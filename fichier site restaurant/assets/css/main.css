@@ -63,7 +63,7 @@ a {
 }
 
 a:hover {
-  color: color-mix(in srgb, var(--accent-color), transparent 25%);
+  color: rgba(206, 18, 18, 0.75); /* Adjusted to match the intended color mix */
   text-decoration: none;
 }
 
@@ -84,7 +84,7 @@ h6 {
   height: 94px;
   background: radial-gradient(
     var(--accent-color) 50%,
-    color-mix(in srgb, var(--accent-color), transparent 75%) 52%
+    rgba(206, 18, 18, 0.25) 52% /* Adjusted to match the intended color mix */
   );
   border-radius: 50%;
   display: block;
@@ -258,7 +258,7 @@ h6 {
 .header .btn-getstarted:hover,
 .header .btn-getstarted:focus:hover {
   color: var(--contrast-color);
-  background: color-mix(in srgb, var(--accent-color), transparent 15%);
+  background: rgba(206, 18, 18, 0.85); /* Adjusted to match the intended color mix */
 }
 
 @media (max-width: 1200px) {
