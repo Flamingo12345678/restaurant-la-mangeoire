@@ -1,5 +1,5 @@
--- Active: 1737405433981@@localhost@3306
 -- Table Clients
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Clients' AND xtype='U')
 CREATE TABLE Clients (
     ClientID INT IDENTITY(1,1) PRIMARY KEY,
     Nom NVARCHAR(100) NOT NULL,
@@ -15,17 +15,15 @@ CREATE TABLE Tables (
     Capacite INT NOT NULL
 );
 
--- Table R�servations
-CREATE TABLE Reservations (
-    ReservationID INT IDENTITY(1,1) PRIMARY KEY,
-    ClientID INT,
-    TableID INT,
-    DateReservation DATE NOT NULL,
-    HeureReservation TIME NOT NULL,
-    NombrePersonnes INT NOT NULL,
-    FOREIGN KEY (ClientID) REFERENCES Clients(ClientID),
-    FOREIGN KEY (TableID) REFERENCES Tables(TableID)
+-- Table Reservations
+CREATE TABLE reservations (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    nom_client NVARCHAR(255) NOT NULL,
+    email_client NVARCHAR(255) NOT NULL,
+    date_reservation DATETIME NOT NULL,
+    statut NVARCHAR(50) DEFAULT 'Réservée' CHECK (statut IN ('Réservée', 'Annulée'))
 );
+
 
 -- Table Menus
 CREATE TABLE Menus (
@@ -45,7 +43,7 @@ CREATE TABLE Commandes (
     FOREIGN KEY (MenuID) REFERENCES Menus(MenuID)
 );
 
--- Table Employ�s
+-- Table Employes
 CREATE TABLE Employes (
     EmployeID INT IDENTITY(1,1) PRIMARY KEY,
     Nom NVARCHAR(100) NOT NULL,

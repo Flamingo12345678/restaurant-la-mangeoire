@@ -1,4 +1,6 @@
 <?php
+require 'vendor/autoload.php';
+
 // Paramètres de connexion à la base de données
 $serverName = "FLAMINGO\SQLEXPRESS"; // Nom du serveur ou adresse IP
 $connectionOptions = array(

@@ -1,0 +1,8 @@
+{
+    "require": {
+        "nesbot/carbon": "^3.8",
+        "mollie/mollie-api-php": "^2.76",
+        "firebase/php-jwt": "^6.10",
+        "paragonie/sodium_compat": "^2.1"
+    }
+}
