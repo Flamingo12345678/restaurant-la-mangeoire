@@ -258,7 +258,12 @@ h6 {
 .header .btn-getstarted:hover,
 .header .btn-getstarted:focus:hover {
   color: var(--contrast-color);
-  background: rgba(206, 18, 18, 0.85); /* Adjusted to match the intended color mix */
+  background: rgba(
+    206,
+    18,
+    18,
+    0.85
+  ); /* Adjusted to match the intended color mix */
 }
 
 @media (max-width: 1200px) {
@@ -1644,4 +1649,9 @@ section,
 
 .contact .php-email-form button[type="submit"]:hover {
   background: color-mix(in srgb, var(--accent-color), transparent 20%);
+}
+
+/* Masquer la zone d'erreur du template réservation si pas d'erreur JS */
+.error-message {
+  display: none !important;
 }
