@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nom_client'], $_POST[
     if ($result) {
       $message = 'Réservation ajoutée.';
     } else {
-      $message = 'Erreur lors de l\'ajout.';
+      echo = 'Erreur lors de l\'ajout.';
     }
   } else {
     $message = 'Champs invalides.';

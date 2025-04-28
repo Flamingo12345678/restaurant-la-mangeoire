@@ -45,7 +45,7 @@ $reservations = $conn->query("SELECT * FROM Reservations ORDER BY id DESC")->fet
     <input type="text" name="statut" placeholder="Statut (Réservée/Annulée)">
     <button type="submit" name="ajouter">Ajouter</button>
   </form>
-  <table border="1" cellpadding="5">
+  <table borde="1" cellpadding="5">
     <tr>
       <th>ID</th>
       <th>Nom</th>
