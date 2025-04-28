@@ -1,7 +1,5 @@
 <?php
 define('CAPACITE_SALLE', 100);
-
-// --- Capacité totale de la salle ---
 require_once '../db_connexion.php';
 session_start();
 if (!isset($_SESSION['admin'])) {
@@ -109,7 +107,9 @@ if ($stmt) {
   $row = $stmt->fetch(PDO::FETCH_ASSOC);
   $total_places = intval($row['total_places']);
 }
-$places_restantes = CAPACITE_SALLE - $total_places;
+// Capacité maximale de la salle
+$cap_max = defined('CAPACITE_SALLE') ? CAPACITE_SALLE : 100;
+$places_restantes = max(0, $cap_max - $total_places);
 
 // 2. Calculer le nombre de personnes réservées à venir (toutes tables confondues)
 $now = date('Y-m-d H:i:s');
@@ -175,15 +175,143 @@ try {
   <meta charset="UTF-8">
   <title>Tables</title>
   <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
-    .success-message {
-      color: #2e7d32;
-      font-weight: bold;
+    body {
+      background: #f8f9fa;
+      font-family: 'Segoe UI', Arial, sans-serif;
     }
 
-    .error-message {
-      color: #c62828;
+    .sidebar {
+      background: #1a237e;
+      color: #fff;
+      width: 240px;
+      min-height: 100vh;
+      position: fixed;
+      left: 0;
+      top: 0;
+      display: flex;
+      flex-direction: column;
+      z-index: 10;
+    }
+
+    .sidebar .logo {
+      font-size: 2rem;
       font-weight: bold;
+      padding: 32px 0 24px 0;
+      text-align: center;
+      letter-spacing: 2px;
+      color: #fff;
+    }
+
+    .sidebar nav ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .sidebar nav ul li {
+      margin: 0;
+    }
+
+    .sidebar nav ul li a {
+      display: flex;
+      align-items: center;
+      color: #fff;
+      text-decoration: none;
+      padding: 16px 32px;
+      font-size: 1.1rem;
+      transition: background 0.2s;
+      border-left: 4px solid transparent;
+    }
+
+    .sidebar nav ul li a.active,
+    .sidebar nav ul li a:hover {
+      background: #283593;
+      border-left: 4px solid #42a5f5;
+      color: #42a5f5;
+    }
+
+    .sidebar nav ul li a i {
+      margin-right: 12px;
+      font-size: 1.3rem;
+    }
+
+    .main-content {
+      margin-left: 240px;
+      min-height: 100vh;
+      background: #f8f9fa;
+      transition: margin-left 0.2s;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff;
+      padding: 24px 40px 24px 40px;
+      box-shadow: 0 2px 8px #0001;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    .topbar .search input {
+      border: 1px solid #e0e0e0;
+      border-radius: 24px;
+      padding: 8px 20px;
+      font-size: 1rem;
+      background: #f5f5f5;
+      outline: none;
+      width: 220px;
+      transition: box-shadow 0.2s;
+    }
+
+    .topbar .icons {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .topbar .icons img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #eee;
+      object-fit: cover;
+      border: 2px solid #e0e0e0;
+    }
+
+    .dashboard-cards {
+      display: flex;
+      gap: 32px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+    }
+
+    .dashboard-card {
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 2px 8px #0001;
+      padding: 28px 32px;
+      min-width: 200px;
+      flex: 1 1 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .dashboard-card .card-title {
+      font-size: 1.1rem;
+      color: #757575;
+      margin-bottom: 8px;
+    }
+
+    .dashboard-card .card-value {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #1a237e;
     }
 
     .admin-table {
@@ -192,12 +320,14 @@ try {
       margin-top: 1em;
       background: #fff;
       box-shadow: 0 2px 8px #0001;
+      border-radius: 12px;
+      overflow: hidden;
     }
 
     .admin-table th,
     .admin-table td {
-      border: 1px solid #ddd;
-      padding: 8px 12px;
+      border: 1px solid #e0e0e0;
+      padding: 12px 16px;
       text-align: left;
     }
 
@@ -211,170 +341,132 @@ try {
     }
 
     .admin-table tr:hover {
-      background: #f1f8e9;
+      background: #e3f2fd;
     }
 
-    @media (max-width: 700px) {
-
-      .admin-table,
-      .admin-table thead,
-      .admin-table tbody,
-      .admin-table th,
-      .admin-table td,
-      .admin-table tr {
-        display: block;
-      }
-
-      .admin-table tr {
-        margin-bottom: 1em;
-      }
-
-      .admin-table td,
-      .admin-table th {
-        padding: 10px 5px;
-        border: none;
-        border-bottom: 1px solid #eee;
-      }
-
-      .admin-table th {
-        background: #e0e0e0;
-      }
+    .form-section {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px #0001;
+      padding: 32px;
+      margin-bottom: 32px;
+      max-width: 500px;
     }
 
-    .admin-form input,
-    .admin-form button {
-      margin: 0.2em 0.5em 0.2em 0;
-      padding: 0.5em;
-      border-radius: 4px;
-      border: 1px solid #bbb;
+    .form-section input,
+    .form-section button {
+      margin-bottom: 16px;
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+      font-size: 1rem;
     }
 
-    .admin-form button {
-      background: #388e3c;
+    .form-section button {
+      background: #1a237e;
       color: #fff;
+      font-weight: bold;
       border: none;
       cursor: pointer;
-      font-weight: bold;
       transition: background 0.2s;
     }
 
-    .admin-form button:hover {
-      background: #2e7d32;
+    .form-section button:hover {
+      background: #283593;
     }
 
-    .admin-form {
-      margin-bottom: 1.5em;
-      background: #f9fbe7;
-      padding: 1em;
-      border-radius: 8px;
-      box-shadow: 0 1px 4px #0001;
-      max-width: 500px;
+    @media (max-width: 900px) {
+      .main-content {
+        margin-left: 0;
+      }
+
+      .sidebar {
+        position: relative;
+        width: 100%;
+        flex-direction: row;
+        height: auto;
+      }
+
+      .dashboard-cards {
+        flex-direction: column;
+        gap: 16px;
+      }
     }
   </style>
 </head>
 
 <body>
-  <h1>Tables</h1>
-  <a href="index.php">&larr; Retour admin</a>
-  <?php if ($message): ?><div><?= $message ?></div><?php endif; ?>
-  <?= $alerte ?>
-  <div style="margin:1em 0; font-weight:bold; color:#1976d2;">
-    Capacité totale de la salle : <span style="color:#c62828;">100 places strictement</span><br>
-    Nombre de places utilisées (tables) : <span style="color:#c62828;"><?= $total_places ?></span><br>
-    Nombre de personnes réservées à venir : <span style="color:#1976d2;"><?= $total_reserves ?></span><br>
-    Places restantes (physiques) : <span style="color:<?= $places_restantes > 0 ? '#388e3c' : ($places_restantes == 0 ? '#1976d2' : '#c62828') ?>; font-weight:bold;">
-      <?= $places_restantes == 0 ? 'Aucune (capacité maximale atteinte)' : $places_restantes ?>
-    </span>
-    <br>
-    <span style="font-size:0.95em;color:#b01e28;">
-      Vous devez organiser vos tables pour que la somme des capacités fasse <b>exactement</b> 100 places.<br>
-      <b>Le nombre de personnes réservées ne doit jamais dépasser le nombre de places physiques.</b>
-    </span>
+  <div class="sidebar">
+    <div class="logo">Tables</div>
+    <nav>
+      <ul>
+        <li><a href="index.php"><i class="bi bi-bar-chart"></i> Analytics</a></li>
+        <li><a href="clients.php"><i class="bi bi-people"></i> Clients</a></li>
+        <li><a href="commandes.php"><i class="bi bi-basket"></i> Commandes</a></li>
+        <li><a href="employes.php"><i class="bi bi-person-badge"></i> Employés</a></li>
+        <li><a href="menus.php"><i class="bi bi-list"></i> Menus</a></li>
+        <li><a href="paiements.php"><i class="bi bi-credit-card"></i> Paiements</a></li>
+        <li><a href="reservations.php"><i class="bi bi-calendar-check"></i> Réservations</a></li>
+        <li><a href="tables.php" class="active"><i class="bi bi-table"></i> Tables</a></li>
+        <li><a href="logout.php"><i class="bi bi-box-arrow-right"></i> Déconnexion</a></li>
+      </ul>
+    </nav>
   </div>
-  <h2>Ajouter une table</h2>
-  <form method="post" class="admin-form">
-    <input type="number" name="numero" placeholder="Numéro de table *" required min="1">
-    <input type="number" name="capacite" placeholder="Capacité *" min="1" required>
-    <button type="submit">Ajouter</button>
-  </form>
-  <form method="post" style="margin-bottom:2em;">
-    <input type="hidden" name="ajout_tables_types" value="1">
-    <button type="submit" style="background:#1976d2;color:#fff;font-weight:bold;padding:0.7em 1.5em;border-radius:6px;border:none;cursor:pointer;">Ajouter différentes tailles de tables pour 100 personnes</button>
-  </form>
-  <h2>Liste des tables</h2>
-  <table class="admin-table">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Numéro</th>
-        <th>Capacité</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      <?php foreach ($tables as $t): ?>
-        <?php if (isset($_GET['edit']) && $_GET['edit'] == $t['TableID']): ?>
+  <div class="main-content">
+    <div class="topbar">
+      <div class="icons">
+        <img src="../assets/img/favcon.jpeg" alt="Profil" style="width:50px;height:50px;border-radius:50%;background:#eee;">
+      </div>
+    </div>
+    <div style="padding:40px;">
+      <h2 style="margin-bottom:32px;">Gestion des tables</h2>
+      <?php if ($alerte) echo $alerte; ?>
+      <?php if ($message) echo '<div class="success-message">' . $message . '</div>'; ?>
+      <div class="dashboard-cards">
+        <div class="dashboard-card">
+          <div class="card-title">Places totales</div>
+          <div class="card-value"><?php echo $total_places; ?></div>
+        </div>
+        <div class="dashboard-card">
+          <div class="card-title">Places restantes</div>
+          <div class="card-value"><?php echo $places_restantes; ?></div>
+        </div>
+        <div class="dashboard-card">
+          <div class="card-title">Personnes réservées à venir</div>
+          <div class="card-value"><?php echo $total_reserves; ?></div>
+        </div>
+      </div>
+      <div class="form-section">
+        <form method="post">
+          <input type="number" name="numero" placeholder="Numéro de table" required>
+          <input type="number" name="capacite" placeholder="Capacité" required>
+          <button type="submit">Ajouter</button>
+          <button type="submit" name="ajout_tables_types">Ajout auto (2,4,6,8 places)</button>
+        </form>
+      </div>
+      <table class="admin-table">
+        <thead>
           <tr>
-            <form method="post" class="admin-form">
-              <td><input type="hidden" name="edit_table_id" value="<?= $t['TableID'] ?>"><?= htmlspecialchars($t['TableID']) ?></td>
-              <td><input type="number" name="edit_numero" value="<?= htmlspecialchars($t['NumeroTable']) ?>" min="1" required style="width:70px;"></td>
-              <td><input type="number" name="edit_capacite" value="<?= htmlspecialchars($t['Capacite']) ?>" min="1" required style="width:70px;"></td>
-              <td>
-                <button type="submit">Enregistrer</button>
-                <a href="tables.php">Annuler</a>
-              </td>
-            </form>
+            <th>ID</th>
+            <th>Numéro</th>
+            <th>Capacité</th>
+            <th>Actions</th>
           </tr>
-        <?php else: ?>
-          <tr>
-            <td><?= htmlspecialchars($t['TableID']) ?></td>
-            <td><?= htmlspecialchars($t['NumeroTable']) ?></td>
-            <td><?= htmlspecialchars($t['Capacite']) ?></td>
-            <td>
-              <a href="?edit=<?= $t['TableID'] ?>" style="color:#1976d2;font-weight:bold;">Modifier</a> |
-              <a href="?delete=<?= $t['TableID'] ?>" onclick="return confirm('Supprimer cette table ?');" style="color:#c62828;font-weight:bold;">Supprimer</a>
-            </td>
-          </tr>
-        <?php endif; ?>
-      <?php endforeach; ?>
-    </tbody>
-  </table>
-  <h2>Statistiques d'occupation des tables</h2>
-  <table class="admin-table">
-    <thead>
-      <tr>
-        <th>Numéro</th>
-        <th>Capacité</th>
-        <th>Nombre de réservations à venir</th>
-        <th>Personnes réservées à venir</th>
-        <th>Taux d'occupation à venir (%)</th>
-      </tr>
-    </thead>
-    <tbody>
-      <?php
-      // On ne compte que les réservations à venir (date >= aujourd'hui)
-      $now = date('Y-m-d H:i:s');
-      $sql = "SELECT t.NumeroTable, t.Capacite, COUNT(r.ReservationID) AS nb_resa, COALESCE(SUM(r.nb_personnes),0) AS nb_pers
-              FROM TablesRestaurant t
-              LEFT JOIN Reservations r ON t.TableID = r.TableID AND r.Statut = 'Réservée' AND r.DateReservation >= ?
-              GROUP BY t.TableID
-              ORDER BY t.NumeroTable ASC";
-      $stmt = $conn->prepare($sql);
-      $stmt->execute([$now]);
-      $stats = $stmt->fetchAll();
-      foreach ($stats as $s):
-        $taux = $s['Capacite'] > 0 ? round(($s['nb_pers'] / $s['Capacite']) * 100, 1) : 0;
-      ?>
-        <tr>
-          <td><?= htmlspecialchars($s['NumeroTable']) ?></td>
-          <td><?= htmlspecialchars($s['Capacite']) ?></td>
-          <td><?= htmlspecialchars($s['nb_resa']) ?></td>
-          <td><?= htmlspecialchars($s['nb_pers']) ?></td>
-          <td><?= $taux ?>%</td>
-        </tr>
-      <?php endforeach; ?>
-    </tbody>
-  </table>
+        </thead>
+        <tbody>
+          <?php if (isset($tables)) foreach ($tables as $t): ?>
+            <tr>
+              <td><?= htmlspecialchars($t['TableID']) ?></td>
+              <td><?= htmlspecialchars($t['NumeroTable']) ?></td>
+              <td><?= htmlspecialchars($t['Capacite']) ?></td>
+              <td><a href="?delete=<?= $t['TableID'] ?>" onclick="return confirm('Supprimer cette table ?')"><i class="bi bi-trash"></i></a></td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </body>
 
 </html>
