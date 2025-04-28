@@ -1,9 +1,9 @@
 <?php
 // Connexion PDO MySQL centralisée
-$host = 'localhost';
-$db   = 'restaurant_la_mangeoire';
-$user = 'root';
-$pass = '';
+$host = getenv('MYSQLHOST') ?: 'localhost';
+$db   = getenv('MYSQLDATABASE') ?: 'restaurant_la_mangeoire';
+$user = getenv('MYSQLUSER') ?: 'root';
+$pass = getenv('MYSQLPASSWORD') ?: '';
 $charset = 'utf8mb4';
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
 $options = [
