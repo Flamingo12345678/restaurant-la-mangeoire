@@ -14,22 +14,42 @@ $message = '';
 
 // --- Traitement du formulaire d'ajout de réservation ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nom_client'], $_POST['email_client'], $_POST['DateReservation'])) {
-  $nom = trim($_POST['nom_client']);
-  $email = filter_var($_POST['email_client'], FILTER_VALIDATE_EMAIL);
-  $date = $_POST['DateReservation'];
-  $statut = trim($_POST['statut'] ?? 'Réservée');
-  if ($nom && $email && $date) {
-    // Préparation et exécution de la requête d'insertion
-    $sql = "INSERT INTO Reservations (nom_client, email_client, DateReservation, statut) VALUES (?, ?, ?, ?)";
-    $stmt = $conn->prepare($sql);
-    $result = $stmt->execute([$nom, $email, $date, $statut]);
-    if ($result) {
-      $message = 'Réservation ajoutée.';
-    } else {
-      $message = 'Erreur lors de l\'ajout.';
-    }
+  // Vérification du dépassement de capacité avant toute réservation
+  $now = date('Y-m-d H:i:s');
+  $sql = "SELECT COALESCE(SUM(nb_personnes),0) AS total_reserves FROM Reservations WHERE Statut = 'Réservée' AND DateReservation >= ?";
+  $stmt = $conn->prepare($sql);
+  $stmt->execute([$now]);
+  $row = $stmt->fetch(PDO::FETCH_ASSOC);
+  $total_reserves = intval($row['total_reserves']);
+  $sql = "SELECT SUM(Capacite) AS total_places FROM TablesRestaurant";
+  $stmt = $conn->query($sql);
+  $total_places = 0;
+  if ($stmt) {
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $total_places = intval($row['total_places']);
+  }
+  $people = intval($_POST['nb_personnes'] ?? 0);
+  if ($total_reserves + $people > $total_places) {
+    $message = "<span class='alert alert-error'>Impossible d'enregistrer la réservation : la capacité maximale de la salle serait dépassée.</span>";
   } else {
-    $message = 'Champs invalides.';
+    // Préparation et exécution de la requête d'insertion
+    $nom = trim($_POST['nom_client']);
+    $email = filter_var($_POST['email_client'], FILTER_VALIDATE_EMAIL);
+    $date = $_POST['DateReservation'];
+    $statut = trim($_POST['statut'] ?? 'Réservée');
+    $nb_personnes = intval($_POST['nb_personnes'] ?? 1);
+    if ($nom && $email && $date && $nb_personnes > 0) {
+      $sql = "INSERT INTO Reservations (nom_client, email_client, DateReservation, statut, nb_personnes) VALUES (?, ?, ?, ?, ?)";
+      $stmt = $conn->prepare($sql);
+      $result = $stmt->execute([$nom, $email, $date, $statut, $nb_personnes]);
+      if ($result) {
+        $message = 'Réservation ajoutée.';
+      } else {
+        $message = 'Erreur lors de l\'ajout.';
+      }
+    } else {
+      $message = 'Champs invalides.';
+    }
   }
 }
 
@@ -53,17 +73,33 @@ if (isset($_POST['edit_id'], $_POST['edit_nom_client'], $_POST['edit_email_clien
   $edit_email = filter_var($_POST['edit_email_client'], FILTER_VALIDATE_EMAIL);
   $edit_date = $_POST['edit_DateReservation'];
   $edit_statut = trim($_POST['edit_statut'] ?? 'Réservée');
+  $edit_nb_personnes = intval($_POST['edit_nb_personnes'] ?? 1);
   // Correction : forcer la valeur à 'Réservée' ou 'Annulée' uniquement
   if ($edit_statut !== 'Annulée') {
     $edit_statut = 'Réservée';
   }
-  if ($edit_nom && $edit_email && $edit_date) {
-    $sql = "UPDATE Reservations SET nom_client = ?, email_client = ?, DateReservation = ?, Statut = ? WHERE ReservationID = ?";
+  // Vérification du dépassement de capacité lors de la modification
+  $now = date('Y-m-d H:i:s');
+  $sql = "SELECT COALESCE(SUM(nb_personnes),0) AS total_reserves FROM Reservations WHERE Statut = 'Réservée' AND DateReservation >= ? AND ReservationID != ?";
+  $stmt = $conn->prepare($sql);
+  $stmt->execute([$now, $edit_id]);
+  $row = $stmt->fetch(PDO::FETCH_ASSOC);
+  $total_reserves = intval($row['total_reserves']);
+  $sql = "SELECT SUM(Capacite) AS total_places FROM TablesRestaurant";
+  $stmt = $conn->query($sql);
+  $total_places = 0;
+  if ($stmt) {
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $total_places = intval($row['total_places']);
+  }
+  if ($total_reserves + $edit_nb_personnes > $total_places) {
+    $message = "<span class='alert alert-error'>Impossible de modifier la réservation : la capacité maximale de la salle serait dépassée.</span>";
+  } elseif ($edit_nom && $edit_email && $edit_date && $edit_nb_personnes > 0) {
+    $sql = "UPDATE Reservations SET nom_client = ?, email_client = ?, DateReservation = ?, Statut = ?, nb_personnes = ? WHERE ReservationID = ?";
     $stmt = $conn->prepare($sql);
-    $result = $stmt->execute([$edit_nom, $edit_email, $edit_date, $edit_statut, $edit_id]);
+    $result = $stmt->execute([$edit_nom, $edit_email, $edit_date, $edit_statut, $edit_nb_personnes, $edit_id]);
     if ($result) {
       $message = 'Réservation modifiée.';
-      // Redirection pour réinitialiser l'état du formulaire d'édition
       header('Location: reservations.php');
       exit;
     } else {
@@ -207,6 +243,7 @@ try {
     <input type="email" name="email_client" placeholder="Email du client *" required maxlength="255">
     <input type="datetime-local" name="DateReservation" placeholder="Date et heure *" required>
     <input type="text" name="statut" placeholder="Statut (Réservée/Annulée)" maxlength="50" value="Réservée">
+    <input type="number" name="nb_personnes" placeholder="Nombre de personnes *" required min="1" value="1">
     <button type="submit">Ajouter</button>
   </form>
 
@@ -220,6 +257,7 @@ try {
         <th>Email</th>
         <th>Date</th>
         <th>Statut</th>
+        <th>Nombre de personnes</th>
         <th>Action</th>
       </tr>
     </thead>
@@ -233,6 +271,7 @@ try {
               <td><input type="email" name="edit_email_client" value="<?= htmlspecialchars($r['email_client']) ?>" required maxlength="255"></td>
               <td><input type="datetime-local" name="edit_DateReservation" value="<?= date('Y-m-d\TH:i', strtotime($r['DateReservation'])) ?>" required></td>
               <td><input type="text" name="edit_statut" value="<?= htmlspecialchars($r['statut'] ?? '') ?>" maxlength="50"></td>
+              <td><input type="number" name="edit_nb_personnes" value="<?= (int)($r['nb_personnes'] ?? 1) ?>" min="1" required style="width:70px;"> </td>
               <td>
                 <button type="submit">Enregistrer</button>
                 <a href="reservations.php">Annuler</a>
@@ -246,6 +285,7 @@ try {
             <td><?= htmlspecialchars($r['email_client']) ?></td>
             <td><?= htmlspecialchars($r['DateReservation']) ?></td>
             <td><?= htmlspecialchars($r['statut'] ?? '') ?></td>
+            <td><?= (int)($r['nb_personnes'] ?? 1) ?></td>
             <td>
               <a href="?edit=<?= $r['ReservationID'] ?>" style="color:#1976d2;font-weight:bold;">Modifier</a> |
               <a href="?delete=<?= $r['ReservationID'] ?>" onclick="return confirm('Supprimer cette réservation ?');" style="color:#c62828;font-weight:bold;">Supprimer</a>
