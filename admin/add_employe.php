@@ -14,33 +14,48 @@ function log_admin_action($action, $details = '')
   $entry = "[$date] [$user] $action $details\n";
   file_put_contents($logfile, $entry, FILE_APPEND | LOCK_EX);
 }
+// Contrôle de droits strict : seuls les superadmins peuvent ajouter
 if (!isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'superadmin') {
-  // Contrôle de droits (préparation multi-niveaux)
+  header('Location: index.php?error=forbidden');
+  exit;
 }
+
+// Génération du token CSRF si besoin
+if (empty($_SESSION['csrf_token'])) {
+  $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $nom = trim($_POST['nom'] ?? '');
-  $prenom = trim($_POST['prenom'] ?? '');
-  $poste = trim($_POST['poste'] ?? '');
-  $salaire = floatval($_POST['salaire'] ?? 0);
-  $date_embauche = $_POST['date_embauche'] ?? '';
-  if ($nom && $prenom && $poste && $salaire > 0 && $date_embauche) {
-    try {
-      $sql = "INSERT INTO Employes (Nom, Prenom, Poste, Salaire, DateEmbauche) VALUES (?, ?, ?, ?, ?)";
-      $stmt = $conn->prepare($sql);
-      $result = $stmt->execute([$nom, $prenom, $poste, $salaire, $date_embauche]);
-      if ($result) {
-        $message = 'Employé ajouté.';
-        log_admin_action('Ajout employé', "Nom: $nom, Prénom: $prenom, Poste: $poste");
-      } else {
-        $message = 'Erreur lors de l\'ajout.';
-        log_admin_action('Erreur ajout employé', "Nom: $nom, Prénom: $prenom, Poste: $poste");
-      }
-    } catch (PDOException $e) {
-      $message = 'Erreur base de données.';
-      log_admin_action('Erreur PDO ajout employé', $e->getMessage());
-    }
+  // Vérification du token CSRF
+  if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+    $message = 'Erreur de sécurité (CSRF).';
+    log_admin_action('Tentative CSRF ajout employé');
   } else {
-    $message = 'Champs invalides.';
+    $nom = trim($_POST['nom'] ?? '');
+    $prenom = trim($_POST['prenom'] ?? '');
+    $poste = trim($_POST['poste'] ?? '');
+    $salaire = floatval($_POST['salaire'] ?? 0);
+    $date_embauche = $_POST['date_embauche'] ?? '';
+    // Validation stricte
+    if ($nom && $prenom && $poste && $salaire > 0 && $date_embauche && mb_strlen($nom) <= 100 && mb_strlen($prenom) <= 100 && mb_strlen($poste) <= 50) {
+      try {
+        $sql = "INSERT INTO Employes (Nom, Prenom, Poste, Salaire, DateEmbauche) VALUES (?, ?, ?, ?, ?)";
+        $stmt = $conn->prepare($sql);
+        $result = $stmt->execute([$nom, $prenom, $poste, $salaire, $date_embauche]);
+        if ($result) {
+          $message = 'Employé ajouté.';
+          log_admin_action('Ajout employé', "Nom: $nom, Prénom: $prenom, Poste: $poste");
+        } else {
+          $message = 'Erreur lors de l\'ajout.';
+          log_admin_action('Erreur ajout employé', "Nom: $nom, Prénom: $prenom, Poste: $poste");
+        }
+      } catch (PDOException $e) {
+        $message = 'Erreur base de données.';
+        log_admin_action('Erreur PDO ajout employé', 'PDOException');
+      }
+    } else {
+      $message = 'Champs invalides.';
+    }
   }
 }
 ?>
@@ -156,10 +171,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </div>
     <?php endif; ?>
     <form method="post" autocomplete="off">
-      <input type="text" name="nom" placeholder="Nom" required>
-      <input type="text" name="prenom" placeholder="Prénom" required>
-      <input type="text" name="poste" placeholder="Poste" required>
-      <input type="number" name="salaire" placeholder="Salaire" step="0.01" min="0" required>
+      <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+      <input type="text" name="nom" placeholder="Nom" required maxlength="100">
+      <input type="text" name="prenom" placeholder="Prénom" required maxlength="100">
+      <input type="text" name="poste" placeholder="Poste" required maxlength="50">
+      <input type="number" name="salaire" placeholder="Salaire" required min="0" step="0.01">
       <input type="date" name="date_embauche" placeholder="Date d'embauche" required>
       <button type="submit">Ajouter</button>
     </form>

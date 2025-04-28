@@ -10,33 +10,48 @@ function log_admin_action($action, $details = '')
   $entry = "[$date] [$user] $action $details\n";
   file_put_contents($logfile, $entry, FILE_APPEND | LOCK_EX);
 }
+// Contrôle de droits strict : seuls les superadmins peuvent modifier
 if (!isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'superadmin') {
-  // Contrôle de droits (préparation multi-niveaux)
+  header('Location: index.php?error=forbidden');
+  exit;
 }
+
+// Génération du token CSRF si besoin
+if (empty($_SESSION['csrf_token'])) {
+  $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 $id = intval($_GET['id'] ?? 0);
 if ($id > 0) {
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nom = trim($_POST['nom'] ?? '');
-    $description = trim($_POST['description'] ?? '');
-    $prix = floatval($_POST['prix'] ?? 0);
-    if ($nom && $prix > 0) {
-      try {
-        $sql = "UPDATE Menus SET NomItem=?, Description=?, Prix=? WHERE MenuID=?";
-        $stmt = $conn->prepare($sql);
-        $result = $stmt->execute([$nom, $description, $prix, $id]);
-        if ($result) {
-          $message = 'Menu modifié.';
-          log_admin_action('Modification menu', "ID: $id, Nom: $nom, Prix: $prix");
-        } else {
-          $message = 'Erreur lors de la modification.';
-          log_admin_action('Erreur modification menu', "ID: $id, Nom: $nom, Prix: $prix");
-        }
-      } catch (PDOException $e) {
-        $message = 'Erreur base de données.';
-        log_admin_action('Erreur PDO modification menu', $e->getMessage());
-      }
+    // Vérification du token CSRF
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+      $message = 'Erreur de sécurité (CSRF).';
+      log_admin_action('Tentative CSRF modification menu');
     } else {
-      $message = 'Champs invalides.';
+      $nom = trim($_POST['nom'] ?? '');
+      $description = trim($_POST['description'] ?? '');
+      $prix = floatval($_POST['prix'] ?? 0);
+      // Validation stricte
+      if ($nom && $prix > 0 && mb_strlen($nom) <= 100 && mb_strlen($description) <= 255) {
+        try {
+          $sql = "UPDATE Menus SET NomItem=?, Description=?, Prix=? WHERE MenuID=?";
+          $stmt = $conn->prepare($sql);
+          $result = $stmt->execute([$nom, $description, $prix, $id]);
+          if ($result) {
+            $message = 'Menu modifié.';
+            log_admin_action('Modification menu', "ID: $id, Nom: $nom, Prix: $prix");
+          } else {
+            $message = 'Erreur lors de la modification.';
+            log_admin_action('Erreur modification menu', "ID: $id, Nom: $nom, Prix: $prix");
+          }
+        } catch (PDOException $e) {
+          $message = 'Erreur base de données.';
+          log_admin_action('Erreur PDO modification menu', 'PDOException');
+        }
+      } else {
+        $message = 'Champs invalides.';
+      }
     }
   }
   $sql = "SELECT * FROM Menus WHERE MenuID=?";
@@ -172,9 +187,10 @@ if ($id > 0) {
     <?php endif; ?>
     <?php if ($menu): ?>
       <form method="post" autocomplete="off">
-        <input type="text" name="nom" value="<?= htmlspecialchars($menu['NomItem']) ?>" placeholder="Nom du menu" required>
-        <input type="text" name="description" value="<?= htmlspecialchars($menu['Description']) ?>" placeholder="Description" required>
-        <input type="number" name="prix" value="<?= htmlspecialchars($menu['Prix']) ?>" step="0.01" min="0" placeholder="Prix" required>
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+        <input type="text" name="nom" value="<?= htmlspecialchars($menu['NomItem'] ?? '') ?>" placeholder="Nom du menu" required maxlength="100">
+        <input type="text" name="description" value="<?= htmlspecialchars($menu['Description'] ?? '') ?>" placeholder="Description" maxlength="255">
+        <input type="number" name="prix" value="<?= htmlspecialchars($menu['Prix'] ?? '') ?>" placeholder="Prix" required min="0" step="0.01">
         <button type="submit">Enregistrer</button>
       </form>
     <?php else: ?>

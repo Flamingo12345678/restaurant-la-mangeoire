@@ -14,40 +14,57 @@ function log_admin_action($action, $details = '')
   $entry = "[$date] [$user] $action $details\n";
   file_put_contents($logfile, $entry, FILE_APPEND | LOCK_EX);
 }
+// Contrôle de droits strict : seuls les superadmins peuvent modifier
 if (!isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'superadmin') {
-  // Contrôle de droits (préparation multi-niveaux)
+  header('Location: index.php?error=forbidden');
+  exit;
 }
+
+// Génération du token CSRF si besoin
+if (empty($_SESSION['csrf_token'])) {
+  $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 $id = intval($_GET['id'] ?? 0);
 if ($id > 0) {
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nom = trim($_POST['nom'] ?? '');
-    $prenom = trim($_POST['prenom'] ?? '');
-    $poste = trim($_POST['poste'] ?? '');
-    $salaire = floatval($_POST['salaire'] ?? 0);
-    $date_embauche = $_POST['date_embauche'] ?? '';
-    if ($nom && $prenom && $poste && $salaire > 0 && $date_embauche) {
-      try {
-        $sql = "UPDATE Employes SET Nom=?, Prenom=?, Poste=?, Salaire=?, DateEmbauche=? WHERE EmployeID=?";
-        $stmt = $conn->prepare($sql);
-        $result = $stmt->execute([$nom, $prenom, $poste, $salaire, $date_embauche, $id]);
-        if ($result) {
-          $message = 'Employé modifié.';
-          log_admin_action('Modification employé', "ID: $id, Nom: $nom, Prénom: $prenom, Poste: $poste");
-        } else {
-          $message = 'Erreur lors de la modification.';
-          log_admin_action('Erreur modification employé', "ID: $id, Nom: $nom, Prénom: $prenom, Poste: $poste");
-        }
-      } catch (PDOException $e) {
-        $message = 'Erreur base de données.';
-        log_admin_action('Erreur PDO modification employé', $e->getMessage());
-      }
+    // Vérification du token CSRF
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+      $message = 'Erreur de sécurité (CSRF).';
+      log_admin_action('Tentative CSRF modification employé');
     } else {
-      $message = 'Champs invalides.';
+      $nom = trim($_POST['nom'] ?? '');
+      $prenom = trim($_POST['prenom'] ?? '');
+      $poste = trim($_POST['poste'] ?? '');
+      $salaire = floatval($_POST['salaire'] ?? 0);
+      $date_embauche = $_POST['date_embauche'] ?? '';
+      // Validation stricte
+      if ($nom && $prenom && $poste && $salaire > 0 && $date_embauche && mb_strlen($nom) <= 100 && mb_strlen($prenom) <= 100 && mb_strlen($poste) <= 50) {
+        try {
+          $sql = "UPDATE Employes SET Nom=?, Prenom=?, Poste=?, Salaire=?, DateEmbauche=? WHERE EmployeID=?";
+          $stmt = $conn->prepare($sql);
+          $result = $stmt->execute([$nom, $prenom, $poste, $salaire, $date_embauche, $id]);
+          if ($result) {
+            $message = 'Employé modifié.';
+            log_admin_action('Modification employé', "ID: $id, Nom: $nom, Prénom: $prenom, Poste: $poste");
+          } else {
+            $message = 'Erreur lors de la modification.';
+            log_admin_action('Erreur modification employé', "ID: $id, Nom: $nom, Prénom: $prenom, Poste: $poste");
+          }
+        } catch (PDOException $e) {
+          $message = 'Erreur base de données.';
+          log_admin_action('Erreur PDO modification employé', 'PDOException');
+        }
+      } else {
+        $message = 'Champs invalides.';
+      }
     }
   }
+  // Récupération de l'employé avec PDO
   $sql = "SELECT * FROM Employes WHERE EmployeID=?";
-  $stmt = sqlsrv_prepare($conn, $sql, [$id]);
-  $employe = ($stmt && sqlsrv_execute($stmt)) ? sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC) : null;
+  $stmt = $conn->prepare($sql);
+  $stmt->execute([$id]);
+  $employe = $stmt->fetch(PDO::FETCH_ASSOC);
 } else {
   $employe = null;
 }
@@ -177,11 +194,12 @@ if ($id > 0) {
     <?php endif; ?>
     <?php if ($employe): ?>
       <form method="post" autocomplete="off">
-        <input type="text" name="nom" value="<?= htmlspecialchars($employe['Nom']) ?>" placeholder="Nom" required>
-        <input type="text" name="prenom" value="<?= htmlspecialchars($employe['Prenom']) ?>" placeholder="Prénom" required>
-        <input type="text" name="poste" value="<?= htmlspecialchars($employe['Poste']) ?>" placeholder="Poste" required>
-        <input type="number" name="salaire" value="<?= htmlspecialchars($employe['Salaire']) ?>" step="0.01" min="0" placeholder="Salaire" required>
-        <input type="date" name="date_embauche" value="<?= htmlspecialchars($employe['DateEmbauche']) ?>">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+        <input type="text" name="nom" value="<?= htmlspecialchars($employe['Nom'] ?? '') ?>" placeholder="Nom" required maxlength="100">
+        <input type="text" name="prenom" value="<?= htmlspecialchars($employe['Prenom'] ?? '') ?>" placeholder="Prénom" required maxlength="100">
+        <input type="text" name="poste" value="<?= htmlspecialchars($employe['Poste'] ?? '') ?>" placeholder="Poste" required maxlength="50">
+        <input type="number" name="salaire" value="<?= htmlspecialchars($employe['Salaire'] ?? '') ?>" placeholder="Salaire" required min="0" step="0.01">
+        <input type="date" name="date_embauche" value="<?= htmlspecialchars($employe['DateEmbauche'] ?? '') ?>" placeholder="Date d'embauche" required>
         <button type="submit">Enregistrer</button>
       </form>
     <?php else: ?>

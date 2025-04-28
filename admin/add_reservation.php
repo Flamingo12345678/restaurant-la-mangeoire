@@ -9,10 +9,10 @@ $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $nom = trim($_POST['nom_client'] ?? '');
   $email = filter_var($_POST['email_client'] ?? '', FILTER_VALIDATE_EMAIL);
-  $date = $_POST['date_reservation'] ?? '';
+  $date = $_POST['DateReservation'] ?? '';
   $statut = trim($_POST['statut'] ?? 'Réservée');
   if ($nom && $email && $date) {
-    $sql = "INSERT INTO Reservations (nom_client, email_client, date_reservation, statut) VALUES (?, ?, ?, ?)";
+    $sql = "INSERT INTO Reservations (nom_client, email_client, DateReservation, statut) VALUES (?, ?, ?, ?)";
     $stmt = sqlsrv_prepare($conn, $sql, [$nom, $email, $date, $statut]);
     if ($stmt && sqlsrv_execute($stmt)) {
       $message = 'Réservation ajoutée.';
@@ -138,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <form method="post" autocomplete="off">
       <input type="text" name="nom_client" placeholder="Nom du client" required>
       <input type="email" name="email_client" placeholder="Email du client" required>
-      <input type="datetime-local" name="date_reservation" required>
+      <input type="datetime-local" name="DateReservation" required>
       <input type="text" name="statut" placeholder="Statut (Réservée/Annulée)">
       <button type="submit">Ajouter</button>
     </form>

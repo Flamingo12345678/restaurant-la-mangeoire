@@ -23,37 +23,52 @@ function log_admin_action($action, $details = '')
   $entry = "[$date] [$user] $action $details\n";
   file_put_contents($logfile, $entry, FILE_APPEND | LOCK_EX);
 }
+// Contrôle de droits strict : seuls les superadmins peuvent modifier
 if (!isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'superadmin') {
-  // Contrôle de droits (préparation multi-niveaux)
+  header('Location: index.php?error=forbidden');
+  exit;
 }
+
+// Génération du token CSRF si besoin
+if (empty($_SESSION['csrf_token'])) {
+  $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 $id = intval($_GET['id'] ?? 0);
 $table = null;
 if ($id > 0) {
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $numero = intval($_POST['numero'] ?? 0);
-    $places = intval($_POST['places'] ?? 0);
-    if ($numero > 0 && $places > 0) {
-      try {
-        $sql = "UPDATE Tables SET NumeroTable=?, NbPlaces=? WHERE TableID=?";
-        $stmt = $conn->prepare($sql);
-        $result = $stmt->execute([$numero, $places, $id]);
-        if ($result) {
-          $message = 'Table modifiée.';
-          log_admin_action('Modification table', "ID: $id, Numéro: $numero, Places: $places");
-        } else {
-          $message = 'Erreur lors de la modification.';
-          log_admin_action('Erreur modification table', "ID: $id, Numéro: $numero, Places: $places");
-        }
-      } catch (PDOException $e) {
-        $message = 'Erreur base de données.';
-        log_admin_action('Erreur PDO modification table', $e->getMessage());
-      }
+    // Vérification du token CSRF
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+      $message = 'Erreur de sécurité (CSRF).';
+      log_admin_action('Tentative CSRF modification table');
     } else {
-      $message = 'Champs invalides.';
+      $numero = intval($_POST['numero'] ?? 0);
+      $places = intval($_POST['places'] ?? 0);
+      // Validation stricte
+      if ($numero > 0 && $places > 0) {
+        try {
+          $sql = "UPDATE TablesRestaurant SET NumeroTable=?, Capacite=? WHERE TableID=?";
+          $stmt = $conn->prepare($sql);
+          $result = $stmt->execute([$numero, $places, $id]);
+          if ($result) {
+            $message = 'Table modifiée.';
+            log_admin_action('Modification table', "ID: $id, Numéro: $numero, Places: $places");
+          } else {
+            $message = 'Erreur lors de la modification.';
+            log_admin_action('Erreur modification table', "ID: $id, Numéro: $numero, Places: $places");
+          }
+        } catch (PDOException $e) {
+          $message = 'Erreur base de données.';
+          log_admin_action('Erreur PDO modification table', 'PDOException');
+        }
+      } else {
+        $message = 'Champs invalides.';
+      }
     }
   }
   // Récupération des infos de la table (MySQL/PDO)
-  $sql = "SELECT * FROM Tables WHERE TableID=?";
+  $sql = "SELECT * FROM TablesRestaurant WHERE TableID=?";
   $stmt = $conn->prepare($sql);
   if ($stmt->execute([$id])) {
     $table = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -185,8 +200,9 @@ if ($id > 0) {
     <?php endif; ?>
     <?php if ($table): ?>
       <form method="post" autocomplete="off">
-        <input type="number" name="numero" value="<?= htmlspecialchars($table['NumeroTable']) ?>" placeholder="Numéro de table" required>
-        <input type="number" name="places" value="<?= htmlspecialchars($table['NbPlaces']) ?>" placeholder="Nombre de places" required>
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+        <input type="number" name="numero" value="<?= htmlspecialchars($table['NumeroTable'] ?? '') ?>" placeholder="Numéro de table" required min="1">
+        <input type="number" name="places" value="<?= htmlspecialchars($table['Capacite'] ?? '') ?>" placeholder="Nombre de places" required min="1">
         <button type="submit">Enregistrer</button>
       </form>
     <?php else: ?>

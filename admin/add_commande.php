@@ -17,32 +17,46 @@ function log_admin_action($action, $details = '')
   file_put_contents($logfile, $entry, FILE_APPEND | LOCK_EX);
 }
 
-// Contrôle de droits (préparation multi-niveaux)
+// Contrôle de droits strict : seuls les superadmins peuvent ajouter
 if (!isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'superadmin') {
-  // Ici, on peut restreindre certaines actions selon le rôle
+  header('Location: index.php?error=forbidden');
+  exit;
 }
+
+// Génération du token CSRF si besoin
+if (empty($_SESSION['csrf_token'])) {
+  $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $reservation_id = intval($_POST['reservation_id'] ?? 0);
-  $menu_id = intval($_POST['menu_id'] ?? 0);
-  $quantite = intval($_POST['quantite'] ?? 0);
-  if ($reservation_id > 0 && $menu_id > 0 && $quantite > 0) {
-    try {
-      $sql = "INSERT INTO Commandes (ReservationID, MenuID, Quantite) VALUES (?, ?, ?)";
-      $stmt = $conn->prepare($sql);
-      $result = $stmt->execute([$reservation_id, $menu_id, $quantite]);
-      if ($result) {
-        $message = 'Commande ajoutée.';
-        log_admin_action('Ajout commande', "ReservationID: $reservation_id, MenuID: $menu_id, Quantité: $quantite");
-      } else {
-        $message = 'Erreur lors de l\'ajout.';
-        log_admin_action('Erreur ajout commande', "ReservationID: $reservation_id, MenuID: $menu_id, Quantité: $quantite");
-      }
-    } catch (PDOException $e) {
-      $message = 'Erreur base de données.';
-      log_admin_action('Erreur PDO ajout commande', $e->getMessage());
-    }
+  // Vérification du token CSRF
+  if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+    $message = 'Erreur de sécurité (CSRF).';
+    log_admin_action('Tentative CSRF ajout commande');
   } else {
-    $message = 'Champs invalides.';
+    $reservation_id = intval($_POST['reservation_id'] ?? 0);
+    $menu_id = intval($_POST['menu_id'] ?? 0);
+    $quantite = intval($_POST['quantite'] ?? 0);
+    // Validation stricte
+    if ($reservation_id > 0 && $menu_id > 0 && $quantite > 0) {
+      try {
+        $sql = "INSERT INTO Commandes (ReservationID, MenuID, Quantite) VALUES (?, ?, ?)";
+        $stmt = $conn->prepare($sql);
+        $result = $stmt->execute([$reservation_id, $menu_id, $quantite]);
+        if ($result) {
+          $message = 'Commande ajoutée.';
+          log_admin_action('Ajout commande', "ReservationID: $reservation_id, MenuID: $menu_id, Quantité: $quantite");
+        } else {
+          $message = 'Erreur lors de l\'ajout.';
+          log_admin_action('Erreur ajout commande', "ReservationID: $reservation_id, MenuID: $menu_id, Quantité: $quantite");
+        }
+      } catch (PDOException $e) {
+        $message = 'Erreur base de données.';
+        log_admin_action('Erreur PDO ajout commande', 'PDOException');
+      }
+    } else {
+      $message = 'Champs invalides.';
+    }
   }
 }
 ?>
@@ -158,9 +172,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </div>
     <?php endif; ?>
     <form method="post" autocomplete="off">
-      <input type="number" name="reservation_id" placeholder="ID réservation" required>
-      <input type="number" name="menu_id" placeholder="ID menu" required>
-      <input type="number" name="quantite" placeholder="Quantité" min="1" required>
+      <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+      <input type="number" name="reservation_id" placeholder="ID réservation" required min="1">
+      <input type="number" name="menu_id" placeholder="ID menu" required min="1">
+      <input type="number" name="quantite" placeholder="Quantité" required min="1">
       <button type="submit">Ajouter</button>
     </form>
   </div>

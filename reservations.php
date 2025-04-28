@@ -5,10 +5,10 @@ $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajouter'])) {
   $nom = trim($_POST['nom_client'] ?? '');
   $email = filter_var($_POST['email_client'] ?? '', FILTER_VALIDATE_EMAIL);
-  $date = $_POST['date_reservation'] ?? '';
+  $date = $_POST['DateReservation'] ?? '';
   $statut = trim($_POST['statut'] ?? 'Réservée');
   if ($nom && $email && $date) {
-    $sql = "INSERT INTO Reservations (nom_client, email_client, date_reservation, statut) VALUES (?, ?, ?, ?)";
+    $sql = "INSERT INTO Reservations (nom_client, email_client, DateReservation, statut) VALUES (?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
     $stmt->execute([$nom, $email, $date, $statut]);
     $message = 'Réservation ajoutée.';
@@ -41,7 +41,7 @@ $reservations = $conn->query("SELECT * FROM Reservations ORDER BY id DESC")->fet
   <form method="post">
     <input type="text" name="nom_client" placeholder="Nom du client" required>
     <input type="email" name="email_client" placeholder="Email du client" required>
-    <input type="datetime-local" name="date_reservation" required>
+    <input type="datetime-local" name="DateReservation" required>
     <input type="text" name="statut" placeholder="Statut (Réservée/Annulée)">
     <button type="submit" name="ajouter">Ajouter</button>
   </form>
@@ -59,7 +59,7 @@ $reservations = $conn->query("SELECT * FROM Reservations ORDER BY id DESC")->fet
         <td><?= htmlspecialchars($r['id']) ?></td>
         <td><?= htmlspecialchars($r['nom_client']) ?></td>
         <td><?= htmlspecialchars($r['email_client']) ?></td>
-        <td><?= htmlspecialchars($r['date_reservation']) ?></td>
+        <td><?= htmlspecialchars($r['DateReservation']) ?></td>
         <td><?= htmlspecialchars($r['statut']) ?></td>
         <td><a href="?delete=<?= $r['id'] ?>" onclick="return confirm('Supprimer cette réservation ?')">Supprimer</a></td>
       </tr>

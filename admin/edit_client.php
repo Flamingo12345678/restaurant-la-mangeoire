@@ -16,39 +16,57 @@ function log_admin_action($action, $details = '')
   $entry = "[$date] [$user] $action $details\n";
   file_put_contents($logfile, $entry, FILE_APPEND | LOCK_EX);
 }
+
+// Contrôle de droits strict : seuls les superadmins peuvent modifier
 if (!isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'superadmin') {
-  // Contrôle de droits (préparation multi-niveaux)
+  header('Location: index.php?error=forbidden');
+  exit;
 }
+
+// Génération du token CSRF si besoin
+if (empty($_SESSION['csrf_token'])) {
+  $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 $id = intval($_GET['id'] ?? 0);
 if ($id > 0) {
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nom = trim($_POST['nom'] ?? '');
-    $prenom = trim($_POST['prenom'] ?? '');
-    $email = filter_var($_POST['email'] ?? '', FILTER_VALIDATE_EMAIL);
-    $tel = trim($_POST['telephone'] ?? '');
-    if ($nom && $prenom && $email) {
-      try {
-        $sql = "UPDATE Clients SET Nom=?, Prenom=?, Email=?, Telephone=? WHERE ClientID=?";
-        $stmt = $conn->prepare($sql);
-        $result = $stmt->execute([$nom, $prenom, $email, $tel, $id]);
-        if ($result) {
-          $message = 'Client modifié.';
-          log_admin_action('Modification client', "ID: $id, Nom: $nom, Prénom: $prenom, Email: $email");
-        } else {
-          $message = 'Erreur lors de la modification.';
-          log_admin_action('Erreur modification client', "ID: $id, Nom: $nom, Prénom: $prenom, Email: $email");
-        }
-      } catch (PDOException $e) {
-        $message = 'Erreur base de données.';
-        log_admin_action('Erreur PDO modification client', $e->getMessage());
-      }
+    // Vérification du token CSRF
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+      $message = 'Erreur de sécurité (CSRF).';
+      log_admin_action('Tentative CSRF modification client');
     } else {
-      $message = 'Champs invalides.';
+      $nom = trim($_POST['nom'] ?? '');
+      $prenom = trim($_POST['prenom'] ?? '');
+      $email = filter_var($_POST['email'] ?? '', FILTER_VALIDATE_EMAIL);
+      $tel = trim($_POST['telephone'] ?? '');
+      // Validation stricte
+      if ($nom && $prenom && $email && mb_strlen($nom) <= 100 && mb_strlen($prenom) <= 100 && mb_strlen($tel) <= 20) {
+        try {
+          $sql = "UPDATE Clients SET Nom=?, Prenom=?, Email=?, Telephone=? WHERE ClientID=?";
+          $stmt = $conn->prepare($sql);
+          $result = $stmt->execute([$nom, $prenom, $email, $tel, $id]);
+          if ($result) {
+            $message = 'Client modifié.';
+            log_admin_action('Modification client', "ID: $id, Nom: $nom, Prénom: $prenom, Email: $email");
+          } else {
+            $message = 'Erreur lors de la modification.';
+            log_admin_action('Erreur modification client', "ID: $id, Nom: $nom, Prénom: $prenom, Email: $email");
+          }
+        } catch (PDOException $e) {
+          $message = 'Erreur base de données.';
+          log_admin_action('Erreur PDO modification client', 'PDOException');
+        }
+      } else {
+        $message = 'Champs invalides.';
+      }
     }
   }
+  // Récupération du client avec PDO (et non sqlsrv)
   $sql = "SELECT * FROM Clients WHERE ClientID=?";
-  $stmt = sqlsrv_prepare($conn, $sql, [$id]);
-  $client = ($stmt && sqlsrv_execute($stmt)) ? sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC) : null;
+  $stmt = $conn->prepare($sql);
+  $stmt->execute([$id]);
+  $client = $stmt->fetch(PDO::FETCH_ASSOC);
 } else {
   $client = null;
 }
@@ -166,10 +184,11 @@ if ($id > 0) {
     <?php endif; ?>
     <?php if ($client): ?>
       <form method="post" autocomplete="off">
-        <input type="text" name="nom" value="<?= htmlspecialchars($client['Nom']) ?>" placeholder="Nom" required>
-        <input type="text" name="prenom" value="<?= htmlspecialchars($client['Prenom']) ?>" placeholder="Prénom" required>
-        <input type="email" name="email" value="<?= htmlspecialchars($client['Email']) ?>" placeholder="Email" required>
-        <input type="text" name="telephone" value="<?= htmlspecialchars($client['Telephone']) ?>" placeholder="Téléphone">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+        <input type="text" name="nom" value="<?= htmlspecialchars($client['Nom'] ?? '') ?>" placeholder="Nom" required maxlength="100">
+        <input type="text" name="prenom" value="<?= htmlspecialchars($client['Prenom'] ?? '') ?>" placeholder="Prénom" required maxlength="100">
+        <input type="email" name="email" value="<?= htmlspecialchars($client['Email'] ?? '') ?>" placeholder="Email" required maxlength="100">
+        <input type="text" name="telephone" value="<?= htmlspecialchars($client['Telephone'] ?? '') ?>" placeholder="Téléphone" maxlength="20">
         <button type="submit">Enregistrer</button>
       </form>
     <?php else: ?>

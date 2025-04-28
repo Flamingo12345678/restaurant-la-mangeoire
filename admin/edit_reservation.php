@@ -10,39 +10,56 @@ function log_admin_action($action, $details = '')
   $entry = "[$date] [$user] $action $details\n";
   file_put_contents($logfile, $entry, FILE_APPEND | LOCK_EX);
 }
+// Contrôle de droits strict : seuls les superadmins peuvent modifier
 if (!isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'superadmin') {
-  // Contrôle de droits (préparation multi-niveaux)
+  header('Location: index.php?error=forbidden');
+  exit;
 }
+
+// Génération du token CSRF si besoin
+if (empty($_SESSION['csrf_token'])) {
+  $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 $id = intval($_GET['id'] ?? 0);
 if ($id > 0) {
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nom = trim($_POST['nom_client'] ?? '');
-    $email = filter_var($_POST['email_client'] ?? '', FILTER_VALIDATE_EMAIL);
-    $date = $_POST['date_reservation'] ?? '';
-    $statut = trim($_POST['statut'] ?? 'Réservée');
-    if ($nom && $email && $date) {
-      try {
-        $sql = "UPDATE Reservations SET nom_client=?, email_client=?, date_reservation=?, statut=? WHERE id=?";
-        $stmt = $conn->prepare($sql);
-        $result = $stmt->execute([$nom, $email, $date, $statut, $id]);
-        if ($result) {
-          $message = 'Réservation modifiée.';
-          log_admin_action('Modification réservation', "ID: $id, Nom: $nom, Email: $email, Date: $date");
-        } else {
-          $message = 'Erreur lors de la modification.';
-          log_admin_action('Erreur modification réservation', "ID: $id, Nom: $nom, Email: $email, Date: $date");
-        }
-      } catch (PDOException $e) {
-        $message = 'Erreur base de données.';
-        log_admin_action('Erreur PDO modification réservation', $e->getMessage());
-      }
+    // Vérification du token CSRF
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+      $message = 'Erreur de sécurité (CSRF).';
+      log_admin_action('Tentative CSRF modification réservation');
     } else {
-      $message = 'Champs invalides.';
+      $nom = trim($_POST['nom_client'] ?? '');
+      $email = filter_var($_POST['email_client'] ?? '', FILTER_VALIDATE_EMAIL);
+      $date = $_POST['DateReservation'] ?? '';
+      $statut = trim($_POST['statut'] ?? 'Réservée');
+      // Validation stricte
+      if ($nom && $email && $date && mb_strlen($nom) <= 100 && mb_strlen($email) <= 100 && mb_strlen($statut) <= 50) {
+        try {
+          $sql = "UPDATE Reservations SET nom_client=?, email_client=?, DateReservation=?, statut=? WHERE id=?";
+          $stmt = $conn->prepare($sql);
+          $result = $stmt->execute([$nom, $email, $date, $statut, $id]);
+          if ($result) {
+            $message = 'Réservation modifiée.';
+            log_admin_action('Modification réservation', "ID: $id, Nom: $nom, Email: $email, Date: $date");
+          } else {
+            $message = 'Erreur lors de la modification.';
+            log_admin_action('Erreur modification réservation', "ID: $id, Nom: $nom, Email: $email, Date: $date");
+          }
+        } catch (PDOException $e) {
+          $message = 'Erreur base de données.';
+          log_admin_action('Erreur PDO modification réservation', 'PDOException');
+        }
+      } else {
+        $message = 'Champs invalides.';
+      }
     }
   }
+  // Récupération de la réservation avec PDO
   $sql = "SELECT * FROM Reservations WHERE id=?";
-  $stmt = sqlsrv_prepare($conn, $sql, [$id]);
-  $reservation = ($stmt && sqlsrv_execute($stmt)) ? sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC) : null;
+  $stmt = $conn->prepare($sql);
+  $stmt->execute([$id]);
+  $reservation = $stmt->fetch(PDO::FETCH_ASSOC);
 } else {
   $reservation = null;
 }
@@ -172,10 +189,11 @@ if ($id > 0) {
     <?php endif; ?>
     <?php if ($reservation): ?>
       <form method="post" autocomplete="off">
-        <input type="text" name="nom_client" value="<?= htmlspecialchars($reservation['nom_client']) ?>" placeholder="Nom du client" required>
-        <input type="email" name="email_client" value="<?= htmlspecialchars($reservation['email_client']) ?>" placeholder="Email du client" required>
-        <input type="datetime-local" name="date_reservation" value="<?= htmlspecialchars($reservation['date_reservation']) ?>" required>
-        <input type="text" name="statut" value="<?= htmlspecialchars($reservation['statut']) ?>" placeholder="Statut">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+        <input type="text" name="nom_client" value="<?= htmlspecialchars($reservation['nom_client'] ?? '') ?>" placeholder="Nom du client" required maxlength="100">
+        <input type="email" name="email_client" value="<?= htmlspecialchars($reservation['email_client'] ?? '') ?>" placeholder="Email du client" required maxlength="100">
+        <input type="datetime-local" name="DateReservation" value="<?= htmlspecialchars($reservation['DateReservation'] ?? '') ?>" required>
+        <input type="text" name="statut" value="<?= htmlspecialchars($reservation['statut'] ?? '') ?>" placeholder="Statut (Réservée/Annulée)" maxlength="50">
         <button type="submit">Enregistrer</button>
       </form>
     <?php else: ?>

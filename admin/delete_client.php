@@ -13,26 +13,41 @@ function log_admin_action($action, $details = '')
   $entry = "[$date] [$user] $action $details\n";
   file_put_contents($logfile, $entry, FILE_APPEND | LOCK_EX);
 }
+// Contrôle de droits strict : seuls les superadmins peuvent supprimer
 if (!isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'superadmin') {
-  // Contrôle de droits (préparation multi-niveaux)
+  header('Location: index.php?error=forbidden');
+  exit;
 }
+
+// Génération du token CSRF si besoin
+if (empty($_SESSION['csrf_token'])) {
+  $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 $id = intval($_GET['id'] ?? 0);
-if ($id > 0) {
-  try {
-    $sql = "DELETE FROM Clients WHERE ClientID=?";
-    $stmt = $conn->prepare($sql);
-    $result = $stmt->execute([$id]);
-    if ($result) {
-      log_admin_action('Suppression client', "ID: $id");
-      header('Location: clients.php?msg=supprime');
-      exit;
-    } else {
-      echo "Erreur lors de la suppression.";
-      log_admin_action('Erreur suppression client', "ID: $id");
+$message = '';
+if ($id > 0 && $_SERVER['REQUEST_METHOD'] === 'POST') {
+  // Vérification du token CSRF
+  if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+    $message = 'Erreur de sécurité (CSRF).';
+    log_admin_action('Tentative CSRF suppression client');
+  } else {
+    try {
+      $sql = "DELETE FROM Clients WHERE ClientID=?";
+      $stmt = $conn->prepare($sql);
+      $result = $stmt->execute([$id]);
+      if ($result) {
+        log_admin_action('Suppression client', "ID: $id");
+        header('Location: clients.php?msg=supprime');
+        exit;
+      } else {
+        $message = "Erreur lors de la suppression.";
+        log_admin_action('Erreur suppression client', "ID: $id");
+      }
+    } catch (PDOException $e) {
+      $message = "Erreur base de données.";
+      log_admin_action('Erreur PDO suppression client', 'PDOException');
     }
-  } catch (PDOException $e) {
-    echo "Erreur base de données.";
-    log_admin_action('Erreur PDO suppression client', $e->getMessage());
   }
 } else {
   echo "ID invalide.";
@@ -124,17 +139,20 @@ if ($id > 0) {
 
 <body style="background:#f7f7f7; min-height:100vh;">
   <div class="form-container">
-    <a href="clients.php" class="back-link">&larr; Retour à la liste</a>
     <h1>Supprimer un client</h1>
-    <?php if (isset($message) && $message): ?>
-      <div class="alert alert-error"> <?= htmlspecialchars($message) ?> </div>
-    <?php endif; ?>
     <?php if ($id > 0): ?>
-      <form method="post" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce client ?');">
-        <button type="submit" class="delete-btn">Confirmer la suppression</button>
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+        <p>Êtes-vous sûr de vouloir supprimer ce client (ID <?= $id ?>) ?</p>
+        <button type="submit" style="background:#b01e28;color:#fff;">Confirmer la suppression</button>
+        <a href="clients.php" class="back-link">Annuler</a>
       </form>
+      <?php if ($message): ?>
+        <div class="alert alert-error"> <?= htmlspecialchars($message) ?> </div>
+      <?php endif; ?>
     <?php else: ?>
       <div class="alert alert-error">ID invalide.</div>
+      <a href="clients.php" class="back-link">Retour</a>
     <?php endif; ?>
   </div>
 </body>

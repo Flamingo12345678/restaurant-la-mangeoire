@@ -13,25 +13,40 @@
  * @sécurité Accès restreint aux administrateurs via session.
  */
 session_start();
-if (!isset($_SESSION['admin'])) {
-  header('Location: login.php');
+if (!isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'superadmin') {
+  header('Location: index.php?error=forbidden');
   exit;
 }
+
+// Génération du token CSRF si besoin
+if (empty($_SESSION['csrf_token'])) {
+  $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 require_once '../db_connexion.php';
 $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $numero = intval($_POST['numero'] ?? 0);
-  $places = intval($_POST['places'] ?? 0);
-  if ($numero > 0 && $places > 0) {
-    $sql = "INSERT INTO Tables (NumeroTable, NbPlaces) VALUES (?, ?)";
-    $stmt = sqlsrv_prepare($conn, $sql, [$numero, $places]);
-    if ($stmt && sqlsrv_execute($stmt)) {
-      $message = 'Table ajoutée.';
-    } else {
-      $message = 'Erreur lors de l\'ajout.';
-    }
+  // Vérification du token CSRF
+  if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+    $message = 'Erreur de sécurité (CSRF).';
+    // log_admin_action peut être ajouté ici si besoin
   } else {
-    $message = 'Champs invalides.';
+    $numero = intval($_POST['numero'] ?? 0);
+    $places = intval($_POST['places'] ?? 0);
+    // Validation stricte
+    if ($numero > 0 && $places > 0) {
+      $sql = "INSERT INTO TablesRestaurant (NumeroTable, Capacite) VALUES (?, ?)";
+      $stmt = $conn->prepare($sql);
+      if ($stmt->execute([$numero, $places])) {
+        $message = 'Table ajoutée.';
+        // log_admin_action('Ajout table', "Numéro: $numero, Places: $places");
+      } else {
+        $message = 'Erreur lors de l\'ajout.';
+        // log_admin_action('Erreur ajout table', "Numéro: $numero, Places: $places");
+      }
+    } else {
+      $message = 'Champs invalides.';
+    }
   }
 }
 ?>
@@ -147,8 +162,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </div>
     <?php endif; ?>
     <form method="post" autocomplete="off">
-      <input type="number" name="numero" placeholder="Numéro de table" required>
-      <input type="number" name="places" placeholder="Nombre de places" required>
+      <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+      <input type="number" name="numero" placeholder="Numéro de table" required min="1">
+      <input type="number" name="places" placeholder="Nombre de places" required min="1">
       <button type="submit">Ajouter</button>
     </form>
   </div>

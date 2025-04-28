@@ -10,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['numero'], $_POST['cap
   $numero = intval($_POST['numero']);
   $capacite = intval($_POST['capacite']);
   if ($numero > 0 && $capacite > 0) {
-    $sql = "INSERT INTO Tables (NumeroTable, Capacite) VALUES (?, ?)";
+    $sql = "INSERT INTO TablesRestaurant (NumeroTable, Capacite) VALUES (?, ?)";
     $stmt = $conn->prepare($sql);
     $result = $stmt->execute([$numero, $capacite]);
     if ($result) {
@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['numero'], $_POST['cap
 }
 if (isset($_GET['delete'])) {
   $id = intval($_GET['delete']);
-  $sql = "DELETE FROM Tables WHERE TableID = ?";
+  $sql = "DELETE FROM TablesRestaurant WHERE TableID = ?";
   $stmt = $conn->prepare($sql);
   $result = $stmt->execute([$id]);
   if ($result) {
@@ -34,7 +34,7 @@ if (isset($_GET['delete'])) {
   }
 }
 $tables = [];
-$sql = "SELECT * FROM Tables ORDER BY TableID DESC";
+$sql = "SELECT * FROM TablesRestaurant ORDER BY TableID DESC";
 try {
   $stmt = $conn->query($sql);
   while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
