@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nom_client'], $_POST[
     if ($result) {
       $message = 'Réservation ajoutée.';
     } else {
-      echo = 'Erreur lors de l\'ajout.';
+      $message = 'Erreur lors de l\'ajout.';
     }
   } else {
     $message = 'Champs invalides.';
@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nom_client'], $_POST[
 // --- Suppression d'une réservation si demandé via GET ---
 if (isset($_GET['delete'])) {
   $id = intval($_GET['delete']);
-  $sql = "DELETE FROM Reservations WHERE id = ?";
+  $sql = "DELETE FROM Reservations WHERE ReservationID = ?";
   $stmt = $conn->prepare($sql);
   $result = $stmt->execute([$id]);
   if ($result) {
@@ -46,9 +46,37 @@ if (isset($_GET['delete'])) {
   }
 }
 
+// --- Traitement du formulaire de modification de réservation ---
+if (isset($_POST['edit_id'], $_POST['edit_nom_client'], $_POST['edit_email_client'], $_POST['edit_DateReservation'])) {
+  $edit_id = intval($_POST['edit_id']);
+  $edit_nom = trim($_POST['edit_nom_client']);
+  $edit_email = filter_var($_POST['edit_email_client'], FILTER_VALIDATE_EMAIL);
+  $edit_date = $_POST['edit_DateReservation'];
+  $edit_statut = trim($_POST['edit_statut'] ?? 'Réservée');
+  // Correction : forcer la valeur à 'Réservée' ou 'Annulée' uniquement
+  if ($edit_statut !== 'Annulée') {
+    $edit_statut = 'Réservée';
+  }
+  if ($edit_nom && $edit_email && $edit_date) {
+    $sql = "UPDATE Reservations SET nom_client = ?, email_client = ?, DateReservation = ?, Statut = ? WHERE ReservationID = ?";
+    $stmt = $conn->prepare($sql);
+    $result = $stmt->execute([$edit_nom, $edit_email, $edit_date, $edit_statut, $edit_id]);
+    if ($result) {
+      $message = 'Réservation modifiée.';
+      // Redirection pour réinitialiser l'état du formulaire d'édition
+      header('Location: reservations.php');
+      exit;
+    } else {
+      $message = 'Erreur lors de la modification.';
+    }
+  } else {
+    $message = 'Champs invalides pour la modification.';
+  }
+}
+
 // --- Récupération de la liste des réservations ---
 $reservations = [];
-$sql = "SELECT * FROM Reservations ORDER BY id DESC";
+$sql = "SELECT * FROM Reservations ORDER BY ReservationID DESC";
 try {
   $stmt = $conn->query($sql);
   if ($stmt) {
@@ -57,7 +85,7 @@ try {
     }
   }
 } catch (PDOException $e) {
-  $message = 'Erreur lors de la récupération des réservations.';
+  $message = 'Erreur lors de la récupération des réservations : ' . $e->getMessage();
 }
 ?>
 <!DOCTYPE html>
@@ -170,7 +198,7 @@ try {
   <h1>Réservations</h1>
   <a href="index.php">&larr; Retour admin</a>
   <!-- Affichage du message d'information (succès ou erreur) -->
-  <?php if ($message): ?><div><?= $message ?></div><?php endif; ?>
+  <?php if (!empty($message)): ?><div><?= htmlspecialchars($message) ?></div><?php endif; ?>
 
   <!-- Formulaire d'ajout d'une nouvelle réservation -->
   <h2>Ajouter une réservation</h2>
@@ -197,15 +225,33 @@ try {
     </thead>
     <tbody>
       <?php foreach ($reservations as $r): ?>
-        <tr>
-          <td><?= htmlspecialchars($r['id']) ?></td>
-          <td><?= htmlspecialchars($r['nom_client']) ?></td>
-          <td><?= htmlspecialchars($r['email_client']) ?></td>
-          <td><?= htmlspecialchars($r['DateReservation']) ?></td>
-          <td><?= htmlspecialchars($r['statut']) ?></td>
-          <!-- Lien pour supprimer la réservation (avec confirmation JS) -->
-          <td><a href="?delete=<?= $r['id'] ?>" onclick="return confirm('Supprimer cette réservation ?');" style="color:#c62828;font-weight:bold;">Supprimer</a></td>
-        </tr>
+        <?php if (isset($_GET['edit']) && $_GET['edit'] == $r['ReservationID']): ?>
+          <tr>
+            <form method="post" class="admin-form">
+              <td><input type="hidden" name="edit_id" value="<?= $r['ReservationID'] ?>"><?= htmlspecialchars($r['ReservationID']) ?></td>
+              <td><input type="text" name="edit_nom_client" value="<?= htmlspecialchars($r['nom_client']) ?>" required maxlength="255"></td>
+              <td><input type="email" name="edit_email_client" value="<?= htmlspecialchars($r['email_client']) ?>" required maxlength="255"></td>
+              <td><input type="datetime-local" name="edit_DateReservation" value="<?= date('Y-m-d\TH:i', strtotime($r['DateReservation'])) ?>" required></td>
+              <td><input type="text" name="edit_statut" value="<?= htmlspecialchars($r['statut'] ?? '') ?>" maxlength="50"></td>
+              <td>
+                <button type="submit">Enregistrer</button>
+                <a href="reservations.php">Annuler</a>
+              </td>
+            </form>
+          </tr>
+        <?php else: ?>
+          <tr>
+            <td><?= htmlspecialchars($r['ReservationID']) ?></td>
+            <td><?= htmlspecialchars($r['nom_client']) ?></td>
+            <td><?= htmlspecialchars($r['email_client']) ?></td>
+            <td><?= htmlspecialchars($r['DateReservation']) ?></td>
+            <td><?= htmlspecialchars($r['statut'] ?? '') ?></td>
+            <td>
+              <a href="?edit=<?= $r['ReservationID'] ?>" style="color:#1976d2;font-weight:bold;">Modifier</a> |
+              <a href="?delete=<?= $r['ReservationID'] ?>" onclick="return confirm('Supprimer cette réservation ?');" style="color:#c62828;font-weight:bold;">Supprimer</a>
+            </td>
+          </tr>
+        <?php endif; ?>
       <?php endforeach; ?>
     </tbody>
   </table>
