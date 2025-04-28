@@ -13,20 +13,20 @@ require_once '../db_connexion.php';
 $message = '';
 
 // --- Traitement du formulaire d'ajout de réservation ---
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nom_client'], $_POST['email_client'], $_POST['date_reservation'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nom_client'], $_POST['email_client'], $_POST['DateReservation'])) {
   $nom = trim($_POST['nom_client']);
   $email = filter_var($_POST['email_client'], FILTER_VALIDATE_EMAIL);
-  $date = $_POST['date_reservation'];
+  $date = $_POST['DateReservation'];
   $statut = trim($_POST['statut'] ?? 'Réservée');
   if ($nom && $email && $date) {
     // Préparation et exécution de la requête d'insertion
-    $sql = "INSERT INTO Reservations (nom_client, email_client, date_reservation, statut) VALUES (?, ?, ?, ?)";
+    $sql = "INSERT INTO Reservations (nom_client, email_client, DateReservation, statut) VALUES (?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
     $result = $stmt->execute([$nom, $email, $date, $statut]);
     if ($result) {
       $message = 'Réservation ajoutée.';
     } else {
-      $message = 'Erreur lors de l\'ajout.';
+      echo = 'Erreur lors de l\'ajout.';
     }
   } else {
     $message = 'Champs invalides.';
@@ -177,7 +177,7 @@ try {
   <form method="post" class="admin-form">
     <input type="text" name="nom_client" placeholder="Nom du client *" required maxlength="255">
     <input type="email" name="email_client" placeholder="Email du client *" required maxlength="255">
-    <input type="datetime-local" name="date_reservation" placeholder="Date et heure *" required>
+    <input type="datetime-local" name="DateReservation" placeholder="Date et heure *" required>
     <input type="text" name="statut" placeholder="Statut (Réservée/Annulée)" maxlength="50" value="Réservée">
     <button type="submit">Ajouter</button>
   </form>
@@ -201,7 +201,7 @@ try {
           <td><?= htmlspecialchars($r['id']) ?></td>
           <td><?= htmlspecialchars($r['nom_client']) ?></td>
           <td><?= htmlspecialchars($r['email_client']) ?></td>
-          <td><?= htmlspecialchars($r['date_reservation']) ?></td>
+          <td><?= htmlspecialchars($r['DateReservation']) ?></td>
           <td><?= htmlspecialchars($r['statut']) ?></td>
           <!-- Lien pour supprimer la réservation (avec confirmation JS) -->
           <td><a href="?delete=<?= $r['id'] ?>" onclick="return confirm('Supprimer cette réservation ?');" style="color:#c62828;font-weight:bold;">Supprimer</a></td>
