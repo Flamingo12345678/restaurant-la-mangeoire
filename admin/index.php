@@ -208,6 +208,35 @@ require_once '../db_connexion.php';
         height: auto;
       }
     }
+
+    .btn-retour-public {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5em;
+      background: linear-gradient(90deg, #7f53ac 0%, #647dee 100%);
+      color: #fff !important;
+      border: none;
+      border-radius: 2em;
+      padding: 0.6em 1.6em;
+      font-size: 1.1rem;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(100, 125, 222, 0.15);
+      transition: background 0.3s, box-shadow 0.3s, transform 0.2s;
+      text-decoration: none;
+    }
+
+    .btn-retour-public:hover {
+      background: linear-gradient(90deg, #647dee 0%, #7f53ac 100%);
+      box-shadow: 0 4px 16px rgba(100, 125, 222, 0.25);
+      color: #fff !important;
+      transform: translateY(-2px) scale(1.04);
+      text-decoration: none;
+    }
+
+    .btn-retour-public i {
+      font-size: 1.2em;
+      margin-right: 0.3em;
+    }
   </style>
 </head>
 
@@ -229,6 +258,17 @@ require_once '../db_connexion.php';
     </nav>
   </div>
   <div class="main-content">
+    <header class="header d-flex align-items-center sticky-top" style="background: #fff; border-bottom: 1px solid #eee;">
+      <div class="container position-relative d-flex align-items-center justify-content-between">
+        <a href="index.php" class="logo d-flex align-items-center me-auto me-xl-0">
+          <h1 class="sitename">Admin</h1>
+          <span>.</span>
+        </a>
+        <a href="../index.html" class="btn-retour-public">
+          <i class="bi bi-arrow-left-circle"></i> Retour au site public
+        </a>
+      </div>
+    </header>
     <div class="topbar">
       <div class="icons">
         <img src="../assets/img/favcon.jpeg" alt="Profil" style="width:50px;height:50px;border-radius:50%;background:#eee;">
