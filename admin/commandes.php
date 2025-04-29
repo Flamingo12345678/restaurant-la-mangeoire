@@ -222,7 +222,7 @@ if ($stmt) {
     </nav>
   </div>
   <div class="main-content">
-     <div class="topbar">
+    <div class="topbar">
       <div class="icons">
         <img src="../assets/img/favcon.jpeg" alt="Profil" style="width:50px;height:50px;border-radius:50%;background:#eee;">
       </div>
