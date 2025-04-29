@@ -1,0 +1,25 @@
+# Ignorer les fichiers/dossiers sensibles et inutiles pour le dépôt git
+.env
+backup.tar.gz
+mange.sql
+*.log
+vendor/
+node_modules/
+.DS_Store
+export-*/
+
+# Fichiers temporaires ou de test
+*.tmp
+*.bak
+*.swp
+.idea/
+.vscode/
+
+# Fichiers de base de données exportés
+*.sql
+*.db
+*.sqlite
+*.gz
+
+# Fichiers de configuration locaux
+*.local
