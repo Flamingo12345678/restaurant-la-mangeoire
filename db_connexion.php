@@ -38,4 +38,3 @@ try {
   // Ne pas afficher le détail en production
   die('Erreur de connexion à la base de données.');
 }
-// Avoir une connexion PDO valide
