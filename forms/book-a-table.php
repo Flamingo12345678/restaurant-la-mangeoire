@@ -29,13 +29,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if ($total_reserves + $people > $total_places) {
         $message = '<span class="alert alert-error">Impossible d\'enregistrer la réservation : la capacité maximale de la salle serait dépassée.</span>';
       } else {
-        // Affectation automatique d'une table disponible
-        $sql = "SELECT TableID FROM TablesRestaurant WHERE TableID NOT IN (SELECT TableID FROM Reservations WHERE DateReservation = ? AND Statut = 'Réservée') LIMIT 1";
+        // Calcul du créneau de réservation (2h)
+        $start = $datetime;
+        $end = date('Y-m-d H:i:s', strtotime($datetime . ' +2 hours'));
+        // Recherche d'une table libre sur ce créneau
+        $sql = "SELECT TableID FROM TablesRestaurant WHERE TableID NOT IN (
+          SELECT TableID FROM Reservations 
+          WHERE Statut = 'Réservée'
+            AND ((DateReservation < ? AND DATE_ADD(DateReservation, INTERVAL 2 HOUR) > ?)
+                 OR (DateReservation >= ? AND DateReservation < ?))
+        ) LIMIT 1";
         $stmt = $conn->prepare($sql);
-        $stmt->execute([$datetime]);
+        $stmt->execute([$end, $start, $start, $end]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($row) {
           $table_id = $row['TableID'];
+          // Recherche ou création du client
+          $sql = "SELECT ClientID FROM Clients WHERE Email = ?";
+          $stmt_client = $conn->prepare($sql);
+          $stmt_client->execute([$email]);
+          $client = $stmt_client->fetch(PDO::FETCH_ASSOC);
+          if ($client) {
+            $client_id = $client['ClientID'];
+          } else {
+            $sql = "INSERT INTO Clients (Nom, Prenom, Email, Telephone) VALUES (?, '', ?, ?)";
+            $stmt_insert = $conn->prepare($sql);
+            $stmt_insert->execute([$nom, $email, $telephone]);
+            $client_id = $conn->lastInsertId();
+          }
           // 3. Insérer la réservation avec ClientID
           $sql = "INSERT INTO Reservations (DateReservation, Statut, nom_client, email_client, nb_personnes, telephone, TableID, ClientID) VALUES (?, 'Réservée', ?, ?, ?, ?, ?, ?)";
           $stmt = $conn->prepare($sql);
