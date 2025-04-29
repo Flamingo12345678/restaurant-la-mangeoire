@@ -4,7 +4,7 @@
  * utils.php
  * Fonctions utilitaires pour l'administration : CSRF, validation, gestion des erreurs, affichage sécurisé.
  */
-session_start();
+// Ne pas démarrer la session ici. La session doit être démarrée UNIQUEMENT dans les fichiers principaux (ex: reservations.php) avant d'inclure utils.php.
 
 // Génère un token CSRF si besoin
 define('CSRF_TOKEN_LENGTH', 32);
