@@ -24,29 +24,13 @@ foreach ($envVars as $var) {
   }
 }
 
-echo '<pre>';
-foreach ($envVars as $var) {
-  $val = trim(getenv($var) ?: ($_ENV[$var] ?? ''), '" ');
-  echo $var . ' = "' . $val . '"' . PHP_EOL;
-}
-echo '</pre>';
-
 if (count($missing) > 0) {
   echo "<pre>Variables d'environnement manquantes : " . implode(', ', $missing) . "</pre>";
   die("Erreur : une ou plusieurs variables d'environnement MySQL sont manquantes. Vérifiez la configuration Railway (" . implode(', ', $envVars) . ")");
 }
 
 $dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";
-// Debug : afficher les variables d'environnement et le DSN si DEBUG_DB est présent
-if (getenv('DEBUG_DB') || getenv('RAILWAY_ENVIRONMENT') || !empty($_ENV['DEBUG_DB']) || !empty($_ENV['RAILWAY_ENVIRONMENT'])) {
-  echo "<pre>";
-  foreach ($envVars as $var) {
-    $val = getenv($var) ?: ($_ENV[$var] ?? '');
-    echo "$var: $val\n";
-  }
-  echo "DSN: $dsn\n";
-  echo "</pre>";
-}
+// (DEBUG supprimé)
 $options = [
   PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
   PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
