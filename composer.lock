@@ -5,10 +5,14 @@
         "This file is @generated automatically"
     ],
 <<<<<<< HEAD
+<<<<<<< HEAD
     "content-hash": "053b7e988f17b233e5bb4221f3f6d357",
 =======
     "content-hash": "be71523d758efdb3d265287f6fd8a390",
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+    "content-hash": "be71523d758efdb3d265287f6fd8a390",
+>>>>>>> nouvelle_modif_railway
     "packages": [
         {
             "name": "carbonphp/carbon-doctrine-types",
@@ -220,7 +224,10 @@
         },
         {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> nouvelle_modif_railway
             "name": "graham-campbell/result-type",
             "version": "v1.1.3",
             "source": {
@@ -283,7 +290,10 @@
             "time": "2024-07-20T21:45:45+00:00"
         },
         {
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
             "name": "mollie/mollie-api-php",
             "version": "v2.79.0",
             "source": {
@@ -574,7 +584,10 @@
         },
         {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> nouvelle_modif_railway
             "name": "phpoption/phpoption",
             "version": "1.9.3",
             "source": {
@@ -650,7 +663,10 @@
             "time": "2024-07-20T21:41:07+00:00"
         },
         {
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
             "name": "psr/clock",
             "version": "1.0.0",
             "source": {
@@ -841,7 +857,10 @@
         },
         {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> nouvelle_modif_railway
             "name": "symfony/polyfill-ctype",
             "version": "v1.31.0",
             "source": {
@@ -921,7 +940,10 @@
             "time": "2024-09-09T11:45:10+00:00"
         },
         {
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
             "name": "symfony/polyfill-mbstring",
             "version": "v1.31.0",
             "source": {
@@ -1003,7 +1025,10 @@
         },
         {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> nouvelle_modif_railway
             "name": "symfony/polyfill-php80",
             "version": "v1.31.0",
             "source": {
@@ -1084,7 +1109,10 @@
             "time": "2024-09-09T11:45:10+00:00"
         },
         {
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
             "name": "symfony/polyfill-php83",
             "version": "v1.31.0",
             "source": {
@@ -1333,7 +1361,10 @@
             ],
             "time": "2024-09-25T14:20:29+00:00"
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> nouvelle_modif_railway
         },
         {
             "name": "vlucas/phpdotenv",
@@ -1418,7 +1449,10 @@
                 }
             ],
             "time": "2024-07-20T21:52:34+00:00"
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
         }
     ],
     "packages-dev": [],
@@ -1428,12 +1462,18 @@
     "prefer-stable": false,
     "prefer-lowest": false,
 <<<<<<< HEAD
+<<<<<<< HEAD
     "platform": {},
 =======
     "platform": {
         "php": "^8.3"
     },
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+    "platform": {
+        "php": "^8.3"
+    },
+>>>>>>> nouvelle_modif_railway
     "platform-dev": {},
     "plugin-api-version": "2.6.0"
 }

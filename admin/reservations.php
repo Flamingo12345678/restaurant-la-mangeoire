@@ -1,14 +1,19 @@
 <?php
 <<<<<<< HEAD
+<<<<<<< HEAD
 // --- Démarrage de la session et vérification de l'authentification admin ---
 =======
 // Démarrage de la session et vérification de l'authentification admin
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+// Démarrage de la session et vérification de l'authentification admin
+>>>>>>> nouvelle_modif_railway
 session_start();
 if (!isset($_SESSION['admin'])) {
   header('Location: login.php');
   exit;
 }
+<<<<<<< HEAD
 <<<<<<< HEAD
 
 // --- Connexion à la base de données ---
@@ -43,6 +48,8 @@ if (isset($_GET['delete'])) {
   $id = intval($_GET['delete']);
   $sql = "DELETE FROM Reservations WHERE id = ?";
 =======
+=======
+>>>>>>> nouvelle_modif_railway
 require_once '../db_connexion.php';
 
 // Message d'information pour l'utilisateur (succès/erreur)
@@ -101,7 +108,10 @@ if (
 if (isset($_GET['delete'])) {
   $id = intval($_GET['delete']);
   $sql = "DELETE FROM Reservations WHERE ReservationID = ?";
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
   $stmt = $conn->prepare($sql);
   $result = $stmt->execute([$id]);
   if ($result) {
@@ -112,10 +122,13 @@ if (isset($_GET['delete'])) {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // --- Récupération de la liste des réservations ---
 $reservations = [];
 $sql = "SELECT * FROM Reservations ORDER BY id DESC";
 =======
+=======
+>>>>>>> nouvelle_modif_railway
 // Traitement de la modification d'une réservation (édition inline)
 if (isset($_POST['edit_id'], $_POST['edit_nom_client'], $_POST['edit_email_client'], $_POST['edit_DateReservation'])) {
   $edit_id = intval($_POST['edit_id']);
@@ -164,7 +177,10 @@ if (isset($_POST['edit_id'], $_POST['edit_nom_client'], $_POST['edit_email_clien
 // Récupération de la liste des réservations pour affichage
 $reservations = [];
 $sql = "SELECT * FROM Reservations ORDER BY ReservationID DESC";
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
 try {
   $stmt = $conn->query($sql);
   if ($stmt) {
@@ -174,8 +190,11 @@ try {
   }
 } catch (PDOException $e) {
 <<<<<<< HEAD
+<<<<<<< HEAD
   $message = 'Erreur lors de la récupération des réservations.';
 =======
+=======
+>>>>>>> nouvelle_modif_railway
   $message = 'Erreur lors de la récupération des réservations : ' . $e->getMessage();
 }
 
@@ -194,7 +213,10 @@ $total_places = 0;
 if ($stmt) {
   $row = $stmt->fetch(PDO::FETCH_ASSOC);
   $total_places = intval($row['total_places']);
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
 }
 ?>
 <!DOCTYPE html>
@@ -204,6 +226,7 @@ if ($stmt) {
   <meta charset="UTF-8">
   <title>Réservations</title>
   <link rel="stylesheet" href="../assets/css/main.css">
+<<<<<<< HEAD
 <<<<<<< HEAD
   <style>
     /* --- Styles pour la page d'administration des réservations --- */
@@ -301,6 +324,8 @@ if ($stmt) {
       box-shadow: 0 1px 4px #0001;
       max-width: 500px;
 =======
+=======
+>>>>>>> nouvelle_modif_railway
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
     body {
@@ -381,12 +406,16 @@ if ($stmt) {
         flex-direction: row;
         height: auto;
       }
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
     }
   </style>
 </head>
 
 <body>
+<<<<<<< HEAD
 <<<<<<< HEAD
   <h1>Réservations</h1>
   <a href="index.php">&larr; Retour admin</a>
@@ -431,6 +460,8 @@ if ($stmt) {
     </tbody>
   </table>
 =======
+=======
+>>>>>>> nouvelle_modif_railway
   <div class="sidebar">
     <div class="logo">Reservations</div>
     <nav>
@@ -560,7 +591,10 @@ if ($stmt) {
       </script>
     </div>
   </div>
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
 </body>
 
 </html>

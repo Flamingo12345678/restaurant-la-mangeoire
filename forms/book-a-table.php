@@ -12,6 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   if ($nom && $email && $date && $time && $people > 0 && $telephone) {
     try {
 <<<<<<< HEAD
+<<<<<<< HEAD
       $sql = "INSERT INTO Reservations (DateReservation, Statut, nom_client, email_client, nb_personnes, telephone) VALUES (?, 'Réservée', ?, ?, ?, ?)";
       $stmt = $conn->prepare($sql);
       $result = $stmt->execute([$date . ' ' . $time, $nom, $email, $people, $telephone]);
@@ -22,6 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errorInfo = $stmt->errorInfo();
         $message = 'Erreur lors de la réservation. Détail SQL : ' . htmlspecialchars($errorInfo[2]);
 =======
+=======
+>>>>>>> nouvelle_modif_railway
       // Vérification stricte de la capacité totale à venir (toutes réservations confondues)
       $now = date('Y-m-d H:i:s');
       $sql = "SELECT COALESCE(SUM(nb_personnes),0) AS total_reserves FROM Reservations WHERE Statut = 'Réservée' AND DateReservation >= ?";
@@ -73,7 +76,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           $message = '<span class="alert alert-success" id="resa-success">Réservation enregistrée avec succès ! Vous allez être redirigé vers l\'accueil.</span>';
           echo '<script>setTimeout(function(){ window.location.href = "/index.html"; }, 3000);</script>';
         }
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
       }
     } catch (PDOException $e) {
       $message = 'Erreur base de données : ' . htmlspecialchars($e->getMessage());

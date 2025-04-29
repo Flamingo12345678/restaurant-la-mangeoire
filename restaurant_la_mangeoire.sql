@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS Paiements (
 
 -- Index supplémentaires pour améliorer les performances
 <<<<<<< HEAD
+<<<<<<< HEAD
 DROP INDEX IF EXISTS IDX_Clients_Email ON Clients;
 CREATE INDEX IDX_Clients_Email ON Clients(Email);
 
@@ -87,4 +88,8 @@ DROP INDEX IF EXISTS IDX_Reservations_Date ON Reservations;
 CREATE INDEX IDX_Clients_Email ON Clients(Email);
 CREATE INDEX IDX_Tables_NumeroTable ON TablesRestaurant(NumeroTable);
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+CREATE INDEX IDX_Clients_Email ON Clients(Email);
+CREATE INDEX IDX_Tables_NumeroTable ON TablesRestaurant(NumeroTable);
+>>>>>>> nouvelle_modif_railway
 CREATE INDEX IDX_Reservations_Date ON Reservations(DateReservation);

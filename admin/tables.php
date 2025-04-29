@@ -1,22 +1,31 @@
 <?php
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 define('CAPACITE_SALLE', 100);
 require_once '../db_connexion.php';
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+define('CAPACITE_SALLE', 100);
+require_once '../db_connexion.php';
+>>>>>>> nouvelle_modif_railway
 session_start();
 if (!isset($_SESSION['admin'])) {
   header('Location: login.php');
   exit;
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
 require_once '../db_connexion.php';
 =======
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
 $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['numero'], $_POST['capacite'])) {
   $numero = intval($_POST['numero']);
   $capacite = intval($_POST['capacite']);
+<<<<<<< HEAD
 <<<<<<< HEAD
   if ($numero > 0 && $capacite > 0) {
     $sql = "INSERT INTO TablesRestaurant (NumeroTable, Capacite) VALUES (?, ?)";
@@ -27,6 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['numero'], $_POST['cap
     } else {
       $message = 'Erreur lors de l\'ajout.';
 =======
+=======
+>>>>>>> nouvelle_modif_railway
   // Vérifier la capacité restante avant ajout
   $sql = "SELECT SUM(Capacite) AS total_places FROM TablesRestaurant";
   $stmt = $conn->query($sql);
@@ -48,7 +59,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['numero'], $_POST['cap
       } else {
         $message = 'Erreur lors de l\'ajout.';
       }
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
     }
   } else {
     $message = 'Champs invalides.';
@@ -66,7 +80,10 @@ if (isset($_GET['delete'])) {
   }
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> nouvelle_modif_railway
 if (isset($_POST['ajout_tables_types'])) {
   // Définition des types de tables (exemple : 10x2p, 8x4p, 4x6p, 2x8p)
   $types = [2 => 10, 4 => 8, 6 => 4, 8 => 2];
@@ -177,7 +194,10 @@ if ($total_places > CAPACITE_SALLE) {
   $message = "Des tables ont été supprimées automatiquement pour respecter la capacité maximale de 100 places.";
 }
 
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
 $tables = [];
 $sql = "SELECT * FROM TablesRestaurant ORDER BY TableID DESC";
 try {
@@ -197,6 +217,7 @@ try {
   <title>Tables</title>
   <link rel="stylesheet" href="../assets/css/main.css">
 <<<<<<< HEAD
+<<<<<<< HEAD
   <style>
     .success-message {
       color: #2e7d32;
@@ -207,6 +228,8 @@ try {
       color: #c62828;
       font-weight: bold;
 =======
+=======
+>>>>>>> nouvelle_modif_railway
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
     body {
@@ -344,7 +367,10 @@ try {
       font-size: 2rem;
       font-weight: bold;
       color: #1a237e;
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
     }
 
     .admin-table {
@@ -354,14 +380,20 @@ try {
       background: #fff;
       box-shadow: 0 2px 8px #0001;
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
       border-radius: 12px;
       overflow: hidden;
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+      border-radius: 12px;
+      overflow: hidden;
+>>>>>>> nouvelle_modif_railway
     }
 
     .admin-table th,
     .admin-table td {
+<<<<<<< HEAD
 <<<<<<< HEAD
       border: 1px solid #ddd;
       padding: 8px 12px;
@@ -369,6 +401,10 @@ try {
       border: 1px solid #e0e0e0;
       padding: 12px 16px;
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+      border: 1px solid #e0e0e0;
+      padding: 12px 16px;
+>>>>>>> nouvelle_modif_railway
       text-align: left;
     }
 
@@ -382,6 +418,7 @@ try {
     }
 
     .admin-table tr:hover {
+<<<<<<< HEAD
 <<<<<<< HEAD
       background: #f1f8e9;
     }
@@ -442,6 +479,8 @@ try {
       box-shadow: 0 1px 4px #0001;
       max-width: 500px;
 =======
+=======
+>>>>>>> nouvelle_modif_railway
       background: #e3f2fd;
     }
 
@@ -493,12 +532,16 @@ try {
         flex-direction: column;
         gap: 16px;
       }
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
     }
   </style>
 </head>
 
 <body>
+<<<<<<< HEAD
 <<<<<<< HEAD
   <h1>Tables</h1>
   <a href="index.php">&larr; Retour admin</a>
@@ -531,6 +574,8 @@ try {
     </tbody>
   </table>
 =======
+=======
+>>>>>>> nouvelle_modif_railway
   <div class="sidebar">
     <div class="logo">Tables</div>
     <nav>
@@ -601,7 +646,10 @@ try {
       </table>
     </div>
   </div>
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
 </body>
 
 </html>

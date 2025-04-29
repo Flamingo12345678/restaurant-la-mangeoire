@@ -5,9 +5,13 @@ if (!isset($_SESSION['admin'])) {
   exit;
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 require_once '../db_connexion.php';
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+require_once '../db_connexion.php';
+>>>>>>> nouvelle_modif_railway
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -15,6 +19,7 @@ require_once '../db_connexion.php';
 <head>
   <meta charset="UTF-8">
   <title>Admin - Tableau de bord</title>
+<<<<<<< HEAD
 <<<<<<< HEAD
 </head>
 
@@ -31,6 +36,8 @@ require_once '../db_connexion.php';
     <li><a href="logout.php">Déconnexion</a></li>
   </ul>
 =======
+=======
+>>>>>>> nouvelle_modif_railway
   <link rel="stylesheet" href="/assets/css/main.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
@@ -404,7 +411,10 @@ require_once '../db_connexion.php';
       </div>
     </div>
   </div>
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
 </body>
 
 </html>

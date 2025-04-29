@@ -52,8 +52,11 @@ if ($stmt) {
   <title>Paiements</title>
   <link rel="stylesheet" href="../assets/css/main.css">
 <<<<<<< HEAD
+<<<<<<< HEAD
   <style>
 =======
+=======
+>>>>>>> nouvelle_modif_railway
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
     body {
@@ -136,7 +139,10 @@ if ($stmt) {
       }
     }
 
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
     .success-message {
       color: #2e7d32;
       font-weight: bold;
@@ -175,6 +181,7 @@ if ($stmt) {
       background: #f1f8e9;
     }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     @media (max-width: 700px) {
 
@@ -232,6 +239,8 @@ if ($stmt) {
       box-shadow: 0 1px 4px #0001;
       max-width: 500px;
 =======
+=======
+>>>>>>> nouvelle_modif_railway
     .form-section {
       background: #fff;
       border-radius: 12px;
@@ -262,12 +271,16 @@ if ($stmt) {
 
     .form-section button:hover {
       background: #283593;
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
     }
   </style>
 </head>
 
 <body>
+<<<<<<< HEAD
 <<<<<<< HEAD
   <h1>Paiements</h1>
   <a href="index.php">&larr; Retour admin</a>
@@ -306,6 +319,8 @@ if ($stmt) {
     </tbody>
   </table>
 =======
+=======
+>>>>>>> nouvelle_modif_railway
   <div class="sidebar">
     <div class="logo">Paiements</div>
     <nav>
@@ -369,7 +384,10 @@ if ($stmt) {
       </table>
     </div>
   </div>
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
 </body>
 
 </html>

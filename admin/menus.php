@@ -5,10 +5,14 @@ if (!isset($_SESSION['admin'])) {
   exit;
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
 require_once '../db_connexion.php'; // Assurez-vous que $conn est un objet mysqli
 =======
 require_once '../db_connexion.php';
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+require_once '../db_connexion.php';
+>>>>>>> nouvelle_modif_railway
 
 // Gestion de l'ajout d'un menu
 $message = '';
@@ -62,10 +66,13 @@ if ($stmt && $stmt->execute()) {
 <head>
   <meta charset="UTF-8">
 <<<<<<< HEAD
+<<<<<<< HEAD
   <title>Gestion des menus</title>
   <link rel="stylesheet" href="../assets/css/main.css">
   <style>
 =======
+=======
+>>>>>>> nouvelle_modif_railway
   <title>Menus</title>
   <link rel="stylesheet" href="../assets/css/main.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
@@ -150,7 +157,10 @@ if ($stmt && $stmt->execute()) {
       }
     }
 
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
     .success-message {
       color: #2e7d32;
       font-weight: bold;
@@ -189,6 +199,7 @@ if ($stmt && $stmt->execute()) {
       background: #f1f8e9;
     }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     @media (max-width: 700px) {
 
@@ -246,6 +257,8 @@ if ($stmt && $stmt->execute()) {
       box-shadow: 0 1px 4px #0001;
       max-width: 500px;
 =======
+=======
+>>>>>>> nouvelle_modif_railway
     .form-section {
       background: #fff;
       border-radius: 12px;
@@ -276,12 +289,16 @@ if ($stmt && $stmt->execute()) {
 
     .form-section button:hover {
       background: #283593;
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
     }
   </style>
 </head>
 
 <body>
+<<<<<<< HEAD
 <<<<<<< HEAD
   <h1>Menus</h1>
   <a href="index.php">&larr; Retour admin</a>
@@ -316,6 +333,8 @@ if ($stmt && $stmt->execute()) {
     </tbody>
   </table>
 =======
+=======
+>>>>>>> nouvelle_modif_railway
   <div class="sidebar">
     <div class="logo">Menus</div>
     <nav>
@@ -370,7 +389,10 @@ if ($stmt && $stmt->execute()) {
       </table>
     </div>
   </div>
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
 </body>
 
 </html>

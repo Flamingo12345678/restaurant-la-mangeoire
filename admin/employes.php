@@ -53,6 +53,7 @@ if ($stmt) {
   <title>Employés</title>
   <link rel="stylesheet" href="../assets/css/main.css">
 <<<<<<< HEAD
+<<<<<<< HEAD
   <style>
     .success-message {
       color: #2e7d32;
@@ -148,6 +149,8 @@ if ($stmt) {
       box-shadow: 0 1px 4px #0001;
       max-width: 500px;
 =======
+=======
+>>>>>>> nouvelle_modif_railway
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
     body {
@@ -228,12 +231,16 @@ if ($stmt) {
         flex-direction: row;
         height: auto;
       }
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
     }
   </style>
 </head>
 
 <body>
+<<<<<<< HEAD
 <<<<<<< HEAD
   <h1>Employés</h1>
   <a href="index.php">&larr; Retour admin</a>
@@ -275,6 +282,8 @@ if ($stmt) {
     </tbody>
   </table>
 =======
+=======
+>>>>>>> nouvelle_modif_railway
   <div class="sidebar">
     <div class="logo">Employés</div>
     <nav>
@@ -343,7 +352,10 @@ if ($stmt) {
       </div>
     </div>
   </div>
+<<<<<<< HEAD
 >>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
+=======
+>>>>>>> nouvelle_modif_railway
 </body>
 
 </html>
