@@ -3,22 +3,22 @@
 require_once __DIR__ . '/vendor/autoload.php';
 if (file_exists(__DIR__ . '/.env')) {
   $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-  $dotenv->load(); // Utilise load() pour forcer l'écrasement de l'environnement
+  $dotenv->load();
 }
 
 // Connexion PDO MySQL centralisée
-$host = trim(getenv('MYSQLHOST') ?: ($_ENV['MYSQLHOST'] ?? ''), '"');
-$db   = trim(getenv('MYSQLDATABASE') ?: ($_ENV['MYSQLDATABASE'] ?? ''), '"');
-$user = trim(getenv('MYSQLUSER') ?: ($_ENV['MYSQLUSER'] ?? ''), '"');
-$pass = trim(getenv('MYSQLPASSWORD') ?: ($_ENV['MYSQLPASSWORD'] ?? ''), '"');
-$port = trim(getenv('MYSQLPORT') ?: ($_ENV['MYSQLPORT'] ?? ''), '"');
+$host = trim(getenv('MYSQLHOST') ?: ($_ENV['MYSQLHOST'] ?? ''), "\" ");
+$db   = trim(getenv('MYSQLDATABASE') ?: ($_ENV['MYSQLDATABASE'] ?? ''), "\" ");
+$user = trim(getenv('MYSQLUSER') ?: ($_ENV['MYSQLUSER'] ?? ''), "\" ");
+$pass = trim(getenv('MYSQLPASSWORD') ?: ($_ENV['MYSQLPASSWORD'] ?? ''), "\" ");
+$port = trim(getenv('MYSQLPORT') ?: ($_ENV['MYSQLPORT'] ?? ''), "\" ");
 $charset = 'utf8mb4';
 
 // Vérification stricte des variables d'environnement
 $envVars = ['MYSQLHOST', 'MYSQLDATABASE', 'MYSQLUSER', 'MYSQLPASSWORD', 'MYSQLPORT'];
 $missing = [];
 foreach ($envVars as $var) {
-  $val = trim(getenv($var) ?: ($_ENV[$var] ?? ''), '"');
+  $val = trim(getenv($var) ?: ($_ENV[$var] ?? ''), "\" ");
   if (empty($val)) {
     $missing[] = $var;
   }
@@ -26,7 +26,7 @@ foreach ($envVars as $var) {
 
 echo '<pre>';
 foreach ($envVars as $var) {
-  $val = trim(getenv($var) ?: ($_ENV[$var] ?? ''), '"');
+  $val = trim(getenv($var) ?: ($_ENV[$var] ?? ''), '" ');
   echo $var . ' = "' . $val . '"' . PHP_EOL;
 }
 echo '</pre>';
