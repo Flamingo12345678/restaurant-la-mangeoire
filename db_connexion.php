@@ -1,5 +1,24 @@
 <?php
 // Connexion PDO MySQL centralisée
+// Liste des variables attendues
+$envVars = [
+  'MYSQLHOST',
+  'MYSQLDATABASE',
+  'MYSQLUSER',
+  'MYSQLPASSWORD',
+  'MYSQLPORT'
+];
+$missing = [];
+foreach ($envVars as $var) {
+  if (!getenv($var)) {
+    $missing[] = $var;
+  }
+}
+if (count($missing) > 0) {
+  echo "<pre>Variables d'environnement manquantes : " . implode(', ', $missing) . "</pre>";
+  die("Erreur : une ou plusieurs variables d'environnement MySQL sont manquantes. Vérifiez la configuration Railway (" . implode(', ', $envVars) . ")");
+}
+
 $host = getenv('MYSQLHOST');
 $db   = getenv('MYSQLDATABASE');
 $user = getenv('MYSQLUSER');
@@ -7,19 +26,13 @@ $pass = getenv('MYSQLPASSWORD');
 $port = getenv('MYSQLPORT');
 $charset = 'utf8mb4';
 
-// Vérification stricte des variables d'environnement
-if (!$host || !$db || !$user || !$pass || !$port) {
-  die("Erreur : une ou plusieurs variables d'environnement MySQL sont manquantes. Vérifiez la configuration Railway (MYSQLHOST, MYSQLDATABASE, MYSQLUSER, MYSQLPASSWORD, MYSQLPORT).");
-}
-
 $dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";
-// Debug temporaire : afficher les variables d'environnement et le DSN
-if (getenv('RAILWAY_ENVIRONMENT')) { // Ne s'affiche que sur Railway
+// Debug : afficher les variables d'environnement et le DSN si DEBUG_DB est présent
+if (getenv('DEBUG_DB') || getenv('RAILWAY_ENVIRONMENT')) {
   echo "<pre>";
-  echo "HOST: $host\n";
-  echo "DB: $db\n";
-  echo "USER: $user\n";
-  echo "PORT: $port\n";
+  foreach ($envVars as $var) {
+    echo "$var: " . getenv($var) . "\n";
+  }
   echo "DSN: $dsn\n";
   echo "</pre>";
 }
