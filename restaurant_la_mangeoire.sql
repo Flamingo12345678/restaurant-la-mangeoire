@@ -75,11 +75,6 @@ CREATE TABLE IF NOT EXISTS Paiements (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Index supplémentaires pour améliorer les performances
-DROP INDEX IF EXISTS IDX_Clients_Email ON Clients;
 CREATE INDEX IDX_Clients_Email ON Clients(Email);
-
-DROP INDEX IF EXISTS IDX_Tables_NumeroTable ON TablesRestaurant;
 CREATE INDEX IDX_Tables_NumeroTable ON TablesRestaurant(NumeroTable);
-
-DROP INDEX IF EXISTS IDX_Reservations_Date ON Reservations;
 CREATE INDEX IDX_Reservations_Date ON Reservations(DateReservation);
