@@ -25,6 +25,13 @@ foreach ($envVars as $var) {
     $missing[] = $var;
   }
 }
+
+echo '<pre>';
+foreach ($envVars as $var) {
+  echo $var . ' = "' . (getenv($var) ?: ($_ENV[$var] ?? '')) . '"' . PHP_EOL;
+}
+echo '</pre>';
+
 if (count($missing) > 0) {
   echo "<pre>Variables d'environnement manquantes : " . implode(', ', $missing) . "</pre>";
   die("Erreur : une ou plusieurs variables d'environnement MySQL sont manquantes. Vérifiez la configuration Railway (" . implode(', ', $envVars) . ")");
