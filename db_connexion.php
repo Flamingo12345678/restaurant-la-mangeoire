@@ -1,11 +1,17 @@
 <?php
 // Connexion PDO MySQL centralisée
-$host = getenv('MYSQLHOST') ?: 'localhost';
-$db   = getenv('MYSQLDATABASE') ?: 'restaurant_la_mangeoire';
-$user = getenv('MYSQLUSER') ?: 'root';
-$pass = getenv('MYSQLPASSWORD') ?: '';
-$port = getenv('MYSQLPORT') ?: '3306';
+$host = getenv('MYSQLHOST');
+$db   = getenv('MYSQLDATABASE');
+$user = getenv('MYSQLUSER');
+$pass = getenv('MYSQLPASSWORD');
+$port = getenv('MYSQLPORT');
 $charset = 'utf8mb4';
+
+// Vérification stricte des variables d'environnement
+if (!$host || !$db || !$user || !$pass || !$port) {
+  die("Erreur : une ou plusieurs variables d'environnement MySQL sont manquantes. Vérifiez la configuration Railway (MYSQLHOST, MYSQLDATABASE, MYSQLUSER, MYSQLPASSWORD, MYSQLPORT).");
+}
+
 $dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";
 // Debug temporaire : afficher les variables d'environnement et le DSN
 if (getenv('RAILWAY_ENVIRONMENT')) { // Ne s'affiche que sur Railway
