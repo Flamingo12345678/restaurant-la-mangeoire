@@ -52,6 +52,7 @@ if ($stmt) {
   <meta charset="UTF-8">
   <title>Employés</title>
   <link rel="stylesheet" href="../assets/css/main.css">
+<<<<<<< HEAD
   <style>
     .success-message {
       color: #2e7d32;
@@ -146,11 +147,94 @@ if ($stmt) {
       border-radius: 8px;
       box-shadow: 0 1px 4px #0001;
       max-width: 500px;
+=======
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <style>
+    body {
+      background: #f8f9fa;
+      font-family: 'Segoe UI', Arial, sans-serif;
+    }
+
+    .sidebar {
+      background: #1a237e;
+      color: #fff;
+      width: 240px;
+      min-height: 100vh;
+      position: fixed;
+      left: 0;
+      top: 0;
+      display: flex;
+      flex-direction: column;
+      z-index: 10;
+    }
+
+    .sidebar .logo {
+      font-size: 2rem;
+      font-weight: bold;
+      padding: 32px 0 24px 0;
+      text-align: center;
+      letter-spacing: 2px;
+      color: #fff;
+    }
+
+    .sidebar nav ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .sidebar nav ul li {
+      margin: 0;
+    }
+
+    .sidebar nav ul li a {
+      display: flex;
+      align-items: center;
+      color: #fff;
+      text-decoration: none;
+      padding: 16px 32px;
+      font-size: 1.1rem;
+      transition: background 0.2s;
+      border-left: 4px solid transparent;
+    }
+
+    .sidebar nav ul li a.active,
+    .sidebar nav ul li a:hover {
+      background: #283593;
+      border-left: 4px solid #42a5f5;
+      color: #42a5f5;
+    }
+
+    .sidebar nav ul li a i {
+      margin-right: 12px;
+      font-size: 1.3rem;
+    }
+
+    .main-content {
+      margin-left: 240px;
+      min-height: 100vh;
+      background: #f8f9fa;
+      transition: margin-left 0.2s;
+    }
+
+    @media (max-width: 900px) {
+      .main-content {
+        margin-left: 0;
+      }
+
+      .sidebar {
+        position: relative;
+        width: 100%;
+        flex-direction: row;
+        height: auto;
+      }
+>>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
     }
   </style>
 </head>
 
 <body>
+<<<<<<< HEAD
   <h1>Employés</h1>
   <a href="index.php">&larr; Retour admin</a>
   <?php if ($message): ?><div><?= $message ?></div><?php endif; ?>
@@ -190,6 +274,76 @@ if ($stmt) {
       <?php endforeach; ?>
     </tbody>
   </table>
+=======
+  <div class="sidebar">
+    <div class="logo">Employés</div>
+    <nav>
+      <ul>
+        <li><a href="index.php"><i class="bi bi-bar-chart"></i> Analytics</a></li>
+        <li><a href="clients.php"><i class="bi bi-people"></i> Clients</a></li>
+        <li><a href="commandes.php"><i class="bi bi-basket"></i> Commandes</a></li>
+        <li><a href="employes.php" class="active"><i class="bi bi-person-badge"></i> Employés</a></li>
+        <li><a href="menus.php"><i class="bi bi-list"></i> Menus</a></li>
+        <li><a href="paiements.php"><i class="bi bi-credit-card"></i> Paiements</a></li>
+        <li><a href="reservations.php"><i class="bi bi-calendar-check"></i> Réservations</a></li>
+        <li><a href="tables.php"><i class="bi bi-table"></i> Tables</a></li>
+        <li><a href="logout.php"><i class="bi bi-box-arrow-right"></i> Déconnexion</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div class="main-content">
+    <div class="topbar">
+      <div class="icons">
+        <img src="../assets/img/favcon.jpeg" alt="Profil" style="width:50px;height:50px;border-radius:50%;background:#eee;">
+      </div>
+    </div>
+    <div style="padding:40px;">
+      <!-- Suppression du bouton retour à l'accueil -->
+      <h2 style="margin-bottom:32px;">Gestion des employés</h2>
+      <?php if ($message) echo $message; ?>
+      <div style="max-width:100%;margin-bottom:40px;background:#fff;border-radius:16px;box-shadow:0 2px 12px #0001;padding:32px 32px 24px 32px;">
+        <form method="post" class="form-section" style="background:none;box-shadow:none;padding:0;margin-bottom:0;display:flex;gap:24px;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;">
+          <input type="text" name="nom" placeholder="Nom" required style="flex:1 1 180px;min-width:120px;margin-bottom:0;">
+          <input type="text" name="prenom" placeholder="Prénom" required style="flex:1 1 180px;min-width:120px;margin-bottom:0;">
+          <input type="text" name="poste" placeholder="Poste" required style="flex:1 1 180px;min-width:120px;margin-bottom:0;">
+          <input type="number" name="salaire" placeholder="Salaire" required style="flex:1 1 120px;min-width:100px;margin-bottom:0;">
+          <input type="date" name="date_embauche" placeholder="Date d'embauche" style="flex:1 1 180px;min-width:140px;margin-bottom:0;">
+          <button type="submit" style="flex:0 0 160px;width:160px;background:#182a7e;color:#fff;font-weight:bold;font-size:1.1em;padding:12px 0;border-radius:8px;">Ajouter</button>
+        </form>
+      </div>
+      <div style="overflow-x:auto;width:100%;">
+        <table class="admin-table" style="width:100%;min-width:900px;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px #0001;background:#fff;">
+          <thead style="background:#f5f5f5;">
+            <tr>
+              <th style="padding:18px 20px;">ID</th>
+              <th style="padding:18px 20px;">Nom</th>
+              <th style="padding:18px 20px;">Prénom</th>
+              <th style="padding:18px 20px;">Poste</th>
+              <th style="padding:18px 20px;">Salaire</th>
+              <th style="padding:18px 20px;">Date embauche</th>
+              <th style="padding:18px 20px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($employes as $e): ?>
+              <tr style="background:#fff;">
+                <td style="padding:16px 20px;"><?= htmlspecialchars($e['EmployeID']) ?></td>
+                <td style="padding:16px 20px;"><?= htmlspecialchars($e['Nom']) ?></td>
+                <td style="padding:16px 20px;"><?= htmlspecialchars($e['Prenom']) ?></td>
+                <td style="padding:16px 20px;"><?= htmlspecialchars($e['Poste']) ?></td>
+                <td style="padding:16px 20px;"><?= htmlspecialchars($e['Salaire']) ?></td>
+                <td style="padding:16px 20px;"><?= htmlspecialchars($e['DateEmbauche']) ?></td>
+                <td style="padding:16px 20px;text-align:center;">
+                  <a href="?delete=<?= $e['EmployeID'] ?>" onclick="return confirm('Supprimer cet employé ?')" style="color:#c62828;font-size:1.3em;"><i class="bi bi-trash"></i></a>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+>>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
 </body>
 
 </html>

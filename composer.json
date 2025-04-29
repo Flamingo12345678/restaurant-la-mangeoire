@@ -1,8 +1,17 @@
 {
     "require": {
+<<<<<<< HEAD
         "nesbot/carbon": "^3.8",
         "mollie/mollie-api-php": "^2.76",
         "firebase/php-jwt": "^6.10",
         "paragonie/sodium_compat": "^2.1"
+=======
+        "php": "^8.3",
+        "nesbot/carbon": "^3.8",
+        "mollie/mollie-api-php": "^2.76",
+        "firebase/php-jwt": "^6.10",
+        "paragonie/sodium_compat": "^2.1",
+        "vlucas/phpdotenv": "^5.6"
+>>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
     }
 }
