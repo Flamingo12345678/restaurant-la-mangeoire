@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           $result = $stmt->execute([$datetime, $nom, $email, $people, $telephone, $table_id]);
           if ($result) {
             $message = '<span class="alert alert-success" id="resa-success">Réservation enregistrée avec succès ! Vous allez être redirigé vers l\'accueil.</span>';
-            echo '<script>setTimeout(function(){ window.location.href = "/index.html"; }, 3000);</script>';
+            echo '<script>setTimeout(function(){ window.location.href = "../index.html"; }, 3000);</script>';
           } else {
             $errorInfo = $stmt->errorInfo();
             $message = 'Erreur lors de la réservation. Détail SQL : ' . htmlspecialchars($errorInfo[2]);
@@ -247,7 +247,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           // Redirection automatique après 3 secondes si succès
           if (msg.textContent.includes('succès')) {
             setTimeout(function() {
-              window.location.href = '/index.html';
+              window.location.href = '../index.html';
             }, 3000);
           }
         });
