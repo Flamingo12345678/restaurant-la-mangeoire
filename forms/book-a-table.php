@@ -36,9 +36,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($row) {
           $table_id = $row['TableID'];
-          $sql = "INSERT INTO Reservations (DateReservation, Statut, nom_client, email_client, nb_personnes, telephone, TableID) VALUES (?, 'Réservée', ?, ?, ?, ?, ?)";
+          // 3. Insérer la réservation avec ClientID
+          $sql = "INSERT INTO Reservations (DateReservation, Statut, nom_client, email_client, nb_personnes, telephone, TableID, ClientID) VALUES (?, 'Réservée', ?, ?, ?, ?, ?, ?)";
           $stmt = $conn->prepare($sql);
-          $result = $stmt->execute([$datetime, $nom, $email, $people, $telephone, $table_id]);
+          $result = $stmt->execute([$datetime, $nom, $email, $people, $telephone, $table_id, $client_id]);
           if ($result) {
             $message = '<span class="alert alert-success" id="resa-success">Réservation enregistrée avec succès ! Vous allez être redirigé vers l\'accueil.</span>';
             echo '<script>setTimeout(function(){ window.location.href = "/index.html"; }, 3000);</script>';

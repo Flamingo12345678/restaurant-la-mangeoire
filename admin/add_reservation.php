@@ -12,9 +12,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $date = $_POST['DateReservation'] ?? '';
   $statut = trim($_POST['statut'] ?? 'Réservée');
   if ($nom && $email && $date) {
-    $sql = "INSERT INTO Reservations (nom_client, email_client, DateReservation, statut) VALUES (?, ?, ?, ?)";
-    $stmt = sqlsrv_prepare($conn, $sql, [$nom, $email, $date, $statut]);
-    if ($stmt && sqlsrv_execute($stmt)) {
+    // 1. Vérifier si le client existe déjà
+    $sql = "SELECT ClientID FROM Clients WHERE Email = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute([$email]);
+    $client = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($client) {
+      $client_id = $client['ClientID'];
+    } else {
+      // 2. Ajouter le client s'il n'existe pas
+      $sql = "INSERT INTO Clients (Nom, Prenom, Email, Telephone) VALUES (?, '', ?, '')";
+      $stmt = $conn->prepare($sql);
+      $stmt->execute([$nom, $email]);
+      $client_id = $conn->lastInsertId();
+    }
+    // 3. Insérer la réservation avec ClientID
+    $sql = "INSERT INTO Reservations (nom_client, email_client, DateReservation, statut, ClientID) VALUES (?, ?, ?, ?, ?)";
+    $stmt = $conn->prepare($sql);
+    $result = $stmt->execute([$nom, $email, $date, $statut, $client_id]);
+    if ($result) {
       $message = 'Réservation ajoutée.';
     } else {
       $message = 'Erreur lors de l\'ajout.';
