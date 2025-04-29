@@ -9,18 +9,18 @@ if (file_exists(__DIR__ . '/vendor/autoload.php')) {
 }
 
 // Connexion PDO MySQL centralisée
-$host = getenv('MYSQLHOST') ?: ($_ENV['MYSQLHOST'] ?? null);
-$db   = getenv('MYSQLDATABASE') ?: ($_ENV['MYSQLDATABASE'] ?? null);
-$user = getenv('MYSQLUSER') ?: ($_ENV['MYSQLUSER'] ?? null);
-$pass = getenv('MYSQLPASSWORD') ?: ($_ENV['MYSQLPASSWORD'] ?? null);
-$port = getenv('MYSQLPORT') ?: ($_ENV['MYSQLPORT'] ?? null);
+$host = trim(getenv('MYSQLHOST') ?: ($_ENV['MYSQLHOST'] ?? ''), '"');
+$db   = trim(getenv('MYSQLDATABASE') ?: ($_ENV['MYSQLDATABASE'] ?? ''), '"');
+$user = trim(getenv('MYSQLUSER') ?: ($_ENV['MYSQLUSER'] ?? ''), '"');
+$pass = trim(getenv('MYSQLPASSWORD') ?: ($_ENV['MYSQLPASSWORD'] ?? ''), '"');
+$port = trim(getenv('MYSQLPORT') ?: ($_ENV['MYSQLPORT'] ?? ''), '"');
 $charset = 'utf8mb4';
 
 // Vérification stricte des variables d'environnement
 $envVars = ['MYSQLHOST', 'MYSQLDATABASE', 'MYSQLUSER', 'MYSQLPASSWORD', 'MYSQLPORT'];
 $missing = [];
 foreach ($envVars as $var) {
-  $val = getenv($var) ?: ($_ENV[$var] ?? null);
+  $val = trim(getenv($var) ?: ($_ENV[$var] ?? ''), '"');
   if (empty($val)) {
     $missing[] = $var;
   }
@@ -28,7 +28,8 @@ foreach ($envVars as $var) {
 
 echo '<pre>';
 foreach ($envVars as $var) {
-  echo $var . ' = "' . (getenv($var) ?: ($_ENV[$var] ?? '')) . '"' . PHP_EOL;
+  $val = trim(getenv($var) ?: ($_ENV[$var] ?? ''), '"');
+  echo $var . ' = "' . $val . '"' . PHP_EOL;
 }
 echo '</pre>';
 
