@@ -11,21 +11,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $telephone = trim(strip_tags($_POST['phone'] ?? ''));
   if ($nom && $email && $date && $time && $people > 0 && $telephone) {
     try {
-<<<<<<< HEAD
-<<<<<<< HEAD
-      $sql = "INSERT INTO Reservations (DateReservation, Statut, nom_client, email_client, nb_personnes, telephone) VALUES (?, 'Réservée', ?, ?, ?, ?)";
-      $stmt = $conn->prepare($sql);
-      $result = $stmt->execute([$date . ' ' . $time, $nom, $email, $people, $telephone]);
-      if ($result) {
-        $message = '<span class="alert alert-success" id="resa-success">Réservation enregistrée avec succès ! Vous allez être redirigé vers l\'accueil.</span>';
-        echo '<script>setTimeout(function(){ window.location.href = "/index.html"; }, 3000);</script>';
-      } else {
-        $errorInfo = $stmt->errorInfo();
-        $message = 'Erreur lors de la réservation. Détail SQL : ' . htmlspecialchars($errorInfo[2]);
-=======
-=======
->>>>>>> nouvelle_modif_railway
       // Vérification stricte de la capacité totale à venir (toutes réservations confondues)
+      $datetime = $date . ' ' . $time;
       $now = date('Y-m-d H:i:s');
       $sql = "SELECT COALESCE(SUM(nb_personnes),0) AS total_reserves FROM Reservations WHERE Statut = 'Réservée' AND DateReservation >= ?";
       $stmt = $conn->prepare($sql);
@@ -42,50 +29,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if ($total_reserves + $people > $total_places) {
         $message = '<span class="alert alert-error">Impossible d\'enregistrer la réservation : la capacité maximale de la salle serait dépassée.</span>';
       } else {
-        // 1. Chercher les tables libres pour la date/heure demandée
-        $datetime = $date . ' ' . $time;
-        // Récupérer toutes les tables
-        $sql = "SELECT TableID, Capacite FROM TablesRestaurant ORDER BY Capacite ASC";
-        $tables = $conn->query($sql)->fetchAll();
-        // Récupérer les tables déjà réservées à ce créneau
-        $sql = "SELECT TableID FROM Reservations WHERE DateReservation = ? AND Statut = 'Réservée' AND TableID IS NOT NULL";
+        // Affectation automatique d'une table disponible
+        $sql = "SELECT TableID FROM TablesRestaurant WHERE TableID NOT IN (SELECT TableID FROM Reservations WHERE DateReservation = ? AND Statut = 'Réservée') LIMIT 1";
         $stmt = $conn->prepare($sql);
         $stmt->execute([$datetime]);
-        $tables_occupees = array_column($stmt->fetchAll(), 'TableID');
-        // Filtrer les tables libres
-        $tables_libres = array_filter($tables, function ($t) use ($tables_occupees) {
-          return !in_array($t['TableID'], $tables_occupees);
-        });
-        // Algorithme glouton pour couvrir le nombre de personnes
-        $a_affecter = [];
-        $places_couvertes = 0;
-        foreach ($tables_libres as $t) {
-          $a_affecter[] = $t['TableID'];
-          $places_couvertes += $t['Capacite'];
-          if ($places_couvertes >= $people) break;
-        }
-        if ($places_couvertes < $people) {
-          $message = '<span class="alert alert-error">Impossible de trouver suffisamment de tables libres pour ' . $people . ' personnes à cette date/heure.</span>';
-        } else {
-          // 2. Insérer la réservation pour chaque table affectée
-          foreach ($a_affecter as $table_id) {
-            $sql = "INSERT INTO Reservations (DateReservation, Statut, nom_client, email_client, nb_personnes, telephone, TableID) VALUES (?, 'Réservée', ?, ?, ?, ?, ?)";
-            $stmt = $conn->prepare($sql);
-            $result = $stmt->execute([$datetime, $nom, $email, $people, $telephone, $table_id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row) {
+          $table_id = $row['TableID'];
+          $sql = "INSERT INTO Reservations (DateReservation, Statut, nom_client, email_client, nb_personnes, telephone, TableID) VALUES (?, 'Réservée', ?, ?, ?, ?, ?)";
+          $stmt = $conn->prepare($sql);
+          $result = $stmt->execute([$datetime, $nom, $email, $people, $telephone, $table_id]);
+          if ($result) {
+            $message = '<span class="alert alert-success" id="resa-success">Réservation enregistrée avec succès ! Vous allez être redirigé vers l\'accueil.</span>';
+            echo '<script>setTimeout(function(){ window.location.href = "/index.html"; }, 3000);</script>';
+          } else {
+            $errorInfo = $stmt->errorInfo();
+            $message = 'Erreur lors de la réservation. Détail SQL : ' . htmlspecialchars($errorInfo[2]);
           }
-          $message = '<span class="alert alert-success" id="resa-success">Réservation enregistrée avec succès ! Vous allez être redirigé vers l\'accueil.</span>';
-          echo '<script>setTimeout(function(){ window.location.href = "/index.html"; }, 3000);</script>';
+        } else {
+          $message = '<span class="alert alert-error">Aucune table disponible à cette date/heure.</span>';
         }
-<<<<<<< HEAD
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
->>>>>>> nouvelle_modif_railway
       }
     } catch (PDOException $e) {
-      $message = 'Erreur base de données : ' . htmlspecialchars($e->getMessage());
+      $message = 'Erreur lors de la réservation : ' . $e->getMessage();
     }
   } else {
-    $message = 'Champs invalides.';
+    $message = '<span class="alert alert-error">Champs invalides ou manquants.</span>';
   }
 }
 ?>

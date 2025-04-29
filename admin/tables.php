@@ -1,43 +1,15 @@
 <?php
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
 define('CAPACITE_SALLE', 100);
 require_once '../db_connexion.php';
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
-define('CAPACITE_SALLE', 100);
-require_once '../db_connexion.php';
->>>>>>> nouvelle_modif_railway
 session_start();
 if (!isset($_SESSION['admin'])) {
   header('Location: login.php');
   exit;
 }
-<<<<<<< HEAD
-<<<<<<< HEAD
-require_once '../db_connexion.php';
-=======
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
->>>>>>> nouvelle_modif_railway
 $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['numero'], $_POST['capacite'])) {
   $numero = intval($_POST['numero']);
   $capacite = intval($_POST['capacite']);
-<<<<<<< HEAD
-<<<<<<< HEAD
-  if ($numero > 0 && $capacite > 0) {
-    $sql = "INSERT INTO TablesRestaurant (NumeroTable, Capacite) VALUES (?, ?)";
-    $stmt = $conn->prepare($sql);
-    $result = $stmt->execute([$numero, $capacite]);
-    if ($result) {
-      $message = 'Table ajoutée.';
-    } else {
-      $message = 'Erreur lors de l\'ajout.';
-=======
-=======
->>>>>>> nouvelle_modif_railway
   // Vérifier la capacité restante avant ajout
   $sql = "SELECT SUM(Capacite) AS total_places FROM TablesRestaurant";
   $stmt = $conn->query($sql);
@@ -59,10 +31,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['numero'], $_POST['cap
       } else {
         $message = 'Erreur lors de l\'ajout.';
       }
-<<<<<<< HEAD
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
->>>>>>> nouvelle_modif_railway
     }
   } else {
     $message = 'Champs invalides.';
@@ -79,134 +47,13 @@ if (isset($_GET['delete'])) {
     $message = 'Erreur lors de la suppression.';
   }
 }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=======
->>>>>>> nouvelle_modif_railway
-if (isset($_POST['ajout_tables_types'])) {
-  // Définition des types de tables (exemple : 10x2p, 8x4p, 4x6p, 2x8p)
-  $types = [2 => 10, 4 => 8, 6 => 4, 8 => 2];
-  // Calcul du prochain numéro de table
-  $sql = "SELECT MAX(NumeroTable) AS maxnum, SUM(Capacite) AS total_places FROM TablesRestaurant";
-  $maxnum = 0;
-  $total_places = 0;
-  $stmt = $conn->query($sql);
-  if ($stmt) {
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    $maxnum = intval($row['maxnum']);
-    $total_places = intval($row['total_places']);
-  }
-  $places_restantes = CAPACITE_SALLE - $total_places;
-  $inserted = 0;
-  foreach ($types as $capacite => $nb) {
-    for ($i = 0; $i < $nb; $i++) {
-      if ($capacite > $places_restantes) {
-        $message = "$inserted tables ajoutées. Capacité maximale atteinte, arrêt de l'ajout.";
-        break 2;
-      }
-      $maxnum++;
-      $sql = "INSERT INTO TablesRestaurant (NumeroTable, Capacite) VALUES (?, ?)";
-      $stmt = $conn->prepare($sql);
-      if ($stmt->execute([$maxnum, $capacite])) {
-        $inserted++;
-        $places_restantes -= $capacite;
-      }
-    }
-  }
-  // Après ajout automatique, vérifier la cohérence avec les réservations à venir
-  $now = date('Y-m-d H:i:s');
-  $sql = "SELECT COALESCE(SUM(nb_personnes),0) AS total_reserves FROM Reservations WHERE Statut = 'Réservée' AND DateReservation >= ?";
-  $stmt = $conn->prepare($sql);
-  $stmt->execute([$now]);
-  $row = $stmt->fetch(PDO::FETCH_ASSOC);
-  $total_reserves = intval($row['total_reserves']);
-  $sql = "SELECT SUM(Capacite) AS total_places FROM TablesRestaurant";
-  $stmt = $conn->query($sql);
-  $total_places = 0;
-  if ($stmt) {
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    $total_places = intval($row['total_places']);
-  }
-  if ($total_reserves > $total_places) {
-    $message = "Attention : Il y a plus de personnes réservées ($total_reserves) que de places disponibles ($total_places) !";
-  } elseif (!$message) {
-    $message = "$inserted tables ajoutées automatiquement (2, 4, 6, 8 places) pour une capacité totale de 100 personnes.";
-  }
-}
-
-// --- Calcul du nombre de places utilisées et cohérence avec les réservations ---
-// 1. Calculer le nombre de places utilisées par les tables
-$sql = "SELECT SUM(Capacite) AS total_places FROM TablesRestaurant";
-$stmt = $conn->query($sql);
-$total_places = 0;
-if ($stmt) {
-  $row = $stmt->fetch(PDO::FETCH_ASSOC);
-  $total_places = intval($row['total_places']);
-}
-// Capacité maximale de la salle
-$cap_max = defined('CAPACITE_SALLE') ? CAPACITE_SALLE : 100;
-$places_restantes = max(0, $cap_max - $total_places);
-
-// 2. Calculer le nombre de personnes réservées à venir (toutes tables confondues)
-$now = date('Y-m-d H:i:s');
-$sql = "SELECT COALESCE(SUM(nb_personnes),0) AS total_reserves FROM Reservations WHERE Statut = 'Réservée' AND DateReservation >= ?";
-$stmt = $conn->prepare($sql);
-$stmt->execute([$now]);
-$row = $stmt->fetch(PDO::FETCH_ASSOC);
-$total_reserves = intval($row['total_reserves']);
-
-// 3. Vérifier la cohérence :
-$alerte = '';
-if ($total_reserves > $total_places) {
-  $alerte = "<div style='color:#c62828;font-weight:bold;'>Attention : Il y a plus de personnes réservées ($total_reserves) que de places disponibles ($total_places) !</div>";
-}
-
-// Suppression automatique des tables si la capacité totale dépasse 100
-if ($total_places > CAPACITE_SALLE) {
-  // On supprime les tables les plus récemment ajoutées jusqu'à atteindre 100 places
-  $places_a_supprimer = $total_places - CAPACITE_SALLE;
-  $sql = "SELECT TableID, Capacite FROM TablesRestaurant ORDER BY TableID DESC";
-  $stmt = $conn->query($sql);
-  $tables_to_remove = [];
-  $somme = 0;
-  if ($stmt) {
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-      $tables_to_remove[] = $row;
-      $somme += $row['Capacite'];
-      if ($somme >= $places_a_supprimer) break;
-    }
-  }
-  foreach ($tables_to_remove as $t) {
-    $conn->prepare("DELETE FROM TablesRestaurant WHERE TableID = ?")->execute([$t['TableID']]);
-    $places_a_supprimer -= $t['Capacite'];
-    if ($places_a_supprimer <= 0) break;
-  }
-  // Recalculer le total après suppression
-  $sql = "SELECT SUM(Capacite) AS total_places FROM TablesRestaurant";
-  $stmt = $conn->query($sql);
-  $total_places = 0;
-  if ($stmt) {
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    $total_places = intval($row['total_places']);
-  }
-  $places_restantes = CAPACITE_SALLE - $total_places;
-  $message = "Des tables ont été supprimées automatiquement pour respecter la capacité maximale de 100 places.";
-}
-
-<<<<<<< HEAD
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
->>>>>>> nouvelle_modif_railway
 $tables = [];
 $sql = "SELECT * FROM TablesRestaurant ORDER BY TableID DESC";
-try {
-  $stmt = $conn->query($sql);
+$stmt = $conn->query($sql);
+if ($stmt) {
   while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $tables[] = $row;
   }
-} catch (PDOException $e) {
-  $message = 'Erreur lors de la récupération des tables.';
 }
 ?>
 <!DOCTYPE html>
@@ -216,20 +63,6 @@ try {
   <meta charset="UTF-8">
   <title>Tables</title>
   <link rel="stylesheet" href="../assets/css/main.css">
-<<<<<<< HEAD
-<<<<<<< HEAD
-  <style>
-    .success-message {
-      color: #2e7d32;
-      font-weight: bold;
-    }
-
-    .error-message {
-      color: #c62828;
-      font-weight: bold;
-=======
-=======
->>>>>>> nouvelle_modif_railway
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
     body {
@@ -367,10 +200,6 @@ try {
       font-size: 2rem;
       font-weight: bold;
       color: #1a237e;
-<<<<<<< HEAD
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
->>>>>>> nouvelle_modif_railway
     }
 
     .admin-table {
@@ -379,32 +208,14 @@ try {
       margin-top: 1em;
       background: #fff;
       box-shadow: 0 2px 8px #0001;
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
       border-radius: 12px;
       overflow: hidden;
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
-      border-radius: 12px;
-      overflow: hidden;
->>>>>>> nouvelle_modif_railway
     }
 
     .admin-table th,
     .admin-table td {
-<<<<<<< HEAD
-<<<<<<< HEAD
-      border: 1px solid #ddd;
-      padding: 8px 12px;
-=======
       border: 1px solid #e0e0e0;
       padding: 12px 16px;
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
-      border: 1px solid #e0e0e0;
-      padding: 12px 16px;
->>>>>>> nouvelle_modif_railway
       text-align: left;
     }
 
@@ -418,69 +229,6 @@ try {
     }
 
     .admin-table tr:hover {
-<<<<<<< HEAD
-<<<<<<< HEAD
-      background: #f1f8e9;
-    }
-
-    @media (max-width: 700px) {
-
-      .admin-table,
-      .admin-table thead,
-      .admin-table tbody,
-      .admin-table th,
-      .admin-table td,
-      .admin-table tr {
-        display: block;
-      }
-
-      .admin-table tr {
-        margin-bottom: 1em;
-      }
-
-      .admin-table td,
-      .admin-table th {
-        padding: 10px 5px;
-        border: none;
-        border-bottom: 1px solid #eee;
-      }
-
-      .admin-table th {
-        background: #e0e0e0;
-      }
-    }
-
-    .admin-form input,
-    .admin-form button {
-      margin: 0.2em 0.5em 0.2em 0;
-      padding: 0.5em;
-      border-radius: 4px;
-      border: 1px solid #bbb;
-    }
-
-    .admin-form button {
-      background: #388e3c;
-      color: #fff;
-      border: none;
-      cursor: pointer;
-      font-weight: bold;
-      transition: background 0.2s;
-    }
-
-    .admin-form button:hover {
-      background: #2e7d32;
-    }
-
-    .admin-form {
-      margin-bottom: 1.5em;
-      background: #f9fbe7;
-      padding: 1em;
-      border-radius: 8px;
-      box-shadow: 0 1px 4px #0001;
-      max-width: 500px;
-=======
-=======
->>>>>>> nouvelle_modif_railway
       background: #e3f2fd;
     }
 
@@ -532,50 +280,11 @@ try {
         flex-direction: column;
         gap: 16px;
       }
-<<<<<<< HEAD
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
->>>>>>> nouvelle_modif_railway
     }
   </style>
 </head>
 
 <body>
-<<<<<<< HEAD
-<<<<<<< HEAD
-  <h1>Tables</h1>
-  <a href="index.php">&larr; Retour admin</a>
-  <?php if ($message): ?><div><?= $message ?></div><?php endif; ?>
-  <h2>Ajouter une table</h2>
-  <form method="post" class="admin-form">
-    <input type="number" name="numero" placeholder="Numéro de table *" required min="1">
-    <input type="number" name="capacite" placeholder="Capacité *" min="1" required>
-    <button type="submit">Ajouter</button>
-  </form>
-  <h2>Liste des tables</h2>
-  <table class="admin-table">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Numéro</th>
-        <th>Capacité</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      <?php foreach ($tables as $t): ?>
-        <tr>
-          <td><?= htmlspecialchars($t['TableID']) ?></td>
-          <td><?= htmlspecialchars($t['NumeroTable']) ?></td>
-          <td><?= htmlspecialchars($t['Capacite']) ?></td>
-          <td><a href="?delete=<?= $t['TableID'] ?>" onclick="return confirm('Supprimer cette table ?');" style="color:#c62828;font-weight:bold;">Supprimer</a></td>
-        </tr>
-      <?php endforeach; ?>
-    </tbody>
-  </table>
-=======
-=======
->>>>>>> nouvelle_modif_railway
   <div class="sidebar">
     <div class="logo">Tables</div>
     <nav>
@@ -646,10 +355,6 @@ try {
       </table>
     </div>
   </div>
-<<<<<<< HEAD
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
->>>>>>> nouvelle_modif_railway
 </body>
 
 </html>

@@ -54,42 +54,17 @@ CREATE TABLE IF NOT EXISTS Commandes (
     FOREIGN KEY (MenuID) REFERENCES Menus(MenuID) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Table Employes
-CREATE TABLE IF NOT EXISTS Employes (
-    EmployeID INT AUTO_INCREMENT PRIMARY KEY,
-    Nom VARCHAR(100) NOT NULL,
-    Prenom VARCHAR(100) NOT NULL,
-    Poste VARCHAR(50) NOT NULL,
-    Salaire DECIMAL(10,2) NOT NULL,
-    DateEmbauche DATE NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
 -- Table Paiements
 CREATE TABLE IF NOT EXISTS Paiements (
     PaiementID INT AUTO_INCREMENT PRIMARY KEY,
     ReservationID INT NOT NULL,
     Montant DECIMAL(10,2) NOT NULL,
-    DatePaiement DATE NOT NULL,
+    DatePaiement DATETIME NOT NULL,
     ModePaiement VARCHAR(50),
     FOREIGN KEY (ReservationID) REFERENCES Reservations(ReservationID) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Index supplémentaires pour améliorer les performances
-<<<<<<< HEAD
-<<<<<<< HEAD
-DROP INDEX IF EXISTS IDX_Clients_Email ON Clients;
-CREATE INDEX IDX_Clients_Email ON Clients(Email);
-
-DROP INDEX IF EXISTS IDX_Tables_NumeroTable ON TablesRestaurant;
-CREATE INDEX IDX_Tables_NumeroTable ON TablesRestaurant(NumeroTable);
-
-DROP INDEX IF EXISTS IDX_Reservations_Date ON Reservations;
-=======
+-- Index pour accélérer les recherches
 CREATE INDEX IDX_Clients_Email ON Clients(Email);
 CREATE INDEX IDX_Tables_NumeroTable ON TablesRestaurant(NumeroTable);
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
-CREATE INDEX IDX_Clients_Email ON Clients(Email);
-CREATE INDEX IDX_Tables_NumeroTable ON TablesRestaurant(NumeroTable);
->>>>>>> nouvelle_modif_railway
 CREATE INDEX IDX_Reservations_Date ON Reservations(DateReservation);

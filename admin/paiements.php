@@ -51,12 +51,6 @@ if ($stmt) {
   <meta charset="UTF-8">
   <title>Paiements</title>
   <link rel="stylesheet" href="../assets/css/main.css">
-<<<<<<< HEAD
-<<<<<<< HEAD
-  <style>
-=======
-=======
->>>>>>> nouvelle_modif_railway
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
     body {
@@ -139,10 +133,6 @@ if ($stmt) {
       }
     }
 
-<<<<<<< HEAD
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
->>>>>>> nouvelle_modif_railway
     .success-message {
       color: #2e7d32;
       font-weight: bold;
@@ -181,8 +171,6 @@ if ($stmt) {
       background: #f1f8e9;
     }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
     @media (max-width: 700px) {
 
       .admin-table,
@@ -210,37 +198,6 @@ if ($stmt) {
       }
     }
 
-    .admin-form input,
-    .admin-form button {
-      margin: 0.2em 0.5em 0.2em 0;
-      padding: 0.5em;
-      border-radius: 4px;
-      border: 1px solid #bbb;
-    }
-
-    .admin-form button {
-      background: #388e3c;
-      color: #fff;
-      border: none;
-      cursor: pointer;
-      font-weight: bold;
-      transition: background 0.2s;
-    }
-
-    .admin-form button:hover {
-      background: #2e7d32;
-    }
-
-    .admin-form {
-      margin-bottom: 1.5em;
-      background: #f9fbe7;
-      padding: 1em;
-      border-radius: 8px;
-      box-shadow: 0 1px 4px #0001;
-      max-width: 500px;
-=======
-=======
->>>>>>> nouvelle_modif_railway
     .form-section {
       background: #fff;
       border-radius: 12px;
@@ -271,56 +228,11 @@ if ($stmt) {
 
     .form-section button:hover {
       background: #283593;
-<<<<<<< HEAD
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
->>>>>>> nouvelle_modif_railway
     }
   </style>
 </head>
 
 <body>
-<<<<<<< HEAD
-<<<<<<< HEAD
-  <h1>Paiements</h1>
-  <a href="index.php">&larr; Retour admin</a>
-  <?php if ($message): ?><div><?= $message ?></div><?php endif; ?>
-  <h2>Ajouter un paiement</h2>
-  <form method="post" class="admin-form">
-    <input type="number" name="reservation_id" placeholder="ID réservation *" required min="1">
-    <input type="number" name="montant" placeholder="Montant *" step="0.01" min="0" required>
-    <input type="date" name="date_paiement" placeholder="Date de paiement *" required>
-    <input type="text" name="mode" placeholder="Mode de paiement" maxlength="50">
-    <button type="submit">Ajouter</button>
-  </form>
-  <h2>Liste des paiements</h2>
-  <table class="admin-table">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Réservation</th>
-        <th>Montant</th>
-        <th>Date</th>
-        <th>Mode</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      <?php foreach ($paiements as $p): ?>
-        <tr>
-          <td><?= htmlspecialchars($p['PaiementID']) ?></td>
-          <td><?= htmlspecialchars($p['ReservationID']) ?></td>
-          <td><?= htmlspecialchars($p['Montant']) ?></td>
-          <td><?= htmlspecialchars($p['DatePaiement']) ?></td>
-          <td><?= htmlspecialchars($p['ModePaiement']) ?></td>
-          <td><a href="?delete=<?= $p['PaiementID'] ?>" onclick="return confirm('Supprimer ce paiement ?');" style="color:#c62828;font-weight:bold;">Supprimer</a></td>
-        </tr>
-      <?php endforeach; ?>
-    </tbody>
-  </table>
-=======
-=======
->>>>>>> nouvelle_modif_railway
   <div class="sidebar">
     <div class="logo">Paiements</div>
     <nav>
@@ -384,10 +296,6 @@ if ($stmt) {
       </table>
     </div>
   </div>
-<<<<<<< HEAD
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
->>>>>>> nouvelle_modif_railway
 </body>
 
 </html>

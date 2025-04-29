@@ -4,16 +4,7 @@ if (!isset($_SESSION['admin'])) {
   header('Location: login.php');
   exit;
 }
-<<<<<<< HEAD
-<<<<<<< HEAD
-require_once '../db_connexion.php'; // Assurez-vous que $conn est un objet mysqli
-=======
 require_once '../db_connexion.php';
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
-require_once '../db_connexion.php';
->>>>>>> nouvelle_modif_railway
-
 // Gestion de l'ajout d'un menu
 $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nom'], $_POST['prix'])) {
@@ -35,7 +26,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nom'], $_POST['prix']
     $message = 'Champs invalides.';
   }
 }
-
 // Gestion de la suppression d'un menu
 if (isset($_GET['delete'])) {
   $id = intval($_GET['delete']);
@@ -51,13 +41,13 @@ if (isset($_GET['delete'])) {
     $message = 'Erreur lors de la préparation.';
   }
 }
-
-// Récupération de la liste des menus
 $menus = [];
-$sql = "SELECT MenuID, NomItem, Prix FROM Menus ORDER BY MenuID DESC";
-$stmt = $conn->prepare($sql);
-if ($stmt && $stmt->execute()) {
-  $menus = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$sql = "SELECT * FROM Menus ORDER BY MenuID DESC";
+$stmt = $conn->query($sql);
+if ($stmt) {
+  while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $menus[] = $row;
+  }
 }
 ?>
 <!DOCTYPE html>
@@ -65,14 +55,6 @@ if ($stmt && $stmt->execute()) {
 
 <head>
   <meta charset="UTF-8">
-<<<<<<< HEAD
-<<<<<<< HEAD
-  <title>Gestion des menus</title>
-  <link rel="stylesheet" href="../assets/css/main.css">
-  <style>
-=======
-=======
->>>>>>> nouvelle_modif_railway
   <title>Menus</title>
   <link rel="stylesheet" href="../assets/css/main.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
@@ -157,10 +139,6 @@ if ($stmt && $stmt->execute()) {
       }
     }
 
-<<<<<<< HEAD
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
->>>>>>> nouvelle_modif_railway
     .success-message {
       color: #2e7d32;
       font-weight: bold;
@@ -199,8 +177,6 @@ if ($stmt && $stmt->execute()) {
       background: #f1f8e9;
     }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
     @media (max-width: 700px) {
 
       .admin-table,
@@ -228,37 +204,6 @@ if ($stmt && $stmt->execute()) {
       }
     }
 
-    .admin-form input,
-    .admin-form button {
-      margin: 0.2em 0.5em 0.2em 0;
-      padding: 0.5em;
-      border-radius: 4px;
-      border: 1px solid #bbb;
-    }
-
-    .admin-form button {
-      background: #388e3c;
-      color: #fff;
-      border: none;
-      cursor: pointer;
-      font-weight: bold;
-      transition: background 0.2s;
-    }
-
-    .admin-form button:hover {
-      background: #2e7d32;
-    }
-
-    .admin-form {
-      margin-bottom: 1.5em;
-      background: #f9fbe7;
-      padding: 1em;
-      border-radius: 8px;
-      box-shadow: 0 1px 4px #0001;
-      max-width: 500px;
-=======
-=======
->>>>>>> nouvelle_modif_railway
     .form-section {
       background: #fff;
       border-radius: 12px;
@@ -289,52 +234,11 @@ if ($stmt && $stmt->execute()) {
 
     .form-section button:hover {
       background: #283593;
-<<<<<<< HEAD
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
->>>>>>> nouvelle_modif_railway
     }
   </style>
 </head>
 
 <body>
-<<<<<<< HEAD
-<<<<<<< HEAD
-  <h1>Menus</h1>
-  <a href="index.php">&larr; Retour admin</a>
-  <?php if ($message): ?>
-    <div class="<?= strpos($message, 'succès') !== false ? 'success-message' : 'error-message' ?>"><?= htmlspecialchars($message) ?></div>
-  <?php endif; ?>
-  <h2>Ajouter un menu</h2>
-  <form method="post" class="admin-form">
-    <input type="text" name="nom" placeholder="Nom du menu *" required maxlength="100">
-    <input type="number" name="prix" placeholder="Prix *" step="0.01" min="0" required>
-    <button type="submit">Ajouter</button>
-  </form>
-  <h2>Liste des menus</h2>
-  <table class="admin-table">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Nom</th>
-        <th>Prix</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      <?php foreach ($menus as $menu): ?>
-        <tr>
-          <td><?= htmlspecialchars($menu['MenuID']) ?></td>
-          <td><?= htmlspecialchars($menu['NomItem']) ?></td>
-          <td><?= htmlspecialchars($menu['Prix']) ?> XAF</td>
-          <td><a href="?delete=<?= $menu['MenuID'] ?>" onclick="return confirm('Supprimer ce menu ?');" style="color:#c62828;font-weight:bold;">Supprimer</a></td>
-        </tr>
-      <?php endforeach; ?>
-    </tbody>
-  </table>
-=======
-=======
->>>>>>> nouvelle_modif_railway
   <div class="sidebar">
     <div class="logo">Menus</div>
     <nav>
@@ -389,10 +293,6 @@ if ($stmt && $stmt->execute()) {
       </table>
     </div>
   </div>
-<<<<<<< HEAD
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
->>>>>>> nouvelle_modif_railway
 </body>
 
 </html>

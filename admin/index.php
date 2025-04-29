@@ -12,21 +12,6 @@ require_once '../db_connexion.php';
 <head>
   <meta charset="UTF-8">
   <title>Admin - Tableau de bord</title>
-</head>
-
-<body>
-  <h1>Bienvenue sur l'administration</h1>
-  <ul>
-    <li><a href="clients.php">Clients</a></li>
-    <li><a href="commandes.php">Commandes</a></li>
-    <li><a href="employes.php">Employés</a></li>
-    <li><a href="menus.php">Menus</a></li>
-    <li><a href="paiements.php">Paiements</a></li>
-    <li><a href="reservations.php">Réservations</a></li>
-    <li><a href="tables.php">Tables</a></li>
-    <li><a href="logout.php">Déconnexion</a></li>
-  </ul>
-
   <link rel="stylesheet" href="/assets/css/main.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
@@ -253,153 +238,153 @@ require_once '../db_connexion.php';
       margin-right: 0.3em;
     }
   </style>
-  </head>
+</head>
 
-  <body>
-    <div class="sidebar">
-      <div class="logo">Analyse</div>
-      <nav>
-        <ul>
-          <li><a href="index.php" class="active"><i class="bi bi-bar-chart"></i> Analyse</a></li>
-          <li><a href="clients.php"><i class="bi bi-people"></i> Clients</a></li>
-          <li><a href="commandes.php"><i class="bi bi-basket"></i> Commandes</a></li>
-          <li><a href="employes.php"><i class="bi bi-person-badge"></i> Employés</a></li>
-          <li><a href="menus.php"><i class="bi bi-list"></i> Menus</a></li>
-          <li><a href="paiements.php"><i class="bi bi-credit-card"></i> Paiements</a></li>
-          <li><a href="reservations.php"><i class="bi bi-calendar-check"></i> Réservations</a></li>
-          <li><a href="tables.php"><i class="bi bi-table"></i> Tables</a></li>
-          <li><a href="logout.php"><i class="bi bi-box-arrow-right"></i> Déconnexion</a></li>
-        </ul>
-      </nav>
+<body>
+  <div class="sidebar">
+    <div class="logo">Analyse</div>
+    <nav>
+      <ul>
+        <li><a href="index.php" class="active"><i class="bi bi-bar-chart"></i> Analyse</a></li>
+        <li><a href="clients.php"><i class="bi bi-people"></i> Clients</a></li>
+        <li><a href="commandes.php"><i class="bi bi-basket"></i> Commandes</a></li>
+        <li><a href="employes.php"><i class="bi bi-person-badge"></i> Employés</a></li>
+        <li><a href="menus.php"><i class="bi bi-list"></i> Menus</a></li>
+        <li><a href="paiements.php"><i class="bi bi-credit-card"></i> Paiements</a></li>
+        <li><a href="reservations.php"><i class="bi bi-calendar-check"></i> Réservations</a></li>
+        <li><a href="tables.php"><i class="bi bi-table"></i> Tables</a></li>
+        <li><a href="logout.php"><i class="bi bi-box-arrow-right"></i> Déconnexion</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div class="main-content">
+    <header class="header d-flex align-items-center sticky-top" style="background: #fff; border-bottom: 1px solid #eee;">
+      <div class="container position-relative d-flex align-items-center justify-content-between">
+        <a href="index.php" class="logo d-flex align-items-center me-auto me-xl-0">
+          <h1 class="sitename">Admin</h1>
+          <span>.</span>
+        </a>
+        <a href="../index.html" class="btn-retour-public">
+          <i class="bi bi-arrow-left-circle"></i> Retour au site public
+        </a>
+      </div>
+    </header>
+    <div class="topbar">
+      <div class="icons">
+        <img src="../assets/img/favcon.jpeg" alt="Profil" style="width:50px;height:50px;border-radius:50%;background:#eee;">
+      </div>
     </div>
-    <div class="main-content">
-      <header class="header d-flex align-items-center sticky-top" style="background: #fff; border-bottom: 1px solid #eee;">
-        <div class="container position-relative d-flex align-items-center justify-content-between">
-          <a href="index.php" class="logo d-flex align-items-center me-auto me-xl-0">
-            <h1 class="sitename">Admin</h1>
-            <span>.</span>
-          </a>
-          <a href="../index.html" class="btn-retour-public">
-            <i class="bi bi-arrow-left-circle"></i> Retour au site public
-          </a>
-        </div>
-      </header>
-      <div class="topbar">
-        <div class="icons">
-          <img src="../assets/img/favcon.jpeg" alt="Profil" style="width:50px;height:50px;border-radius:50%;background:#eee;">
-        </div>
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-title">Clients inscrits</div>
+        <div class="stat-value"><?php
+                                $sql = "SELECT COUNT(*) FROM Clients";
+                                $stmt = $conn->query($sql);
+                                echo $stmt ? $stmt->fetchColumn() : 0;
+                                ?></div>
+        <div class="stat-chart"></div>
       </div>
-      <div class="stats">
-        <div class="stat-card">
-          <div class="stat-title">Clients inscrits</div>
-          <div class="stat-value"><?php
-                                  $sql = "SELECT COUNT(*) FROM Clients";
-                                  $stmt = $conn->query($sql);
-                                  echo $stmt ? $stmt->fetchColumn() : 0;
-                                  ?></div>
-          <div class="stat-chart"></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-title">Réservations à venir</div>
-          <div class="stat-value"><?php
-                                  $now = date('Y-m-d H:i:s');
-                                  $sql = "SELECT COUNT(*) FROM Reservations WHERE Statut = 'Réservée' AND DateReservation >= ?";
-                                  $stmt = $conn->prepare($sql);
-                                  $stmt->execute([$now]);
-                                  echo $stmt ? $stmt->fetchColumn() : 0;
-                                  ?></div>
-          <div class="stat-chart"></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-title">Commandes totales</div>
-          <div class="stat-value"><?php
-                                  $sql = "SELECT COUNT(*) FROM Commandes";
-                                  $stmt = $conn->query($sql);
-                                  echo $stmt ? $stmt->fetchColumn() : 0;
-                                  ?></div>
-          <div class="stat-chart"></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-title">Revenus totaux (€)</div>
-          <div class="stat-value"><?php
-                                  $sql = "SELECT COALESCE(SUM(Montant),0) FROM Paiements";
-                                  $stmt = $conn->query($sql);
-                                  $revenus = $stmt ? $stmt->fetchColumn() : 0;
-                                  echo number_format($revenus, 2, ',', ' ');
-                                  ?></div>
-          <div class="stat-chart"></div>
-        </div>
+      <div class="stat-card">
+        <div class="stat-title">Réservations à venir</div>
+        <div class="stat-value"><?php
+                                $now = date('Y-m-d H:i:s');
+                                $sql = "SELECT COUNT(*) FROM Reservations WHERE Statut = 'Réservée' AND DateReservation >= ?";
+                                $stmt = $conn->prepare($sql);
+                                $stmt->execute([$now]);
+                                echo $stmt ? $stmt->fetchColumn() : 0;
+                                ?></div>
+        <div class="stat-chart"></div>
       </div>
-      <div class="dashboard-section">
-        <div class="dashboard-main">
-          <h2>Trafic direct</h2>
-          <canvas id="liveTrafficChart" width="100%" height="180" style="background:#f6f8fb;"></canvas>
-          <script>
-            // Simulation de trafic en direct (exemple, à remplacer par une vraie source si besoin)
-            const ctx = document.getElementById('liveTrafficChart').getContext('2d');
-            let trafficData = [12, 19, 8, 15, 22, 17, 25];
+      <div class="stat-card">
+        <div class="stat-title">Commandes totales</div>
+        <div class="stat-value"><?php
+                                $sql = "SELECT COUNT(*) FROM Commandes";
+                                $stmt = $conn->query($sql);
+                                echo $stmt ? $stmt->fetchColumn() : 0;
+                                ?></div>
+        <div class="stat-chart"></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Revenus totaux (€)</div>
+        <div class="stat-value"><?php
+                                $sql = "SELECT COALESCE(SUM(Montant),0) FROM Paiements";
+                                $stmt = $conn->query($sql);
+                                $revenus = $stmt ? $stmt->fetchColumn() : 0;
+                                echo number_format($revenus, 2, ',', ' ');
+                                ?></div>
+        <div class="stat-chart"></div>
+      </div>
+    </div>
+    <div class="dashboard-section">
+      <div class="dashboard-main">
+        <h2>Trafic direct</h2>
+        <canvas id="liveTrafficChart" width="100%" height="180" style="background:#f6f8fb;"></canvas>
+        <script>
+          // Simulation de trafic en direct (exemple, à remplacer par une vraie source si besoin)
+          const ctx = document.getElementById('liveTrafficChart').getContext('2d');
+          let trafficData = [12, 19, 8, 15, 22, 17, 25];
 
-            function drawTraffic(data) {
-              ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-              ctx.beginPath();
-              ctx.moveTo(30, 150 - data[0] * 5);
-              for (let i = 1; i < data.length; i++) {
-                ctx.lineTo(30 + i * 60, 150 - data[i] * 5);
-              }
-              ctx.strokeStyle = '#2342a4';
-              ctx.lineWidth = 3;
-              ctx.stroke();
-              // Points
-              ctx.fillStyle = '#2342a4';
-              for (let i = 0; i < data.length; i++) {
-                ctx.beginPath();
-                ctx.arc(30 + i * 60, 150 - data[i] * 5, 6, 0, 2 * Math.PI);
-                ctx.fill();
-              }
+          function drawTraffic(data) {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            ctx.beginPath();
+            ctx.moveTo(30, 150 - data[0] * 5);
+            for (let i = 1; i < data.length; i++) {
+              ctx.lineTo(30 + i * 60, 150 - data[i] * 5);
             }
+            ctx.strokeStyle = '#2342a4';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            // Points
+            ctx.fillStyle = '#2342a4';
+            for (let i = 0; i < data.length; i++) {
+              ctx.beginPath();
+              ctx.arc(30 + i * 60, 150 - data[i] * 5, 6, 0, 2 * Math.PI);
+              ctx.fill();
+            }
+          }
+          drawTraffic(trafficData);
+          // Mise à jour automatique toutes les 3 secondes (simulation)
+          setInterval(() => {
+            trafficData.push(Math.floor(Math.random() * 20) + 8);
+            if (trafficData.length > 7) trafficData.shift();
             drawTraffic(trafficData);
-            // Mise à jour automatique toutes les 3 secondes (simulation)
-            setInterval(() => {
-              trafficData.push(Math.floor(Math.random() * 20) + 8);
-              if (trafficData.length > 7) trafficData.shift();
-              drawTraffic(trafficData);
-            }, 3000);
-          </script>
-          <div style="display:flex;gap:32px;margin-top:24px;">
-            <div><span class="pie-chart"><svg viewBox="0 0 32 32">
-                  <circle r="16" cx="16" cy="16" fill="#eee" />
-                  <path d="M16 16 L16 0 A16 16 0 1 1 2.8 25.6 Z" fill="#2342a4" />
-                </svg></span> <b>9600</b><br><span style="color:#888">Ventes totales</span></div>
-            <div><span class="pie-chart"><svg viewBox="0 0 32 32">
-                  <circle r="16" cx="16" cy="16" fill="#eee" />
-                  <path d="M16 16 L16 0 A16 16 0 1 1 16 32 Z" fill="#ff4d4f" />
-                </svg></span> <b>6900</b><br><span style="color:#888">Commandes totales</span></div>
-            <div><span class="pie-chart"><svg viewBox="0 0 32 32">
-                  <circle r="16" cx="16" cy="16" fill="#eee" />
-                  <path d="M16 16 L16 0 A16 16 0 1 1 8 30 Z" fill="#ffb300" />
-                </svg></span> <b>3800</b><br><span style="color:#888">Revenus totaux</span></div>
-          </div>
+          }, 3000);
+        </script>
+        <div style="display:flex;gap:32px;margin-top:24px;">
+          <div><span class="pie-chart"><svg viewBox="0 0 32 32">
+                <circle r="16" cx="16" cy="16" fill="#eee" />
+                <path d="M16 16 L16 0 A16 16 0 1 1 2.8 25.6 Z" fill="#2342a4" />
+              </svg></span> <b>9600</b><br><span style="color:#888">Ventes totales</span></div>
+          <div><span class="pie-chart"><svg viewBox="0 0 32 32">
+                <circle r="16" cx="16" cy="16" fill="#eee" />
+                <path d="M16 16 L16 0 A16 16 0 1 1 16 32 Z" fill="#ff4d4f" />
+              </svg></span> <b>6900</b><br><span style="color:#888">Commandes totales</span></div>
+          <div><span class="pie-chart"><svg viewBox="0 0 32 32">
+                <circle r="16" cx="16" cy="16" fill="#eee" />
+                <path d="M16 16 L16 0 A16 16 0 1 1 8 30 Z" fill="#ffb300" />
+              </svg></span> <b>3800</b><br><span style="color:#888">Revenus totaux</span></div>
         </div>
-        <div class="dashboard-side">
-          <div class="dashboard-card">
-            <h3>Activité</h3>
-            <ul class="activity-list">
-              <li><img src="/assets/img/chefs/chefs-1.jpg" class="avatar" alt=""> Sophie Michiels <span style="color:#888;font-size:0.9em;">il y a 3 jours</span></li>
-              <li><img src="/assets/img/chefs/chefs-2.jpg" class="avatar" alt=""> Jean Dupont <span style="color:#888;font-size:0.9em;">il y a 5 jours</span></li>
-              <li><img src="/assets/img/chefs/chefs-3.jpg" class="avatar" alt=""> Alice Martin <span style="color:#888;font-size:0.9em;">il y a 1 semaine</span></li>
-            </ul>
-          </div>
-          <div class="dashboard-card">
-            <h3>Meilleures ventes</h3>
-            <ul style="padding-left:18px;">
-              <li>Storite Portable Bag</li>
-              <li>Menu Dégustation</li>
-              <li>Formule Midi</li>
-            </ul>
-          </div>
+      </div>
+      <div class="dashboard-side">
+        <div class="dashboard-card">
+          <h3>Activité</h3>
+          <ul class="activity-list">
+            <li><img src="/assets/img/chefs/chefs-1.jpg" class="avatar" alt=""> Sophie Michiels <span style="color:#888;font-size:0.9em;">il y a 3 jours</span></li>
+            <li><img src="/assets/img/chefs/chefs-2.jpg" class="avatar" alt=""> Jean Dupont <span style="color:#888;font-size:0.9em;">il y a 5 jours</span></li>
+            <li><img src="/assets/img/chefs/chefs-3.jpg" class="avatar" alt=""> Alice Martin <span style="color:#888;font-size:0.9em;">il y a 1 semaine</span></li>
+          </ul>
+        </div>
+        <div class="dashboard-card">
+          <h3>Meilleures ventes</h3>
+          <ul style="padding-left:18px;">
+            <li>Storite Portable Bag</li>
+            <li>Menu Dégustation</li>
+            <li>Formule Midi</li>
+          </ul>
         </div>
       </div>
     </div>
-  </body>
+  </div>
+</body>
 
 </html>

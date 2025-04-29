@@ -1,60 +1,11 @@
 <?php
-<<<<<<< HEAD
-<<<<<<< HEAD
-// --- Démarrage de la session et vérification de l'authentification admin ---
-=======
-// Démarrage de la session et vérification de l'authentification admin
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
-// Démarrage de la session et vérification de l'authentification admin
->>>>>>> nouvelle_modif_railway
 session_start();
 if (!isset($_SESSION['admin'])) {
   header('Location: login.php');
   exit;
 }
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-// --- Connexion à la base de données ---
 require_once '../db_connexion.php';
-
-// --- Initialisation du message d'information ---
 $message = '';
-
-// --- Traitement du formulaire d'ajout de réservation ---
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nom_client'], $_POST['email_client'], $_POST['DateReservation'])) {
-  $nom = trim($_POST['nom_client']);
-  $email = filter_var($_POST['email_client'], FILTER_VALIDATE_EMAIL);
-  $date = $_POST['DateReservation'];
-  $statut = trim($_POST['statut'] ?? 'Réservée');
-  if ($nom && $email && $date) {
-    // Préparation et exécution de la requête d'insertion
-    $sql = "INSERT INTO Reservations (nom_client, email_client, DateReservation, statut) VALUES (?, ?, ?, ?)";
-    $stmt = $conn->prepare($sql);
-    $result = $stmt->execute([$nom, $email, $date, $statut]);
-    if ($result) {
-      $message = 'Réservation ajoutée.';
-    } else {
-      echo = 'Erreur lors de l\'ajout.';
-    }
-  } else {
-    $message = 'Champs invalides.';
-  }
-}
-
-// --- Suppression d'une réservation si demandé via GET ---
-if (isset($_GET['delete'])) {
-  $id = intval($_GET['delete']);
-  $sql = "DELETE FROM Reservations WHERE id = ?";
-=======
-=======
->>>>>>> nouvelle_modif_railway
-require_once '../db_connexion.php';
-
-// Message d'information pour l'utilisateur (succès/erreur)
-$message = '';
-
 // Traitement de l'ajout d'une réservation
 if (
   $_SERVER['REQUEST_METHOD'] === 'POST' &&
@@ -108,10 +59,6 @@ if (
 if (isset($_GET['delete'])) {
   $id = intval($_GET['delete']);
   $sql = "DELETE FROM Reservations WHERE ReservationID = ?";
-<<<<<<< HEAD
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
->>>>>>> nouvelle_modif_railway
   $stmt = $conn->prepare($sql);
   $result = $stmt->execute([$id]);
   if ($result) {
@@ -121,14 +68,6 @@ if (isset($_GET['delete'])) {
   }
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-// --- Récupération de la liste des réservations ---
-$reservations = [];
-$sql = "SELECT * FROM Reservations ORDER BY id DESC";
-=======
-=======
->>>>>>> nouvelle_modif_railway
 // Traitement de la modification d'une réservation (édition inline)
 if (isset($_POST['edit_id'], $_POST['edit_nom_client'], $_POST['edit_email_client'], $_POST['edit_DateReservation'])) {
   $edit_id = intval($_POST['edit_id']);
@@ -177,10 +116,6 @@ if (isset($_POST['edit_id'], $_POST['edit_nom_client'], $_POST['edit_email_clien
 // Récupération de la liste des réservations pour affichage
 $reservations = [];
 $sql = "SELECT * FROM Reservations ORDER BY ReservationID DESC";
-<<<<<<< HEAD
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
->>>>>>> nouvelle_modif_railway
 try {
   $stmt = $conn->query($sql);
   if ($stmt) {
@@ -189,12 +124,6 @@ try {
     }
   }
 } catch (PDOException $e) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-  $message = 'Erreur lors de la récupération des réservations.';
-=======
-=======
->>>>>>> nouvelle_modif_railway
   $message = 'Erreur lors de la récupération des réservations : ' . $e->getMessage();
 }
 
@@ -213,10 +142,6 @@ $total_places = 0;
 if ($stmt) {
   $row = $stmt->fetch(PDO::FETCH_ASSOC);
   $total_places = intval($row['total_places']);
-<<<<<<< HEAD
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
->>>>>>> nouvelle_modif_railway
 }
 ?>
 <!DOCTYPE html>
@@ -226,106 +151,6 @@ if ($stmt) {
   <meta charset="UTF-8">
   <title>Réservations</title>
   <link rel="stylesheet" href="../assets/css/main.css">
-<<<<<<< HEAD
-<<<<<<< HEAD
-  <style>
-    /* --- Styles pour la page d'administration des réservations --- */
-    .success-message {
-      color: #2e7d32;
-      font-weight: bold;
-    }
-
-    .error-message {
-      color: #c62828;
-      font-weight: bold;
-    }
-
-    .admin-table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 1em;
-      background: #fff;
-      box-shadow: 0 2px 8px #0001;
-    }
-
-    .admin-table th,
-    .admin-table td {
-      border: 1px solid #ddd;
-      padding: 8px 12px;
-      text-align: left;
-    }
-
-    .admin-table th {
-      background: #f5f5f5;
-      font-weight: bold;
-    }
-
-    .admin-table tr:nth-child(even) {
-      background: #fafafa;
-    }
-
-    .admin-table tr:hover {
-      background: #f1f8e9;
-    }
-
-    @media (max-width: 700px) {
-
-      .admin-table,
-      .admin-table thead,
-      .admin-table tbody,
-      .admin-table th,
-      .admin-table td,
-      .admin-table tr {
-        display: block;
-      }
-
-      .admin-table tr {
-        margin-bottom: 1em;
-      }
-
-      .admin-table td,
-      .admin-table th {
-        padding: 10px 5px;
-        border: none;
-        border-bottom: 1px solid #eee;
-      }
-
-      .admin-table th {
-        background: #e0e0e0;
-      }
-    }
-
-    .admin-form input,
-    .admin-form button {
-      margin: 0.2em 0.5em 0.2em 0;
-      padding: 0.5em;
-      border-radius: 4px;
-      border: 1px solid #bbb;
-    }
-
-    .admin-form button {
-      background: #388e3c;
-      color: #fff;
-      border: none;
-      cursor: pointer;
-      font-weight: bold;
-      transition: background 0.2s;
-    }
-
-    .admin-form button:hover {
-      background: #2e7d32;
-    }
-
-    .admin-form {
-      margin-bottom: 1.5em;
-      background: #f9fbe7;
-      padding: 1em;
-      border-radius: 8px;
-      box-shadow: 0 1px 4px #0001;
-      max-width: 500px;
-=======
-=======
->>>>>>> nouvelle_modif_railway
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
     body {
@@ -406,62 +231,11 @@ if ($stmt) {
         flex-direction: row;
         height: auto;
       }
-<<<<<<< HEAD
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
->>>>>>> nouvelle_modif_railway
     }
   </style>
 </head>
 
 <body>
-<<<<<<< HEAD
-<<<<<<< HEAD
-  <h1>Réservations</h1>
-  <a href="index.php">&larr; Retour admin</a>
-  <!-- Affichage du message d'information (succès ou erreur) -->
-  <?php if ($message): ?><div><?= $message ?></div><?php endif; ?>
-
-  <!-- Formulaire d'ajout d'une nouvelle réservation -->
-  <h2>Ajouter une réservation</h2>
-  <form method="post" class="admin-form">
-    <input type="text" name="nom_client" placeholder="Nom du client *" required maxlength="255">
-    <input type="email" name="email_client" placeholder="Email du client *" required maxlength="255">
-    <input type="datetime-local" name="DateReservation" placeholder="Date et heure *" required>
-    <input type="text" name="statut" placeholder="Statut (Réservée/Annulée)" maxlength="50" value="Réservée">
-    <button type="submit">Ajouter</button>
-  </form>
-
-  <!-- Tableau affichant la liste des réservations existantes -->
-  <h2>Liste des réservations</h2>
-  <table class="admin-table">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Nom</th>
-        <th>Email</th>
-        <th>Date</th>
-        <th>Statut</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      <?php foreach ($reservations as $r): ?>
-        <tr>
-          <td><?= htmlspecialchars($r['id']) ?></td>
-          <td><?= htmlspecialchars($r['nom_client']) ?></td>
-          <td><?= htmlspecialchars($r['email_client']) ?></td>
-          <td><?= htmlspecialchars($r['DateReservation']) ?></td>
-          <td><?= htmlspecialchars($r['statut']) ?></td>
-          <!-- Lien pour supprimer la réservation (avec confirmation JS) -->
-          <td><a href="?delete=<?= $r['id'] ?>" onclick="return confirm('Supprimer cette réservation ?');" style="color:#c62828;font-weight:bold;">Supprimer</a></td>
-        </tr>
-      <?php endforeach; ?>
-    </tbody>
-  </table>
-=======
-=======
->>>>>>> nouvelle_modif_railway
   <div class="sidebar">
     <div class="logo">Reservations</div>
     <nav>
@@ -591,10 +365,6 @@ if ($stmt) {
       </script>
     </div>
   </div>
-<<<<<<< HEAD
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
->>>>>>> nouvelle_modif_railway
 </body>
 
 </html>

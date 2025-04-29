@@ -50,12 +50,6 @@ if ($stmt) {
   <meta charset="UTF-8">
   <title>Commandes</title>
   <link rel="stylesheet" href="../assets/css/main.css">
-<<<<<<< HEAD
-<<<<<<< HEAD
-  <style>
-=======
-=======
->>>>>>> nouvelle_modif_railway
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
     body {
@@ -138,10 +132,6 @@ if ($stmt) {
       }
     }
 
-<<<<<<< HEAD
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
->>>>>>> nouvelle_modif_railway
     .success-message {
       color: #2e7d32;
       font-weight: bold;
@@ -180,66 +170,6 @@ if ($stmt) {
       background: #f1f8e9;
     }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-    @media (max-width: 700px) {
-
-      .admin-table,
-      .admin-table thead,
-      .admin-table tbody,
-      .admin-table th,
-      .admin-table td,
-      .admin-table tr {
-        display: block;
-      }
-
-      .admin-table tr {
-        margin-bottom: 1em;
-      }
-
-      .admin-table td,
-      .admin-table th {
-        padding: 10px 5px;
-        border: none;
-        border-bottom: 1px solid #eee;
-      }
-
-      .admin-table th {
-        background: #e0e0e0;
-      }
-    }
-
-    .admin-form input,
-    .admin-form button {
-      margin: 0.2em 0.5em 0.2em 0;
-      padding: 0.5em;
-      border-radius: 4px;
-      border: 1px solid #bbb;
-    }
-
-    .admin-form button {
-      background: #388e3c;
-      color: #fff;
-      border: none;
-      cursor: pointer;
-      font-weight: bold;
-      transition: background 0.2s;
-    }
-
-    .admin-form button:hover {
-      background: #2e7d32;
-    }
-
-    .admin-form {
-      margin-bottom: 1.5em;
-      background: #f9fbe7;
-      padding: 1em;
-      border-radius: 8px;
-      box-shadow: 0 1px 4px #0001;
-      max-width: 500px;
-=======
-=======
->>>>>>> nouvelle_modif_railway
     .form-section {
       background: #fff;
       border-radius: 12px;
@@ -270,53 +200,11 @@ if ($stmt) {
 
     .form-section button:hover {
       background: #283593;
-<<<<<<< HEAD
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
->>>>>>> nouvelle_modif_railway
     }
   </style>
 </head>
 
 <body>
-<<<<<<< HEAD
-<<<<<<< HEAD
-  <h1>Commandes</h1>
-  <a href="index.php">&larr; Retour admin</a>
-  <?php if ($message): ?><div><?= $message ?></div><?php endif; ?>
-  <h2>Ajouter une commande</h2>
-  <form method="post" class="admin-form">
-    <input type="number" name="reservation_id" placeholder="ID réservation *" required min="1">
-    <input type="number" name="menu_id" placeholder="ID menu *" required min="1">
-    <input type="number" name="quantite" placeholder="Quantité *" min="1" required>
-    <button type="submit">Ajouter</button>
-  </form>
-  <h2>Liste des commandes</h2>
-  <table class="admin-table">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Réservation</th>
-        <th>Menu</th>
-        <th>Quantité</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      <?php foreach ($commandes as $c): ?>
-        <tr>
-          <td><?= htmlspecialchars($c['CommandeID']) ?></td>
-          <td><?= htmlspecialchars($c['ReservationID']) ?></td>
-          <td><?= htmlspecialchars($c['MenuID']) ?></td>
-          <td><?= htmlspecialchars($c['Quantite']) ?></td>
-          <td><a href="?delete=<?= $c['CommandeID'] ?>" onclick="return confirm('Supprimer cette commande ?');" style="color:#c62828;font-weight:bold;">Supprimer</a></td>
-        </tr>
-      <?php endforeach; ?>
-    </tbody>
-  </table>
-=======
-=======
->>>>>>> nouvelle_modif_railway
   <div class="sidebar">
     <div class="logo">Commandes</div>
     <nav>
@@ -374,10 +262,6 @@ if ($stmt) {
       </table>
     </div>
   </div>
-<<<<<<< HEAD
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
->>>>>>> nouvelle_modif_railway
 </body>
 
 </html>

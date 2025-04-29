@@ -26,21 +26,6 @@ if (isset($_POST['username'], $_POST['password'])) {
   <meta charset="UTF-8">
   <title>Connexion Admin</title>
   <link rel="stylesheet" href="../assets/css/main.css">
-<<<<<<< HEAD
-<<<<<<< HEAD
-</head>
-
-<body>
-  <h1>Connexion administrateur</h1>
-  <?php if (isset($error)) echo '<p style="color:red">' . $error . '</p>'; ?>
-  <form method="post">
-    <input type="text" name="username" placeholder="Nom d\'utilisateur" required><br>
-    <input type="password" name="password" placeholder="Mot de passe" required><br>
-    <button type="submit">Connexion</button>
-  </form>
-=======
-=======
->>>>>>> nouvelle_modif_railway
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
     body {
@@ -146,10 +131,6 @@ if (isset($_POST['username'], $_POST['password'])) {
       <button type="submit"><i class="bi bi-box-arrow-in-right" style="margin-right:8px;"></i>Connexion</button>
     </form>
   </div>
-<<<<<<< HEAD
->>>>>>> 230e8dc (mise à jour du fichier db_connexion et ajout du fichier .env)
-=======
->>>>>>> nouvelle_modif_railway
 </body>
 
 </html>
