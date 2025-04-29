@@ -1,0 +1,45 @@
+# Dépendances PHP
+vendor/
+
+# Dépendances front-end (si jamais vous utilisez npm/yarn plus tard)
+node_modules/
+
+# Fichiers temporaires et de logs
+*.log
+*.tmp
+.DS_Store
+
+# Fichiers de configuration locaux
+.env
+.env.*
+
+# Fichiers de sauvegarde d’éditeurs
+*~
+*.swp
+
+# Fichiers générés par Composer
+composer.lock
+
+# Fichiers de base de données ou exports temporaires
+*.sqlite
+*.sqlite3
+*.db
+*.sql
+
+# Fichiers de test ou de debug
+/test_*
+
+# Fichiers de diagrammes générés
+*.erd.json
+
+# Dossiers de build éventuels
+/dist/
+/build/
+
+# Dossiers d’upload temporaires
+/uploads/
+
+# Exclure les fichiers sensibles ou inutiles du dépôt
+secrets.json
+
+# Ajoutez ici d’autres patterns spécifiques à votre projet si besoin
