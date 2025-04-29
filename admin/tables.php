@@ -7,6 +7,13 @@ if (!isset($_SESSION['admin'])) {
   exit;
 }
 $message = '';
+
+// Initialisation par défaut pour éviter les warnings
+$alerte = '';
+$total_places = 0;
+$places_restantes = 0;
+$total_reserves = 0;
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['numero'], $_POST['capacite'])) {
   $numero = intval($_POST['numero']);
   $capacite = intval($_POST['capacite']);
