@@ -62,6 +62,47 @@ if ($stmt) {
     $tables[] = $row;
   }
 }
+
+// Calcul dynamique des statistiques pour les cards
+$sql = "SELECT SUM(Capacite) AS total_places FROM TablesRestaurant";
+$stmt = $conn->query($sql);
+$total_places = 0;
+if ($stmt) {
+  $row = $stmt->fetch(PDO::FETCH_ASSOC);
+  $total_places = intval($row['total_places']);
+}
+// Correction : places restantes = capacité totale de la salle - personnes réservées à venir
+$now = date('Y-m-d H:i:s');
+$sql = "SELECT SUM(Capacite) AS total_places FROM TablesRestaurant";
+$stmt = $conn->query($sql);
+$total_places = 0;
+if ($stmt) {
+  $row = $stmt->fetch(PDO::FETCH_ASSOC);
+  $total_places = intval($row['total_places']);
+}
+$sql = "SELECT COALESCE(SUM(nb_personnes),0) AS total_reserves FROM Reservations WHERE Statut = 'Réservée' AND DateReservation >= ?";
+$stmt = $conn->prepare($sql);
+$stmt->execute([$now]);
+$row = $stmt->fetch(PDO::FETCH_ASSOC);
+$total_reserves = intval($row['total_reserves']);
+$places_restantes = $total_places - $total_reserves;
+// Card : nombre de tables disponibles (statut 'Libre')
+$sql = "SELECT COUNT(*) AS nb_libres FROM TablesRestaurant WHERE Statut = 'Libre'";
+$stmt = $conn->query($sql);
+$nb_tables_libres = 0;
+if ($stmt) {
+  $row = $stmt->fetch(PDO::FETCH_ASSOC);
+  $nb_tables_libres = intval($row['nb_libres']);
+}
+// Card : nombre de tables disponibles (statut 'Libre') et détail par type
+$sql = "SELECT Capacite, COUNT(*) AS nb FROM TablesRestaurant WHERE Statut = 'Libre' GROUP BY Capacite ORDER BY Capacite ASC";
+$stmt = $conn->query($sql);
+$types_tables_libres = [];
+if ($stmt) {
+  while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $types_tables_libres[] = $row;
+  }
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -330,6 +371,17 @@ if ($stmt) {
         <div class="dashboard-card">
           <div class="card-title">Personnes réservées à venir</div>
           <div class="card-value"><?php echo $total_reserves; ?></div>
+        </div>
+        <div class="dashboard-card">
+          <div class="card-title">Tables disponibles</div>
+          <div class="card-value"><?php echo $nb_tables_libres; ?></div>
+          <?php if (!empty($types_tables_libres)): ?>
+            <div style="font-size:1em;color:#444;margin-top:8px;">
+              <?php foreach ($types_tables_libres as $t): ?>
+                <div><?= $t['nb'] ?> table<?= $t['nb'] > 1 ? 's' : '' ?> de <?= $t['Capacite'] ?> place<?= $t['Capacite'] > 1 ? 's' : '' ?></div>
+              <?php endforeach; ?>
+            </div>
+          <?php endif; ?>
         </div>
       </div>
       <div class="form-section">

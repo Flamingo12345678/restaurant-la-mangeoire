@@ -58,16 +58,21 @@ if (
 // Suppression d'une réservation
 if (isset($_GET['delete'])) {
   $id = intval($_GET['delete']);
-  // Libérer la table associée à la réservation supprimée
-  $sql = "SELECT TableID FROM Reservations WHERE ReservationID = ?";
+  // Libérer toutes les tables associées à la réservation supprimée (multi-tables)
+  $sql = "SELECT TableID FROM ReservationTables WHERE ReservationID = ?";
   $stmt = $conn->prepare($sql);
   $stmt->execute([$id]);
-  $row = $stmt->fetch(PDO::FETCH_ASSOC);
-  if ($row && !empty($row['TableID'])) {
-    $table_id = $row['TableID'];
-    $sql = "UPDATE TablesRestaurant SET Statut = 'Libre' WHERE TableID = ?";
-    $stmt2 = $conn->prepare($sql);
-    $stmt2->execute([$table_id]);
+  $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
+  if ($tables) {
+    foreach ($tables as $table_id) {
+      $sql = "UPDATE TablesRestaurant SET Statut = 'Libre' WHERE TableID = ?";
+      $stmt2 = $conn->prepare($sql);
+      $stmt2->execute([$table_id]);
+    }
+    // Supprimer les associations dans ReservationTables
+    $sql = "DELETE FROM ReservationTables WHERE ReservationID = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute([$id]);
   }
   // Suppression de la réservation
   $sql = "DELETE FROM Reservations WHERE ReservationID = ?";
@@ -113,17 +118,22 @@ if (isset($_POST['edit_id'], $_POST['edit_nom_client'], $_POST['edit_email_clien
     $sql = "UPDATE Reservations SET nom_client = ?, email_client = ?, DateReservation = ?, Statut = ?, nb_personnes = ? WHERE ReservationID = ?";
     $stmt = $conn->prepare($sql);
     $result = $stmt->execute([$edit_nom, $edit_email, $edit_date, $edit_statut, $edit_nb_personnes, $edit_id]);
-    // Si la réservation passe à Annulée, libérer la table
+    // Si la réservation passe à Annulée, libérer toutes les tables associées (multi-tables)
     if ($edit_statut === 'Annulée') {
-      $sql = "SELECT TableID FROM Reservations WHERE ReservationID = ?";
+      $sql = "SELECT TableID FROM ReservationTables WHERE ReservationID = ?";
       $stmt2 = $conn->prepare($sql);
       $stmt2->execute([$edit_id]);
-      $row = $stmt2->fetch(PDO::FETCH_ASSOC);
-      if ($row && !empty($row['TableID'])) {
-        $table_id = $row['TableID'];
-        $sql = "UPDATE TablesRestaurant SET Statut = 'Libre' WHERE TableID = ?";
-        $stmt3 = $conn->prepare($sql);
-        $stmt3->execute([$table_id]);
+      $tables = $stmt2->fetchAll(PDO::FETCH_COLUMN);
+      if ($tables) {
+        foreach ($tables as $table_id) {
+          $sql = "UPDATE TablesRestaurant SET Statut = 'Libre' WHERE TableID = ?";
+          $stmt3 = $conn->prepare($sql);
+          $stmt3->execute([$table_id]);
+        }
+        // Supprimer les associations dans ReservationTables
+        $sql = "DELETE FROM ReservationTables WHERE ReservationID = ?";
+        $stmt2 = $conn->prepare($sql);
+        $stmt2->execute([$edit_id]);
       }
     }
     if ($result) {

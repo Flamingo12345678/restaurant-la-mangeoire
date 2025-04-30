@@ -29,21 +29,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if ($total_reserves + $people > $total_places) {
         $message = '<span class="alert alert-error">Impossible d\'enregistrer la réservation : la capacité maximale de la salle serait dépassée.</span>';
       } else {
-        // Calcul du créneau de réservation (2h)
-        $start = $datetime;
-        $end = date('Y-m-d H:i:s', strtotime($datetime . ' +2 hours'));
-        // Recherche d'une table libre sur ce créneau
-        $sql = "SELECT TableID FROM TablesRestaurant WHERE TableID NOT IN (
-          SELECT TableID FROM Reservations 
+        // Recherche de toutes les tables et calcul des places déjà réservées sur le créneau
+        $sql = "SELECT t.TableID, t.Capacite
+        FROM TablesRestaurant t
+        WHERE t.TableID NOT IN (
+          SELECT TableID FROM Reservations
           WHERE Statut = 'Réservée'
             AND ((DateReservation < ? AND DATE_ADD(DateReservation, INTERVAL 2 HOUR) > ?)
                  OR (DateReservation >= ? AND DateReservation < ?))
-        ) LIMIT 1";
+        )
+        ORDER BY t.Capacite DESC";
         $stmt = $conn->prepare($sql);
         $stmt->execute([$end, $start, $start, $end]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        if ($row) {
-          $table_id = $row['TableID'];
+        $tables_libres = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $personnes_restantes = $people;
+        $tables_attribuees = [];
+        foreach ($tables_libres as $table) {
+          if ($personnes_restantes <= 0) break;
+          $places = min($table['Capacite'], $personnes_restantes);
+          $tables_attribuees[] = [
+            'TableID' => $table['TableID'],
+            'places' => $places,
+            'Capacite' => $table['Capacite']
+          ];
+          $personnes_restantes -= $places;
+        }
+        if ($personnes_restantes <= 0) {
           // Recherche ou création du client
           $sql = "SELECT ClientID FROM Clients WHERE Email = ?";
           $stmt_client = $conn->prepare($sql);
@@ -57,23 +68,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt_insert->execute([$nom, $email, $telephone]);
             $client_id = $conn->lastInsertId();
           }
-          // 3. Insérer la réservation avec ClientID
-          $sql = "INSERT INTO Reservations (DateReservation, Statut, nom_client, email_client, nb_personnes, telephone, TableID, ClientID) VALUES (?, 'Réservée', ?, ?, ?, ?, ?, ?)";
+          // 1 seule réservation pour tout le groupe
+          $sql = "INSERT INTO Reservations (DateReservation, Statut, nom_client, email_client, nb_personnes, telephone, ClientID) VALUES (?, 'Réservée', ?, ?, ?, ?, ?)";
           $stmt = $conn->prepare($sql);
-          $result = $stmt->execute([$datetime, $nom, $email, $people, $telephone, $table_id, $client_id]);
-          if ($result) {
-            // Mettre à jour le statut de la table en 'Réservée'
-            $sql = "UPDATE TablesRestaurant SET Statut = 'Réservée' WHERE TableID = ?";
-            $stmt_update = $conn->prepare($sql);
-            $stmt_update->execute([$table_id]);
-            $message = '<span class="alert alert-success" id="resa-success">Réservation enregistrée avec succès ! Vous allez être redirigé vers l\'accueil.</span>';
-            echo '<script>setTimeout(function(){ window.location.href = "/index.html"; }, 3000);</script>';
-          } else {
-            $errorInfo = $stmt->errorInfo();
-            $message = 'Erreur lors de la réservation. Détail SQL : ' . htmlspecialchars($errorInfo[2]);
+          $stmt->execute([$datetime, $nom, $email, $people, $telephone, $client_id]);
+          $reservation_id = $conn->lastInsertId();
+          // Associer toutes les tables à la réservation dans ReservationTables (avec le nombre de places attribuées)
+          foreach ($tables_attribuees as $table) {
+            $sql = "INSERT INTO ReservationTables (ReservationID, TableID, nb_places) VALUES (?, ?, ?)";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([$reservation_id, $table['TableID'], $table['places']]);
+            // Mettre à jour le statut de la table en 'Réservée' si elle est totalement occupée par cette réservation, sinon 'Libre'
+            if ($table['places'] == $table['Capacite']) {
+              $sql = "UPDATE TablesRestaurant SET Statut = 'Réservée' WHERE TableID = ?";
+              $stmt_update = $conn->prepare($sql);
+              $stmt_update->execute([$table['TableID']]);
+            } else {
+              $sql = "UPDATE TablesRestaurant SET Statut = 'Libre' WHERE TableID = ?";
+              $stmt_update = $conn->prepare($sql);
+              $stmt_update->execute([$table['TableID']]);
+            }
           }
+          $details = array_map(function ($t) {
+            return 'Table ' . $t['TableID'] . ' (' . $t['places'] . ' pers.)';
+          }, $tables_attribuees);
+          $message = '<span class="alert alert-success" id="resa-success">Réservation enregistrée avec succès !<br>Tables attribuées : ' . implode(', ', $details) . '</span>';
+          echo '<script>setTimeout(function(){ window.location.href = "/index.html"; }, 3000);</script>';
         } else {
-          $message = '<span class="alert alert-error">Aucune table disponible à cette date/heure.</span>';
+          $message = '<span class="alert alert-error">Pas assez de places disponibles pour accueillir ' . $people . ' personnes à cette date/heure.</span>';
         }
       }
     } catch (PDOException $e) {
