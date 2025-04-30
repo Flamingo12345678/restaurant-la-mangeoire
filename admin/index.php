@@ -31,6 +31,12 @@ require_once '../db_connexion.php';
       display: flex;
       flex-direction: column;
       z-index: 10;
+      transition: transform 0.3s ease;
+      transform: translateX(0);
+    }
+
+    .sidebar.open {
+      transform: translateX(0);
     }
 
     .sidebar .logo {
@@ -237,27 +243,67 @@ require_once '../db_connexion.php';
       font-size: 1.2em;
       margin-right: 0.3em;
     }
+
+    .menu-toggle {
+      display: none;
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: #1a237e;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 20;
+      font-size: 1.5rem;
+    }
+
+    @media (max-width: 768px) {
+      .menu-toggle {
+        display: flex;
+      }
+
+      .sidebar {
+        transform: translateX(-100%);
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .main-content {
+        margin-left: 0;
+        padding: 32px;
+      }
+    }
   </style>
 </head>
 
 <body>
+  <button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+    <i class="bi bi-list"></i>
+  </button>
   <div class="sidebar">
-    <div class="logo">Analyse</div>
+    <div class="logo">La Mangeoire</div>
     <nav>
       <ul>
-        <li><a href="index.php" class="active"><i class="bi bi-bar-chart"></i> Analyse</a></li>
+        <li><a href="index.php"><i class="bi bi-house"></i> Tableau de bord</a></li>
         <li><a href="clients.php"><i class="bi bi-people"></i> Clients</a></li>
         <li><a href="commandes.php"><i class="bi bi-basket"></i> Commandes</a></li>
-        <li><a href="employes.php"><i class="bi bi-person-badge"></i> Employés</a></li>
-        <li><a href="menus.php"><i class="bi bi-list"></i> Menus</a></li>
-        <li><a href="paiements.php"><i class="bi bi-credit-card"></i> Paiements</a></li>
+        <li><a href="menus.php"><i class="bi bi-book"></i> Menus</a></li>
         <li><a href="reservations.php"><i class="bi bi-calendar-check"></i> Réservations</a></li>
         <li><a href="tables.php"><i class="bi bi-table"></i> Tables</a></li>
+        <li><a href="employes.php"><i class="bi bi-person-badge"></i> Employés</a></li>
+        <li><a href="paiements.php"><i class="bi bi-credit-card"></i> Paiements</a></li>
         <li><a href="logout.php"><i class="bi bi-box-arrow-right"></i> Déconnexion</a></li>
       </ul>
     </nav>
   </div>
-  <div class="main-content">
+  <div class="main-content" style="margin-left:240px; padding:32px;">
     <header class="header d-flex align-items-center sticky-top" style="background: #fff; border-bottom: 1px solid #eee;">
       <div class="container position-relative d-flex align-items-center justify-content-between">
         <a href="index.php" class="logo d-flex align-items-center me-auto me-xl-0">
@@ -386,5 +432,15 @@ require_once '../db_connexion.php';
     </div>
   </div>
 </body>
-
-</html>
+<script>
+  // Fermer la sidebar quand on clique en dehors sur mobile
+  window.addEventListener('click', function(e) {
+    const sidebar = document.querySelector('.sidebar');
+    const toggle = document.querySelector('.menu-toggle');
+    if (window.innerWidth <= 768 && sidebar.classList.contains('open')) {
+      if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
+        sidebar.classList.remove('open');
+      }
+    }
+  });
+</script>

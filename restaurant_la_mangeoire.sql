@@ -25,14 +25,22 @@ CREATE TABLE IF NOT EXISTS TablesRestaurant (
 CREATE TABLE IF NOT EXISTS Reservations (
     ReservationID INT AUTO_INCREMENT PRIMARY KEY,
     ClientID INT,
-    TableID INT,
     DateReservation DATETIME NOT NULL,
     Statut ENUM('Réservée', 'Annulée') DEFAULT 'Réservée',
     nom_client VARCHAR(100),
     email_client VARCHAR(100),
     nb_personnes INT,
     telephone VARCHAR(30),
-    FOREIGN KEY (ClientID) REFERENCES Clients(ClientID) ON DELETE CASCADE,
+    FOREIGN KEY (ClientID) REFERENCES Clients(ClientID) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Table de liaison ReservationTables pour gestion multi-tables
+CREATE TABLE IF NOT EXISTS ReservationTables (
+    ReservationID INT NOT NULL,
+    TableID INT NOT NULL,
+    nb_places INT NOT NULL,
+    PRIMARY KEY (ReservationID, TableID),
+    FOREIGN KEY (ReservationID) REFERENCES Reservations(ReservationID) ON DELETE CASCADE,
     FOREIGN KEY (TableID) REFERENCES TablesRestaurant(TableID) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -68,3 +76,7 @@ CREATE TABLE IF NOT EXISTS Paiements (
 CREATE INDEX IDX_Clients_Email ON Clients(Email);
 CREATE INDEX IDX_Tables_NumeroTable ON TablesRestaurant(NumeroTable);
 CREATE INDEX IDX_Reservations_Date ON Reservations(DateReservation);
+
+-- Suppression du champ TableID de Reservations (obsolète avec la gestion multi-tables)
+ALTER TABLE Reservations DROP FOREIGN KEY Reservations_ibfk_2;
+ALTER TABLE Reservations DROP COLUMN TableID;

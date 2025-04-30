@@ -1655,3 +1655,45 @@ section,
 .error-message {
   display: none !important;
 }
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: -260px;
+    top: 0;
+    width: 240px;
+    height: 100vh;
+    transition: left 0.3s;
+    z-index: 1000;
+  }
+  .sidebar.open {
+    left: 0;
+  }
+  .sidebar .logo {
+    padding: 24px 0 16px 0;
+    font-size: 1.5rem;
+  }
+  .menu-toggle {
+    display: block;
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    background: #1a237e;
+    color: #fff;
+    border: none;
+    font-size: 2rem;
+    z-index: 1100;
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+  .main-content {
+    margin-left: 0 !important;
+    padding: 16px;
+    width: 100%;
+  }
+}
+
+.menu-toggle {
+  display: none;
+}
