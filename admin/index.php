@@ -284,7 +284,8 @@ require_once '../db_connexion.php';
 </head>
 
 <body>
-  <button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+  <!-- Bouton menu-toggle pour mobile (affiché via CSS @media) -->
+  <button class="menu-toggle" aria-label="Ouvrir le menu" onclick="document.querySelector('.sidebar').classList.toggle('open')">
     <i class="bi bi-list"></i>
   </button>
   <div class="sidebar">
