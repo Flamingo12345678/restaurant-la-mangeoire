@@ -1694,6 +1694,50 @@ section,
   }
 }
 
-.menu-toggle {
-  display: none;
+/* --- Améliorations responsive pour l'admin mobile --- */
+@media (max-width: 768px) {
+  /* Empilement vertical des cartes/statistiques */
+  .admin-dashboard-cards,
+  .dashboard-cards,
+  .dashboard-row {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .admin-dashboard-cards > *,
+  .dashboard-cards > *,
+  .dashboard-row > * {
+    width: 100% !important;
+    min-width: 0;
+    margin: 0 !important;
+  }
+  /* Padding autour du contenu principal */
+  .main-content {
+    padding: 16px 4vw;
+  }
+  /* Sidebar occulte le fond lors de l'ouverture */
+  .sidebar.open::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 999;
+    pointer-events: auto;
+  }
+}
+
+/* Pour éviter que la sidebar masque le bouton menu-toggle */
+@media (max-width: 768px) {
+  .sidebar.open {
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* Amélioration accessibilité bouton menu-toggle */
+.menu-toggle:focus {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
 }

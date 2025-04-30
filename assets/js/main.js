@@ -165,4 +165,22 @@
   window.addEventListener('load', navmenuScrollspy);
   document.addEventListener('scroll', navmenuScrollspy);
 
+  // --- Gestion sidebar admin responsive ---
+  document.addEventListener('DOMContentLoaded', function () {
+    const menuToggle = document.querySelector('.menu-toggle');
+    const sidebar = document.querySelector('.sidebar');
+
+    if (menuToggle && sidebar) {
+      menuToggle.addEventListener('click', function () {
+        sidebar.classList.toggle('open');
+      });
+      // Fermer la sidebar si on clique sur l'overlay
+      sidebar.addEventListener('click', function (e) {
+        if (e.target === sidebar && sidebar.classList.contains('open')) {
+          sidebar.classList.remove('open');
+        }
+      });
+    }
+  });
+
 })();
