@@ -183,4 +183,22 @@
     }
   });
 
+  // --- Sidebar admin mobile optimisée ---
+  document.addEventListener('DOMContentLoaded', function () {
+    const menuToggle = document.querySelector('.menu-toggle');
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+
+    if (menuToggle && sidebar && overlay) {
+      menuToggle.addEventListener('click', function () {
+        sidebar.classList.toggle('open');
+        overlay.style.display = sidebar.classList.contains('open') ? 'block' : 'none';
+      });
+      overlay.addEventListener('click', function () {
+        sidebar.classList.remove('open');
+        overlay.style.display = 'none';
+      });
+    }
+  });
+
 })();

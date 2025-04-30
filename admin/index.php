@@ -280,14 +280,31 @@ require_once '../db_connexion.php';
         padding: 32px;
       }
     }
+
+    /* Styles pour l'overlay de la sidebar */
+    .sidebar-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      z-index: 5;
+    }
+
+    .sidebar.open+.sidebar-overlay {
+      display: block;
+    }
   </style>
 </head>
 
 <body>
-  <!-- Bouton menu-toggle pour mobile (affiché via CSS @media) -->
+  <!-- Bouton menu-toggle pour mobile -->
   <button class="menu-toggle" aria-label="Ouvrir le menu" onclick="document.querySelector('.sidebar').classList.toggle('open')">
     <i class="bi bi-list"></i>
   </button>
+  <!-- Sidebar -->
   <div class="sidebar">
     <div class="logo">La Mangeoire</div>
     <nav>
@@ -304,6 +321,8 @@ require_once '../db_connexion.php';
       </ul>
     </nav>
   </div>
+  <!-- Overlay pour mobile -->
+  <div class="sidebar-overlay"></div>
   <div class="main-content" style="margin-left:240px; padding:32px;">
     <header class="header d-flex align-items-center sticky-top" style="background: #fff; border-bottom: 1px solid #eee;">
       <div class="container position-relative d-flex align-items-center justify-content-between">
