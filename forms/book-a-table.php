@@ -62,6 +62,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           $stmt = $conn->prepare($sql);
           $result = $stmt->execute([$datetime, $nom, $email, $people, $telephone, $table_id, $client_id]);
           if ($result) {
+            // Mettre à jour le statut de la table en 'Réservée'
+            $sql = "UPDATE TablesRestaurant SET Statut = 'Réservée' WHERE TableID = ?";
+            $stmt_update = $conn->prepare($sql);
+            $stmt_update->execute([$table_id]);
             $message = '<span class="alert alert-success" id="resa-success">Réservation enregistrée avec succès ! Vous allez être redirigé vers l\'accueil.</span>';
             echo '<script>setTimeout(function(){ window.location.href = "/index.html"; }, 3000);</script>';
           } else {

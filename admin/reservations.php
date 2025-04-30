@@ -58,6 +58,18 @@ if (
 // Suppression d'une réservation
 if (isset($_GET['delete'])) {
   $id = intval($_GET['delete']);
+  // Libérer la table associée à la réservation supprimée
+  $sql = "SELECT TableID FROM Reservations WHERE ReservationID = ?";
+  $stmt = $conn->prepare($sql);
+  $stmt->execute([$id]);
+  $row = $stmt->fetch(PDO::FETCH_ASSOC);
+  if ($row && !empty($row['TableID'])) {
+    $table_id = $row['TableID'];
+    $sql = "UPDATE TablesRestaurant SET Statut = 'Libre' WHERE TableID = ?";
+    $stmt2 = $conn->prepare($sql);
+    $stmt2->execute([$table_id]);
+  }
+  // Suppression de la réservation
   $sql = "DELETE FROM Reservations WHERE ReservationID = ?";
   $stmt = $conn->prepare($sql);
   $result = $stmt->execute([$id]);
@@ -101,6 +113,19 @@ if (isset($_POST['edit_id'], $_POST['edit_nom_client'], $_POST['edit_email_clien
     $sql = "UPDATE Reservations SET nom_client = ?, email_client = ?, DateReservation = ?, Statut = ?, nb_personnes = ? WHERE ReservationID = ?";
     $stmt = $conn->prepare($sql);
     $result = $stmt->execute([$edit_nom, $edit_email, $edit_date, $edit_statut, $edit_nb_personnes, $edit_id]);
+    // Si la réservation passe à Annulée, libérer la table
+    if ($edit_statut === 'Annulée') {
+      $sql = "SELECT TableID FROM Reservations WHERE ReservationID = ?";
+      $stmt2 = $conn->prepare($sql);
+      $stmt2->execute([$edit_id]);
+      $row = $stmt2->fetch(PDO::FETCH_ASSOC);
+      if ($row && !empty($row['TableID'])) {
+        $table_id = $row['TableID'];
+        $sql = "UPDATE TablesRestaurant SET Statut = 'Libre' WHERE TableID = ?";
+        $stmt3 = $conn->prepare($sql);
+        $stmt3->execute([$table_id]);
+      }
+    }
     if ($result) {
       $message = 'Réservation modifiée.';
       header('Location: reservations.php');
@@ -125,6 +150,28 @@ try {
   }
 } catch (PDOException $e) {
   $message = 'Erreur lors de la récupération des réservations : ' . $e->getMessage();
+}
+
+// Libération automatique des tables dont la réservation est terminée (à chaque chargement de la page admin)
+try {
+  $now = date('Y-m-d H:i:s');
+  $sql = "SELECT t.TableID
+          FROM TablesRestaurant t
+          LEFT JOIN Reservations r ON t.TableID = r.TableID AND r.Statut = 'Réservée' AND r.DateReservation > ?
+          WHERE t.Statut = 'Réservée'
+          GROUP BY t.TableID
+          HAVING COUNT(r.ReservationID) = 0";
+  $stmt = $conn->prepare($sql);
+  $stmt->execute([$now]);
+  $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
+  if ($tables) {
+    $in = implode(',', array_fill(0, count($tables), '?'));
+    $sql = "UPDATE TablesRestaurant SET Statut = 'Libre' WHERE TableID IN ($in)";
+    $stmt2 = $conn->prepare($sql);
+    $stmt2->execute($tables);
+  }
+} catch (PDOException $e) {
+  // Optionnel : log ou message d'erreur admin
 }
 
 // Toujours recalculer les statistiques avant l'affichage
