@@ -346,6 +346,7 @@ if ($stmt) {
             <th>ID</th>
             <th>Numéro</th>
             <th>Capacité</th>
+            <th>Statut</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -355,6 +356,15 @@ if ($stmt) {
               <td><?= htmlspecialchars($t['TableID']) ?></td>
               <td><?= htmlspecialchars($t['NumeroTable']) ?></td>
               <td><?= htmlspecialchars($t['Capacite']) ?></td>
+              <td>
+                <?php if (isset($t['Statut'])): ?>
+                  <span style="font-weight:bold;color:<?= $t['Statut'] === 'Réservée' ? '#b01e28' : '#217a3c' ?>;">
+                    <?= htmlspecialchars($t['Statut']) ?>
+                  </span>
+                <?php else: ?>
+                  <span style="color:#757575;">-</span>
+                <?php endif; ?>
+              </td>
               <td><a href="?delete=<?= $t['TableID'] ?>" onclick="return confirm('Supprimer cette table ?')"><i class="bi bi-trash"></i></a></td>
             </tr>
           <?php endforeach; ?>
