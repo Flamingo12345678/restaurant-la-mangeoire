@@ -240,6 +240,22 @@ define('INCLUDED_IN_PAGE', true);
         margin-bottom: 15px;
       }
     }
+
+    /* Styles pour l'overlay de la sidebar */
+    .sidebar-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      z-index: 5;
+    }
+
+    .sidebar.open+.sidebar-overlay {
+      display: block;
+    }
   </style>
 </head>
 
