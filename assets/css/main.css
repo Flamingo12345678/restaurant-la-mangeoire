@@ -1,3 +1,207 @@
+/* Amélioration de l’accessibilité : contraste, focus, éléments masqués */
+
+/* Contraste renforcé pour les liens actifs et hover */
+a,
+a:focus,
+a:active {
+  outline: none;
+  color: var(--accent-color);
+}
+a:hover,
+a:focus-visible {
+  color: #b01e28;
+  background: color-mix(in srgb, var(--accent-color) 10%, #fff 90%);
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+/* Focus visible sur les boutons et champs */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-color) 30%, #fff 70%);
+}
+
+/* Contraste renforcé pour les boutons principaux */
+.form-section button,
+.btn-getstarted,
+.delete-btn {
+  background: var(--accent-color);
+  color: var(--contrast-color);
+}
+.form-section button:hover,
+.btn-getstarted:hover {
+  background: #b01e28;
+  color: var(--contrast-color);
+}
+
+/* Contraste pour les tableaux admin */
+.admin-table th {
+  background: color-mix(in srgb, var(--accent-color) 10%, #fff 90%);
+  color: var(--heading-color);
+}
+.admin-table tr:hover {
+  background: color-mix(in srgb, var(--accent-color) 5%, #fff 95%);
+}
+
+/* Contraste pour la sidebar admin */
+.sidebar,
+.admin-sidebar {
+  background: var(--accent-color, #1a237e);
+  color: var(--contrast-color, #fff);
+}
+.sidebar nav ul li a.active,
+.sidebar nav ul li a:focus {
+  background: color-mix(in srgb, var(--accent-color) 20%, #fff 80%);
+  color: var(--accent-color);
+  outline: 2px solid var(--accent-color);
+}
+
+/* Accessibilité : éléments masqués visuellement mais accessibles */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* Utilisation cohérente des variables CSS */
+.sidebar,
+.admin-sidebar,
+.sidebar .logo,
+.admin-sidebar .logo {
+  background: var(--accent-color, #1a237e);
+  color: var(--contrast-color, #fff);
+}
+.sidebar nav ul li a,
+.admin-sidebar nav ul li a {
+  color: var(--contrast-color, #fff);
+  background: transparent;
+  transition: background 0.2s, color 0.2s;
+}
+.sidebar nav ul li a.active,
+.admin-sidebar nav ul li a.active {
+  background: color-mix(in srgb, var(--accent-color) 20%, #fff 80%);
+  color: var(--accent-color);
+}
+.sidebar nav ul li a:focus-visible,
+.admin-sidebar nav ul li a:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+/* Responsive typographie et espacements */
+html {
+  font-size: 16px;
+}
+
+@media (max-width: 1200px) {
+  html {
+    font-size: 15px;
+  }
+  .main-content,
+  .admin-main-content,
+  .form-section,
+  .admin-table {
+    padding: 18px !important;
+  }
+}
+
+@media (max-width: 900px) {
+  html {
+    font-size: 14px;
+  }
+  .main-content,
+  .admin-main-content,
+  .form-section,
+  .admin-table {
+    padding: 12px !important;
+  }
+  h1,
+  .logo,
+  .sidebar .logo {
+    font-size: 1.7rem !important;
+  }
+  h2 {
+    font-size: 1.3rem !important;
+  }
+  h3 {
+    font-size: 1.1rem !important;
+  }
+  .sidebar nav ul li a {
+    font-size: 1rem !important;
+    padding: 12px 18px !important;
+  }
+}
+
+@media (max-width: 700px) {
+  html {
+    font-size: 13px;
+  }
+  .main-content,
+  .admin-main-content,
+  .form-section,
+  .admin-table {
+    padding: 6px !important;
+  }
+  h1,
+  .logo,
+  .sidebar .logo {
+    font-size: 1.3rem !important;
+  }
+  h2 {
+    font-size: 1.1rem !important;
+  }
+  h3 {
+    font-size: 1rem !important;
+  }
+  .sidebar nav ul li a {
+    font-size: 0.95rem !important;
+    padding: 10px 10px !important;
+  }
+}
+/* Spécifique admin clients : suppression des styles inline */
+.form-section input,
+.form-section button {
+  margin-bottom: 16px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  font-size: 1rem;
+}
+
+.form-section button {
+  background: #1a237e;
+  color: #fff;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.form-section button:hover {
+  background: #283593;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: #c62828;
+  font-size: 1.3em;
+  cursor: pointer;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 16px 20px;
+}
 /* Fonts */
 :root {
   --default-font: "Roboto", system-ui, -apple-system, "Segoe UI", Roboto,
@@ -422,7 +626,7 @@ h6 {
 }
 
 /* Mobile Navigation */
-@media (max-width: 1199px) {
+@media (max-width: 780px) {
   .mobile-nav-toggle {
     color: var(--nav-color);
     font-size: 28px;
@@ -1740,4 +1944,13 @@ section,
 .menu-toggle:focus {
   outline: 2px solid var(--accent-color);
   outline-offset: 2px;
+}
+
+.input-error {
+  border: 1px solid red !important;
+}
+.form-error {
+  color: #c62828;
+  font-weight: bold;
+  margin: 10px 0;
 }

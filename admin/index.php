@@ -5,112 +5,40 @@ if (!isset($_SESSION['admin'])) {
   exit;
 }
 require_once '../db_connexion.php';
+// Définir le titre de la page
+$page_title = "Tableau de bord";
+// Indiquer que ce fichier est inclus dans une page
+define('INCLUDED_IN_PAGE', true);
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 
 <head>
   <meta charset="UTF-8">
-  <title>Admin - Tableau de bord</title>
-  <link rel="stylesheet" href="/assets/css/main.css">
+  <title><?php echo htmlspecialchars($page_title); ?> - Administration</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+  <link rel="stylesheet" href="../assets/css/admin-animations.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body {
-      background: #f8f9fa;
-      font-family: 'Segoe UI', Arial, sans-serif;
-    }
-
-    .sidebar {
-      background: #1a237e;
-      color: #fff;
-      width: 240px;
-      min-height: 100vh;
-      position: fixed;
-      left: 0;
-      top: 0;
-      display: flex;
-      flex-direction: column;
-      z-index: 10;
-      transition: transform 0.3s ease;
-      transform: translateX(0);
-    }
-
-    .sidebar.open {
-      transform: translateX(0);
-    }
-
-    .sidebar .logo {
-      font-size: 2rem;
-      font-weight: bold;
-      padding: 32px 0 24px 0;
-      text-align: center;
-      letter-spacing: 2px;
-      color: #fff;
-    }
-
-    .sidebar nav ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .sidebar nav ul li {
-      margin: 0;
-    }
-
-    .sidebar nav ul li a {
-      display: flex;
-      align-items: center;
-      color: #fff;
-      text-decoration: none;
-      padding: 16px 32px;
-      font-size: 1.1rem;
-      transition: background 0.2s;
-      border-left: 4px solid transparent;
-    }
-
-    .sidebar nav ul li a.active,
-    .sidebar nav ul li a:hover {
-      background: #283593;
-      border-left: 4px solid #42a5f5;
-      color: #42a5f5;
-    }
-
-    .sidebar nav ul li a i {
-      margin-right: 12px;
-      font-size: 1.3rem;
-    }
-
-    .main-content {
-      margin-left: 240px;
-      padding: 0;
-      min-height: 100vh;
-      background: #f6f8fb;
-    }
-
-    /* Correction du débordement du fond blanc derrière les cards stats */
+    /* Styles spécifiques au tableau de bord uniquement */
     .stats {
-      display: flex;
-      gap: 32px;
-      margin: 32px 48px 0 48px;
-      background: transparent !important;
-      box-shadow: none !important;
-      padding: 0 !important;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
     }
 
     .stat-card {
-      flex: 1;
-      background: #5a4fcf;
-      border-radius: 18px;
-      box-shadow: 0 4px 24px 0 #2d217a1a;
-      padding: 28px 24px 18px 24px;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      min-width: 180px;
+      background: #ce1212;
+      border-radius: 10px;
+      padding: 20px;
       color: #fff;
       position: relative;
       overflow: hidden;
+      box-shadow: 0 4px 12px rgba(206, 18, 18, 0.15);
     }
 
     .stat-card .stat-title {
@@ -131,39 +59,23 @@ require_once '../db_connexion.php';
       width: 100%;
       height: 38px;
       margin-top: 8px;
-      background: none;
-      border-radius: 0 0 12px 12px;
-      border-bottom: none;
+    }
+
+    .dashboard-main,
+    .dashboard-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 25px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     }
 
     .dashboard-section {
-      margin: 32px 48px;
-      display: flex;
-      gap: 32px;
-    }
-
-    .dashboard-main {
-      flex: 2;
-      background: #fff;
-      border-radius: 18px;
-      box-shadow: 0 4px 24px 0 #2342a41a;
-      padding: 32px 28px 24px 28px;
-      min-width: 0;
-    }
-
-    .dashboard-side {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-      min-width: 260px;
-    }
-
-    .dashboard-card {
-      background: #fff;
-      border-radius: 18px;
-      box-shadow: 0 4px 24px 0 #2342a41a;
-      padding: 24px 20px;
+      margin: 30px 0;
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 25px;
+      background: transparent;
+      box-shadow: none;
     }
 
     .activity-list {
@@ -173,164 +85,206 @@ require_once '../db_connexion.php';
     }
 
     .activity-list li {
-      margin-bottom: 18px;
+      display: flex;
+      align-items: flex-start;
+      gap: 15px;
+      margin-bottom: 15px;
+      padding: 10px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #f0f0f0;
+      background: rgba(0, 0, 0, 0.01);
+      border-radius: 8px;
+    }
+
+    .activity-list li:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
+    .activity-icon {
+      width: 36px;
+      height: 36px;
+      background-color: rgba(206, 18, 18, 0.15);
+      border-radius: 50%;
       display: flex;
       align-items: center;
-      gap: 14px;
+      justify-content: center;
+      color: #ce1212;
+      flex-shrink: 0;
     }
 
-    .activity-list .avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: #eee;
-      object-fit: cover;
-      border: 2px solid #fff;
-      box-shadow: 0 2px 8px #0001;
+    .activity-icon i {
+      font-size: 18px;
     }
 
-    .pie-chart {
-      width: 60px;
-      height: 60px;
-      display: inline-block;
-      margin-right: 12px;
+    .activity-content {
+      flex-grow: 1;
+    }
+
+    .activity-message {
+      font-weight: 500;
+      margin-bottom: 4px;
+      color: #333;
+    }
+
+    .activity-date {
+      font-size: 0.85rem;
+      color: #888;
+    }
+
+    .todo-list {
+      padding-left: 5px;
+      list-style: none;
+    }
+
+    .todo-list li {
+      position: relative;
+      padding-left: 25px;
+      margin-bottom: 12px;
+    }
+
+    .todo-list li:before {
+      content: "⬜";
+      position: absolute;
+      left: 0;
+      color: #ce1212;
+    }
+
+    .section-title {
+      font-size: 18px;
+      color: #333;
+      margin-bottom: 20px;
+      font-weight: 600;
     }
 
     @media (max-width: 900px) {
-
-      .stats,
       .dashboard-section {
-        flex-direction: column;
+        grid-template-columns: 1fr;
       }
 
-      .main-content {
-        margin-left: 0;
+      .stats {
+        gap: 15px;
       }
 
-      .sidebar {
-        position: relative;
-        width: 100%;
-        flex-direction: row;
-        height: auto;
+      .stat-card {
+        min-width: calc(50% - 15px);
+        flex-basis: calc(50% - 15px);
+        margin-bottom: 0;
       }
-    }
-
-    .btn-retour-public {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5em;
-      background: linear-gradient(90deg, #7f53ac 0%, #647dee 100%);
-      color: #fff !important;
-      border: none;
-      border-radius: 2em;
-      padding: 0.6em 1.6em;
-      font-size: 1.1rem;
-      font-weight: 600;
-      box-shadow: 0 2px 8px rgba(100, 125, 222, 0.15);
-      transition: background 0.3s, box-shadow 0.3s, transform 0.2s;
-      text-decoration: none;
-    }
-
-    .btn-retour-public:hover {
-      background: linear-gradient(90deg, #647dee 0%, #7f53ac 100%);
-      box-shadow: 0 4px 16px rgba(100, 125, 222, 0.25);
-      color: #fff !important;
-      transform: translateY(-2px) scale(1.04);
-      text-decoration: none;
-    }
-
-    .btn-retour-public i {
-      font-size: 1.2em;
-      margin-right: 0.3em;
-    }
-
-    .menu-toggle {
-      display: none;
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      background: #1a237e;
-      color: #fff;
-      border: none;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      z-index: 20;
-      font-size: 1.5rem;
     }
 
     @media (max-width: 768px) {
-      .menu-toggle {
-        display: flex;
+      .stat-card {
+        padding: 15px;
       }
 
-      .sidebar {
-        transform: translateX(-100%);
+      .stat-card .stat-title {
+        font-size: 0.9rem;
       }
 
-      .sidebar.open {
-        transform: translateX(0);
+      .stat-card .stat-value {
+        font-size: 1.7rem;
       }
 
-      .main-content {
-        margin-left: 0;
-        padding: 32px;
+      .stat-card .stat-chart {
+        height: 30px;
+      }
+
+      .dashboard-main,
+      .dashboard-card {
+        padding: 18px;
+      }
+
+      .activity-list li {
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+      }
+
+      .section-title {
+        font-size: 16px;
+        margin-bottom: 15px;
+      }
+
+      .activity-icon {
+        width: 32px;
+        height: 32px;
+      }
+
+      .activity-icon i {
+        font-size: 15px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .stats {
+        margin: 20px 0;
+      }
+
+      .stat-card {
+        min-width: 100%;
+        flex-basis: 100%;
+        margin-bottom: 10px;
+      }
+
+      .dashboard-section {
+        gap: 15px;
+        margin: 20px 0;
+      }
+
+      canvas#liveTrafficChart {
+        height: 150px !important;
+      }
+
+      .dashboard-card {
+        margin-bottom: 15px;
       }
     }
   </style>
 </head>
 
 <body>
-  <button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">
-    <i class="bi bi-list"></i>
-  </button>
-  <div class="sidebar">
-    <div class="logo">La Mangeoire</div>
-    <nav>
-      <ul>
-        <li><a href="index.php"><i class="bi bi-house"></i> Tableau de bord</a></li>
-        <li><a href="clients.php"><i class="bi bi-people"></i> Clients</a></li>
-        <li><a href="commandes.php"><i class="bi bi-basket"></i> Commandes</a></li>
-        <li><a href="menus.php"><i class="bi bi-book"></i> Menus</a></li>
-        <li><a href="reservations.php"><i class="bi bi-calendar-check"></i> Réservations</a></li>
-        <li><a href="tables.php"><i class="bi bi-table"></i> Tables</a></li>
-        <li><a href="employes.php"><i class="bi bi-person-badge"></i> Employés</a></li>
-        <li><a href="paiements.php"><i class="bi bi-credit-card"></i> Paiements</a></li>
-        <li><a href="logout.php"><i class="bi bi-box-arrow-right"></i> Déconnexion</a></li>
-      </ul>
-    </nav>
-  </div>
-  <div class="main-content" style="margin-left:240px; padding:32px;">
-    <header class="header d-flex align-items-center sticky-top" style="background: #fff; border-bottom: 1px solid #eee;">
-      <div class="container position-relative d-flex align-items-center justify-content-between">
-        <a href="index.php" class="logo d-flex align-items-center me-auto me-xl-0">
-          <h1 class="sitename">Admin</h1>
-          <span>.</span>
-        </a>
-        <a href="../index.html" class="btn-retour-public">
-          <i class="bi bi-arrow-left-circle"></i> Retour au site public
-        </a>
-      </div>
-    </header>
-    <div class="topbar">
-      <div class="icons">
-        <img src="../assets/img/favcon.jpeg" alt="Profil" style="width:50px;height:50px;border-radius:50%;background:#eee;">
+  <?php include 'header_template.php'; ?>
+
+  <!-- Contenu spécifique de la page -->
+  <div class="content-wrapper">
+    <div style="background: linear-gradient(135deg, #ce1212, #951010); border-radius: 10px; padding: 25px; margin-bottom: 30px; color: white; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+        <div>
+          <h2 style="color: white; font-size: 24px; margin: 0; position: relative; display: flex; align-items: center;">
+            <i class="bi bi-speedometer2" style="margin-right: 12px; font-size: 28px;"></i>
+            Tableau de bord
+          </h2>
+          <p style="margin-top: 8px; color: rgba(255,255,255,0.9); margin-bottom: 0; font-size: 15px;">
+            Bienvenue sur le tableau de bord d'administration
+          </p>
+        </div>
+        <div style="background: rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 8px; text-align: center; margin-top: 10px;">
+          <i class="bi bi-calendar3" style="margin-right: 5px;"></i>
+          <?= date('d/m/Y') ?>
+        </div>
       </div>
     </div>
+
     <div class="stats">
-      <div class="stat-card">
+      <div class="stat-card" style="background: linear-gradient(135deg, #2E93fA, #1E6DD8); position: relative; overflow: hidden;">
+        <div style="position: absolute; right: 15px; top: 15px; opacity: 0.2; font-size: 3rem;">
+          <i class="bi bi-people"></i>
+        </div>
         <div class="stat-title">Clients inscrits</div>
         <div class="stat-value"><?php
                                 $sql = "SELECT COUNT(*) FROM Clients";
                                 $stmt = $conn->query($sql);
                                 echo $stmt ? $stmt->fetchColumn() : 0;
                                 ?></div>
-        <div class="stat-chart"></div>
+        <div style="font-size: 0.9rem; margin-top: 5px;">
+          <i class="bi bi-arrow-up"></i> Base clients
+        </div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" style="background: linear-gradient(135deg, #00C292, #00A574); position: relative; overflow: hidden;">
+        <div style="position: absolute; right: 15px; top: 15px; opacity: 0.2; font-size: 3rem;">
+          <i class="bi bi-calendar-check"></i>
+        </div>
         <div class="stat-title">Réservations à venir</div>
         <div class="stat-value"><?php
                                 $now = date('Y-m-d H:i:s');
@@ -339,56 +293,107 @@ require_once '../db_connexion.php';
                                 $stmt->execute([$now]);
                                 echo $stmt ? $stmt->fetchColumn() : 0;
                                 ?></div>
-        <div class="stat-chart"></div>
+        <div style="font-size: 0.9rem; margin-top: 5px;">
+          <i class="bi bi-clock"></i> À venir
+        </div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" style="background: linear-gradient(135deg, #F3632B, #E5472C); position: relative; overflow: hidden;">
+        <div style="position: absolute; right: 15px; top: 15px; opacity: 0.2; font-size: 3rem;">
+          <i class="bi bi-basket"></i>
+        </div>
         <div class="stat-title">Commandes totales</div>
         <div class="stat-value"><?php
                                 $sql = "SELECT COUNT(*) FROM Commandes";
                                 $stmt = $conn->query($sql);
                                 echo $stmt ? $stmt->fetchColumn() : 0;
                                 ?></div>
-        <div class="stat-chart"></div>
+        <div style="font-size: 0.9rem; margin-top: 5px;">
+          <i class="bi bi-graph-up"></i> Historique
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-title">Revenus totaux (€)</div>
+      <div class="stat-card" style="background: linear-gradient(135deg, #9675CE, #7C5ABD); position: relative; overflow: hidden;">
+        <div style="position: absolute; right: 15px; top: 15px; opacity: 0.2; font-size: 3rem;">
+          <i class="bi bi-currency-euro"></i>
+        </div>
+        <div class="stat-title">Revenus totaux</div>
         <div class="stat-value"><?php
                                 $sql = "SELECT COALESCE(SUM(Montant),0) FROM Paiements";
                                 $stmt = $conn->query($sql);
                                 $revenus = $stmt ? $stmt->fetchColumn() : 0;
                                 echo number_format($revenus, 2, ',', ' ');
-                                ?></div>
-        <div class="stat-chart"></div>
+                                ?> €</div>
+        <div style="font-size: 0.9rem; margin-top: 5px;">
+          <i class="bi bi-cash-stack"></i> Chiffre d'affaires
+        </div>
       </div>
     </div>
     <div class="dashboard-section">
       <div class="dashboard-main">
-        <h2>Trafic direct</h2>
-        <canvas id="liveTrafficChart" width="100%" height="180" style="background:#f6f8fb;"></canvas>
+        <h3 class="section-title" style="display: flex; align-items: center; justify-content: space-between;">
+          <span>Trafic direct</span>
+          <span style="font-size: 0.8rem; background: #f0f0f0; padding: 3px 10px; border-radius: 20px; color: #666;">
+            <i class="bi bi-clock"></i> Mise à jour en direct
+          </span>
+        </h3>
+        <div style="width:100%;position:relative;height:200px;background:#f6f8fb;border-radius:10px;padding:10px;box-shadow: inset 0 0 8px rgba(0,0,0,0.05);">
+          <canvas id="liveTrafficChart" style="width:100%;height:100%;"></canvas>
+        </div>
         <script>
           // Simulation de trafic en direct (exemple, à remplacer par une vraie source si besoin)
           const ctx = document.getElementById('liveTrafficChart').getContext('2d');
           let trafficData = [12, 19, 8, 15, 22, 17, 25];
 
+          function calculateScale() {
+            // Adapter aux dimensions de l'écran
+            const canvas = ctx.canvas;
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            return {
+              xPadding: Math.max(15, canvas.width * 0.05),
+              yScale: canvas.height / 30,
+              xInterval: (canvas.width - 2 * Math.max(15, canvas.width * 0.05)) / (trafficData.length - 1)
+            };
+          }
+
           function drawTraffic(data) {
+            const {
+              xPadding,
+              yScale,
+              xInterval
+            } = calculateScale();
+            const height = ctx.canvas.height;
+
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+            // Dessiner le graphique
             ctx.beginPath();
-            ctx.moveTo(30, 150 - data[0] * 5);
+            ctx.moveTo(xPadding, height - data[0] * yScale);
             for (let i = 1; i < data.length; i++) {
-              ctx.lineTo(30 + i * 60, 150 - data[i] * 5);
+              ctx.lineTo(xPadding + i * xInterval, height - data[i] * yScale);
             }
             ctx.strokeStyle = '#2342a4';
             ctx.lineWidth = 3;
             ctx.stroke();
+
             // Points
             ctx.fillStyle = '#2342a4';
             for (let i = 0; i < data.length; i++) {
               ctx.beginPath();
-              ctx.arc(30 + i * 60, 150 - data[i] * 5, 6, 0, 2 * Math.PI);
+              ctx.arc(xPadding + i * xInterval, height - data[i] * yScale, 6, 0, 2 * Math.PI);
               ctx.fill();
             }
           }
+
+          // Fonction pour s'adapter aux changements de taille
+          function handleResize() {
+            drawTraffic(trafficData);
+          }
+
+          // Écouter les changements de taille d'écran
+          window.addEventListener('resize', handleResize);
+
           drawTraffic(trafficData);
+
           // Mise à jour automatique toutes les 3 secondes (simulation)
           setInterval(() => {
             trafficData.push(Math.floor(Math.random() * 20) + 8);
@@ -396,51 +401,116 @@ require_once '../db_connexion.php';
             drawTraffic(trafficData);
           }, 3000);
         </script>
-        <div style="display:flex;gap:32px;margin-top:24px;">
-          <div><span class="pie-chart"><svg viewBox="0 0 32 32">
-                <circle r="16" cx="16" cy="16" fill="#eee" />
-                <path d="M16 16 L16 0 A16 16 0 1 1 2.8 25.6 Z" fill="#2342a4" />
-              </svg></span> <b>9600</b><br><span style="color:#888">Ventes totales</span></div>
-          <div><span class="pie-chart"><svg viewBox="0 0 32 32">
-                <circle r="16" cx="16" cy="16" fill="#eee" />
-                <path d="M16 16 L16 0 A16 16 0 1 1 16 32 Z" fill="#ff4d4f" />
-              </svg></span> <b>6900</b><br><span style="color:#888">Commandes totales</span></div>
-          <div><span class="pie-chart"><svg viewBox="0 0 32 32">
-                <circle r="16" cx="16" cy="16" fill="#eee" />
-                <path d="M16 16 L16 0 A16 16 0 1 1 8 30 Z" fill="#ffb300" />
-              </svg></span> <b>3800</b><br><span style="color:#888">Revenus totaux</span></div>
+        <div style="margin-top:24px;" class="stats-summary">
+          <h4 style="font-size:0.95rem;color:#666;margin-bottom:15px;border-bottom:1px solid #eee;padding-bottom:8px;">RÉSUMÉ DES PERFORMANCES</h4>
+          <div style="display:flex;gap:20px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:120px;display:flex;align-items:center;margin-bottom:15px;background:#f9f9f9;padding:15px;border-radius:10px;">
+              <span style="display:inline-block;width:45px;height:45px;background:#2E93fA;border-radius:50%;text-align:center;line-height:45px;margin-right:12px;flex-shrink:0;color:#fff;"><i class="bi bi-bag"></i></span>
+              <div>
+                <b style="font-size:1.2rem;display:block;">9 600</b>
+                <span style="color:#666;font-size:0.9rem;">Ventes totales</span>
+              </div>
+            </div>
+            <div style="flex:1;min-width:120px;display:flex;align-items:center;margin-bottom:15px;background:#f9f9f9;padding:15px;border-radius:10px;">
+              <span style="display:inline-block;width:45px;height:45px;background:#F3632B;border-radius:50%;text-align:center;line-height:45px;margin-right:12px;flex-shrink:0;color:#fff;"><i class="bi bi-cart"></i></span>
+              <div>
+                <b style="font-size:1.2rem;display:block;">6 900</b>
+                <span style="color:#666;font-size:0.9rem;">Commandes totales</span>
+              </div>
+            </div>
+            <div style="flex:1;min-width:120px;display:flex;align-items:center;margin-bottom:15px;background:#f9f9f9;padding:15px;border-radius:10px;">
+              <span style="display:inline-block;width:45px;height:45px;background:#9675CE;border-radius:50%;text-align:center;line-height:45px;margin-right:12px;flex-shrink:0;color:#fff;"><i class="bi bi-currency-euro"></i></span>
+              <div>
+                <b style="font-size:1.2rem;display:block;">3 800 €</b>
+                <span style="color:#666;font-size:0.9rem;">Revenus totaux</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+
       <div class="dashboard-side">
-        <div class="dashboard-card">
-          <h3>Activité</h3>
+        <div class="dashboard-card" style="border-left: 4px solid #00C292; border-radius: 10px 10px 10px 10px;">
+          <h3 class="section-title" style="display: flex; align-items: center;">
+            <i class="bi bi-activity" style="margin-right: 8px; color: #00C292;"></i>
+            Activité récente
+          </h3>
           <ul class="activity-list">
-            <li><img src="/assets/img/chefs/chefs-1.jpg" class="avatar" alt=""> Sophie Michiels <span style="color:#888;font-size:0.9em;">il y a 3 jours</span></li>
-            <li><img src="/assets/img/chefs/chefs-2.jpg" class="avatar" alt=""> Jean Dupont <span style="color:#888;font-size:0.9em;">il y a 5 jours</span></li>
-            <li><img src="/assets/img/chefs/chefs-3.jpg" class="avatar" alt=""> Alice Martin <span style="color:#888;font-size:0.9em;">il y a 1 semaine</span></li>
+            <?php
+            // Récupérer les dernières activités
+            $activities = [];
+
+            // Dernières réservations
+            $sql = "SELECT r.ReservationID, r.nom_client, r.DateReservation, 'reservation' AS type 
+                    FROM Reservations r 
+                    ORDER BY r.ReservationID DESC LIMIT 3";
+            $stmt = $conn->query($sql);
+            if ($stmt) {
+              while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $activities[] = [
+                  'type' => 'reservation',
+                  'date' => $row['DateReservation'],
+                  'message' => 'Nouvelle réservation par ' . htmlspecialchars($row['nom_client'])
+                ];
+              }
+            }
+
+            // Dernières commandes
+            $sql = "SELECT c.CommandeID, r.DateReservation, m.NomItem 
+                    FROM Commandes c 
+                    JOIN Menus m ON c.MenuID = m.MenuID 
+                    JOIN Reservations r ON c.ReservationID = r.ReservationID
+                    ORDER BY c.CommandeID DESC LIMIT 3";
+            $stmt = $conn->query($sql);
+            if ($stmt) {
+              while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $activities[] = [
+                  'type' => 'commande',
+                  'date' => $row['DateReservation'] ?? date('Y-m-d H:i:s'),
+                  'message' => 'Commande de ' . htmlspecialchars($row['NomItem'])
+                ];
+              }
+            }
+
+            // Trier par date
+            usort($activities, function ($a, $b) {
+              return strtotime($b['date']) - strtotime($a['date']);
+            });
+
+            // Afficher les activités
+            if (empty($activities)) {
+              echo '<li>Aucune activité récente</li>';
+            } else {
+              foreach (array_slice($activities, 0, 5) as $activity) {
+                $icon = $activity['type'] == 'reservation' ? 'calendar-check' : 'basket';
+                echo '<li>
+                      <span class="activity-icon"><i class="bi bi-' . $icon . '"></i></span>
+                      <div class="activity-content">
+                        <div class="activity-message">' . $activity['message'] . '</div>
+                        <div class="activity-date">' . date('d/m/Y H:i', strtotime($activity['date'])) . '</div>
+                      </div>
+                    </li>';
+              }
+            }
+            ?>
           </ul>
         </div>
-        <div class="dashboard-card">
-          <h3>Meilleures ventes</h3>
-          <ul style="padding-left:18px;">
-            <li>Storite Portable Bag</li>
-            <li>Menu Dégustation</li>
-            <li>Formule Midi</li>
+        <div class="dashboard-card" style="border-left: 4px solid #F3632B; border-radius: 10px 10px 10px 10px;">
+          <h3 class="section-title" style="display: flex; align-items: center;">
+            <i class="bi bi-check2-square" style="margin-right: 8px; color: #F3632B;"></i>
+            À faire
+          </h3>
+          <ul class="todo-list" style="margin-top: 15px;">
+            <li style="padding: 10px 10px 10px 30px; background: #f9f9f9; border-radius: 8px; margin-bottom: 10px;">Vérifier les réservations du jour</li>
+            <li style="padding: 10px 10px 10px 30px; background: #f9f9f9; border-radius: 8px; margin-bottom: 10px;">Mettre à jour le menu hebdomadaire</li>
+            <li style="padding: 10px 10px 10px 30px; background: #f9f9f9; border-radius: 8px; margin-bottom: 10px;">Contacter les fournisseurs</li>
           </ul>
         </div>
       </div>
     </div>
-  </div>
+  </div> <!-- Fermeture du content-wrapper -->
+
+  <?php include 'footer_template.php'; ?>
 </body>
-<script>
-  // Fermer la sidebar quand on clique en dehors sur mobile
-  window.addEventListener('click', function(e) {
-    const sidebar = document.querySelector('.sidebar');
-    const toggle = document.querySelector('.menu-toggle');
-    if (window.innerWidth <= 768 && sidebar.classList.contains('open')) {
-      if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
-        sidebar.classList.remove('open');
-      }
-    }
-  });
-</script>
+
+</html>

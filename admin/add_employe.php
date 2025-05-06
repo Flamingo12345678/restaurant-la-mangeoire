@@ -1,9 +1,8 @@
 <?php
-session_start();
-if (!isset($_SESSION['admin'])) {
-  header('Location: login.php');
-  exit;
-}
+
+require_once __DIR__ . '/../includes/common.php';
+require_superadmin();
+generate_csrf_token();
 require_once '../db_connexion.php';
 $message = '';
 function log_admin_action($action, $details = '')
@@ -28,34 +27,62 @@ if (empty($_SESSION['csrf_token'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   // Vérification du token CSRF
   if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-    $message = 'Erreur de sécurité (CSRF).';
+    set_message('Erreur de sécurité (CSRF).', 'error');
     log_admin_action('Tentative CSRF ajout employé');
+    header('Location: ' . $_SERVER['PHP_SELF']);
+    exit;
   } else {
     $nom = trim($_POST['nom'] ?? '');
     $prenom = trim($_POST['prenom'] ?? '');
     $poste = trim($_POST['poste'] ?? '');
-    $salaire = floatval($_POST['salaire'] ?? 0);
+    $salaire = $_POST['salaire'] ?? '';
     $date_embauche = $_POST['date_embauche'] ?? '';
-    // Validation stricte
-    if ($nom && $prenom && $poste && $salaire > 0 && $date_embauche && mb_strlen($nom) <= 100 && mb_strlen($prenom) <= 100 && mb_strlen($poste) <= 50) {
+    $valid = validate_nom($nom) && validate_prenom($prenom) && validate_nom($poste, 50) && validate_salaire($salaire) && validate_date($date_embauche);
+    if ($valid) {
       try {
         $sql = "INSERT INTO Employes (Nom, Prenom, Poste, Salaire, DateEmbauche) VALUES (?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
         $result = $stmt->execute([$nom, $prenom, $poste, $salaire, $date_embauche]);
         if ($result) {
-          $message = 'Employé ajouté.';
+          set_message('Employé ajouté.');
           log_admin_action('Ajout employé', "Nom: $nom, Prénom: $prenom, Poste: $poste");
+          header('Location: ' . $_SERVER['PHP_SELF']);
+          exit;
         } else {
-          $message = 'Erreur lors de l\'ajout.';
+          set_message('Erreur lors de l\'ajout.', 'error');
           log_admin_action('Erreur ajout employé', "Nom: $nom, Prénom: $prenom, Poste: $poste");
+          header('Location: ' . $_SERVER['PHP_SELF']);
+          exit;
         }
       } catch (PDOException $e) {
-        $message = 'Erreur base de données.';
+        set_message('Erreur base de données.', 'error');
         log_admin_action('Erreur PDO ajout employé', 'PDOException');
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit;
       }
     } else {
-      $message = 'Champs invalides.';
+      set_message('Champs invalides.', 'error');
+      header('Location: ' . $_SERVER['PHP_SELF']);
+      exit;
     }
+  }
+}
+
+// Gestion centralisée des messages
+function set_message($msg, $type = 'success')
+{
+  $_SESSION['flash_message'] = [
+    'text' => $msg,
+    'type' => $type
+  ];
+}
+function display_message()
+{
+  if (!empty($_SESSION['flash_message'])) {
+    $type = $_SESSION['flash_message']['type'] === 'success' ? 'alert-success' : 'alert-error';
+    $text = htmlspecialchars($_SESSION['flash_message']['text']);
+    echo "<div class='alert $type'>$text</div>";
+    unset($_SESSION['flash_message']);
   }
 }
 ?>
@@ -165,11 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="form-container">
     <a href="employes.php" class="back-link">&larr; Retour à la liste</a>
     <h1>Ajouter un employé</h1>
-    <?php if ($message): ?>
-      <div class="alert <?= strpos($message, 'ajouté') !== false ? 'alert-success' : 'alert-error' ?>">
-        <?= htmlspecialchars($message) ?>
-      </div>
-    <?php endif; ?>
+    <?php display_message(); ?>
     <form method="post" autocomplete="off">
       <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
       <input type="text" name="nom" placeholder="Nom" required maxlength="100">

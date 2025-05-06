@@ -1,66 +1,42 @@
-<?php
-
-/**
- * delete_table.php
- *
- * Permet à un administrateur de supprimer une table de la base de données.
- * - Protection par session admin obligatoire.
- * - Suppression sécurisée via requête préparée.
- * - Affiche un message d'erreur en cas d'échec.
- *
- * @auteur Projet La Mangeoire
- * @sécurité Accès restreint aux administrateurs via session.
- */
-
 session_start();
-if (!isset($_SESSION['admin'])) {
-  header('Location: login.php');
-  exit;
-}
-require_once '../db_connexion.php';
-function log_admin_action($action, $details = '')
-{
-  $logfile = __DIR__ . '/../admin/admin_actions.log';
-  $date = date('Y-m-d H:i:s');
-  $user = $_SESSION['admin'] ?? 'inconnu';
-  $entry = "[$date] [$user] $action $details\n";
-  file_put_contents($logfile, $entry, FILE_APPEND | LOCK_EX);
-}
-// Contrôle de droits strict : seuls les superadmins peuvent supprimer
-if (!isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'superadmin') {
-  header('Location: index.php?error=forbidden');
-  exit;
-}
-
-// Génération du token CSRF si besoin
-if (empty($_SESSION['csrf_token'])) {
-  $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
+<?php
+require_once __DIR__ . '/../includes/common.php';
+require_superadmin();
 
 $id = intval($_GET['id'] ?? 0);
-$message = '';
 if ($id > 0 && $_SERVER['REQUEST_METHOD'] === 'POST') {
-  // Vérification du token CSRF
-  if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-    $message = 'Erreur de sécurité (CSRF).';
+  if (!check_csrf_token($_POST['csrf_token'] ?? '')) {
+    set_message('Erreur de sécurité (CSRF).', 'error');
     log_admin_action('Tentative CSRF suppression table');
-  } else {
-    try {
-      $sql = "DELETE FROM TablesRestaurant WHERE TableID=?";
-      $stmt = $conn->prepare($sql);
-      $result = $stmt->execute([$id]);
-      if ($result) {
-        log_admin_action('Suppression table', "ID: $id");
-        header('Location: tables.php?msg=supprime');
-        exit;
-      } else {
-        $message = "Erreur lors de la suppression.";
-        log_admin_action('Erreur suppression table', "ID: $id");
-      }
-    } catch (PDOException $e) {
-      $message = "Erreur base de données.";
-      log_admin_action('Erreur PDO suppression table', 'PDOException');
+    header('Location: tables.php');
+    exit;
+  }
+  // Vérification d'existence de la table
+  $check = $conn->prepare("SELECT COUNT(*) FROM TablesRestaurant WHERE TableID=?");
+  $check->execute([$id]);
+  if ($check->fetchColumn() == 0) {
+    set_message('Table inexistante ou déjà supprimée.', 'error');
+    header('Location: tables.php');
+    exit;
+  }
+  try {
+    $sql = "DELETE FROM TablesRestaurant WHERE TableID=?";
+    $stmt = $conn->prepare($sql);
+    $result = $stmt->execute([$id]);
+    if ($result) {
+      set_message('Table supprimée.');
+      log_admin_action('Suppression table', "ID: $id");
+    } else {
+      set_message('Erreur lors de la suppression.', 'error');
+      log_admin_action('Erreur suppression table', "ID: $id");
     }
+    header('Location: tables.php');
+    exit;
+  } catch (PDOException $e) {
+    set_message('Erreur base de données.', 'error');
+    log_admin_action('Erreur PDO suppression table', $e->getMessage());
+    header('Location: tables.php');
+    exit;
   }
 } else {
   echo "ID invalide.";

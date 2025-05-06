@@ -1,16 +1,13 @@
 <?php
-session_start();
+$message = '';
+require_once __DIR__ . '/../includes/common.php';
+require_admin();
+generate_csrf_token();
 require_once '../db_connexion.php';
+
+
 $message = '';
 
-function log_admin_action($action, $details = '')
-{
-  $logfile = __DIR__ . '/../admin/admin_actions.log';
-  $date = date('Y-m-d H:i:s');
-  $user = $_SESSION['admin'] ?? 'inconnu';
-  $entry = "[$date] [$user] $action $details\n";
-  file_put_contents($logfile, $entry, FILE_APPEND | LOCK_EX);
-}
 
 // Contrôle de droits strict : seuls les superadmins peuvent ajouter
 if (!isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'superadmin') {
@@ -26,32 +23,41 @@ if (empty($_SESSION['csrf_token'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   // Vérification du token CSRF
   if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-    $message = 'Erreur de sécurité (CSRF).';
+    set_message('Erreur de sécurité (CSRF).', 'error');
     log_admin_action('Tentative CSRF ajout paiement');
+    header('Location: ' . $_SERVER['PHP_SELF']);
+    exit;
   } else {
-    $reservation_id = intval($_POST['reservation_id'] ?? 0);
-    $montant = floatval($_POST['montant'] ?? 0);
+    $montant = $_POST['montant'] ?? '';
     $date = $_POST['date_paiement'] ?? '';
-    $mode = trim($_POST['mode'] ?? '');
-    // Validation stricte
-    if ($reservation_id > 0 && $montant > 0 && $date && mb_strlen($mode) <= 50) {
+    $methode = trim($_POST['methode'] ?? '');
+    $valid = validate_prix($montant) && validate_date($date) && validate_nom($methode, 50);
+    if ($valid) {
       try {
         $sql = "INSERT INTO Paiements (ReservationID, Montant, DatePaiement, ModePaiement) VALUES (?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
         $result = $stmt->execute([$reservation_id, $montant, $date, $mode]);
         if ($result) {
-          $message = 'Paiement ajouté.';
+          set_message('Paiement ajouté.');
           log_admin_action('Ajout paiement', "ReservationID: $reservation_id, Montant: $montant, Date: $date");
+          header('Location: ' . $_SERVER['PHP_SELF']);
+          exit;
         } else {
-          $message = 'Erreur lors de l\'ajout.';
+          set_message('Erreur lors de l\'ajout.', 'error');
           log_admin_action('Erreur ajout paiement', "ReservationID: $reservation_id, Montant: $montant, Date: $date");
+          header('Location: ' . $_SERVER['PHP_SELF']);
+          exit;
         }
       } catch (PDOException $e) {
-        $message = 'Erreur base de données.';
+        set_message('Erreur base de données.', 'error');
         log_admin_action('Erreur PDO ajout paiement', 'PDOException');
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit;
       }
     } else {
-      $message = 'Champs invalides.';
+      set_message('Champs invalides.', 'error');
+      header('Location: ' . $_SERVER['PHP_SELF']);
+      exit;
     }
   }
 }
@@ -162,19 +168,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="form-container">
     <a href="paiements.php" class="back-link">&larr; Retour à la liste</a>
     <h1>Ajouter un paiement</h1>
-    <?php if ($message): ?>
-      <div class="alert <?= strpos($message, 'ajouté') !== false ? 'alert-success' : 'alert-error' ?>">
-        <?= htmlspecialchars($message) ?>
-      </div>
-    <?php endif; ?>
-    <form method="post" autocomplete="off">
+    <?php display_message(); ?>
+    <form method="post" autocomplete="off" id="addPaiementForm" novalidate>
       <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
-      <input type="number" name="reservation_id" placeholder="ID réservation *" required min="1">
-      <input type="number" name="montant" placeholder="Montant *" step="0.01" min="0" required>
-      <input type="date" name="date_paiement" placeholder="Date de paiement *" required>
-      <input type="text" name="mode" placeholder="Mode de paiement" maxlength="50">
+      <input type="number" name="reservation_id" id="reservation_id" placeholder="ID réservation *" required min="1">
+      <input type="number" name="montant" id="montant" placeholder="Montant *" step="0.01" min="0" required>
+      <input type="date" name="date_paiement" id="date_paiement" placeholder="Date de paiement *" required>
+      <input type="text" name="mode" id="mode" placeholder="Mode de paiement" maxlength="50">
+      <div id="form-error" class="alert alert-error" style="display:none;"></div>
       <button type="submit">Ajouter</button>
     </form>
+    <script>
+      (function() {
+        const form = document.getElementById('addPaiementForm');
+        const reservation_id = document.getElementById('reservation_id');
+        const montant = document.getElementById('montant');
+        const date_paiement = document.getElementById('date_paiement');
+        const mode = document.getElementById('mode');
+        const errorDiv = document.getElementById('form-error');
+
+        function showError(msg) {
+          errorDiv.textContent = msg;
+          errorDiv.style.display = 'block';
+        }
+
+        function clearError() {
+          errorDiv.textContent = '';
+          errorDiv.style.display = 'none';
+        }
+
+        function validateField(field) {
+          if (field === reservation_id && (reservation_id.value === '' || isNaN(reservation_id.value) || parseInt(reservation_id.value) < 1)) {
+            showError('ID réservation invalide.');
+            return false;
+          }
+          if (field === montant && (montant.value === '' || isNaN(montant.value) || parseFloat(montant.value) < 0)) {
+            showError('Montant invalide.');
+            return false;
+          }
+          if (field === date_paiement && date_paiement.value === '') {
+            showError('Veuillez choisir une date de paiement.');
+            return false;
+          }
+          if (field === mode && mode.value.trim() === '') {
+            showError('Veuillez saisir le mode de paiement.');
+            return false;
+          }
+          clearError();
+          return true;
+        }
+        [reservation_id, montant, date_paiement, mode].forEach(input => {
+          input.addEventListener('input', function() {
+            validateField(this);
+          });
+          input.addEventListener('blur', function() {
+            validateField(this);
+          });
+        });
+        form.addEventListener('submit', function(e) {
+          if (!validateField(reservation_id) || !validateField(montant) || !validateField(date_paiement) || !validateField(mode)) {
+            e.preventDefault();
+            return false;
+          }
+          clearError();
+        });
+      })();
+    </script>
   </div>
 </body>
 

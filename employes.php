@@ -1,31 +1,67 @@
 <?php
+
+require_once __DIR__ . '/includes/common.php';
+require_admin();
+generate_csrf_token();
 require_once 'db_connexion.php';
-$message = '';
+
 // Ajout d'un employé
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajouter'])) {
-  $nom = trim($_POST['nom'] ?? '');
-  $prenom = trim($_POST['prenom'] ?? '');
-  $poste = trim($_POST['poste'] ?? '');
-  $salaire = floatval($_POST['salaire'] ?? 0);
-  $date_embauche = $_POST['date_embauche'] ?? '';
-  if ($nom && $prenom && $poste && $salaire > 0 && $date_embauche) {
-    $sql = "INSERT INTO Employes (Nom, Prenom, Poste, Salaire, DateEmbauche) VALUES (?, ?, ?, ?, ?)";
-    $stmt = $conn->prepare($sql);
-    $stmt->execute([$nom, $prenom, $poste, $salaire, $date_embauche]);
-    $message = 'Employé ajouté.';
+  if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+    set_message('❌ Erreur de sécurité (CSRF) : le formulaire a expiré ou est invalide.', 'error');
+    header('Location: ' . $_SERVER['PHP_SELF']);
+    exit;
   } else {
-    $message = 'Champs invalides.';
+    $nom = trim($_POST['nom'] ?? '');
+    $prenom = trim($_POST['prenom'] ?? '');
+    $poste = trim($_POST['poste'] ?? '');
+    $salaire = $_POST['salaire'] ?? '';
+    $date_embauche = $_POST['date_embauche'] ?? '';
+    $valid = validate_nom($nom) && validate_prenom($prenom) && validate_nom($poste, 50) && validate_salaire($salaire) && validate_date($date_embauche);
+    if ($valid) {
+      $sql = "INSERT INTO Employes (Nom, Prenom, Poste, Salaire, DateEmbauche) VALUES (?, ?, ?, ?, ?)";
+      $stmt = $conn->prepare($sql);
+      $stmt->execute([$nom, $prenom, $poste, $salaire, $date_embauche]);
+      set_message('✅ Employé ajouté avec succès.');
+      header('Location: ' . $_SERVER['PHP_SELF']);
+      exit;
+    } else {
+      set_message('❌ Un ou plusieurs champs sont invalides. Veuillez vérifier vos saisies.', 'error');
+      header('Location: ' . $_SERVER['PHP_SELF']);
+      exit;
+    }
   }
 }
-// Suppression d'un employé
-if (isset($_GET['delete'])) {
-  $id = intval($_GET['delete']);
-  $stmt = $conn->prepare("DELETE FROM Employes WHERE EmployeID=?");
-  $stmt->execute([$id]);
-  $message = 'Employé supprimé.';
+// Suppression d'un employé sécurisée (POST)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_employe'])) {
+  if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+    set_message('❌ Erreur de sécurité (CSRF) : le formulaire a expiré ou est invalide.', 'error');
+    header('Location: ' . $_SERVER['PHP_SELF']);
+    exit;
+  } else {
+    $id = intval($_POST['delete_employe']);
+    // Vérification d'existence de l'employé
+    $check = $conn->prepare("SELECT COUNT(*) FROM Employes WHERE EmployeID=?");
+    $check->execute([$id]);
+    if ($check->fetchColumn() == 0) {
+      set_message('❌ Cet employé n’existe pas ou a déjà été supprimé.', 'error');
+      header('Location: ' . $_SERVER['PHP_SELF']);
+      exit;
+    }
+    $stmt = $conn->prepare("DELETE FROM Employes WHERE EmployeID=?");
+    $stmt->execute([$id]);
+    set_message('🗑️ Employé supprimé avec succès.');
+    header('Location: ' . $_SERVER['PHP_SELF']);
+    exit;
+  }
 }
-// Liste des employés
-$employes = $conn->query("SELECT * FROM Employes ORDER BY EmployeID DESC")->fetchAll();
+// Pagination
+$employes_per_page = 10;
+$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$offset = ($page - 1) * $employes_per_page;
+$total_employes = $conn->query("SELECT COUNT(*) FROM Employes")->fetchColumn();
+$total_pages = ceil($total_employes / $employes_per_page);
+$employes = $conn->query("SELECT * FROM Employes ORDER BY EmployeID DESC LIMIT $employes_per_page OFFSET $offset")->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -33,56 +69,90 @@ $employes = $conn->query("SELECT * FROM Employes ORDER BY EmployeID DESC")->fetc
 <head>
   <meta charset="UTF-8">
   <title>Employés</title>
+  <style>
+    .admin-table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    .admin-table th, .admin-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    .admin-table th { background: #f5f5f5; }
+    .delete-btn { background: none; border: none; color: #b01e28; cursor: pointer; font-size: 1em; }
+    .pagination { margin: 20px 0; }
+    .pagination a, .pagination strong { margin: 0 5px; text-decoration: none; }
+    .pagination strong { color: #1976d2; }
+    .input-error { border: 1px solid red !important; }
+    .form-error { color: #c62828; font-weight: bold; margin: 10px 0; }
+  </style>
 </head>
 
 <body>
+  <?php display_message(); ?>
   <h1>Employés</h1>
   <a href="admin/index.php">Retour admin</a>
-  <?php if ($message): ?><p><?= htmlspecialchars($message) ?></p><?php endif; ?>
   <form method="post" id="employeForm" autocomplete="off" novalidate>
+    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
     <input type="text" name="nom" id="nom" placeholder="Nom" required>
     <input type="text" name="prenom" id="prenom" placeholder="Prénom" required>
     <input type="text" name="poste" id="poste" placeholder="Poste" required>
     <input type="number" name="salaire" id="salaire" placeholder="Salaire" step="0.01" min="0" required>
     <input type="date" name="date_embauche" id="date_embauche" required>
-    <div id="form-error" style="color:#c62828; font-weight:bold; display:none;"></div>
+    <div id="form-error" class="form-error" style="display:none;"></div>
     <button type="submit" name="ajouter">Ajouter</button>
   </form>
   <script>
-    document.getElementById('employeForm').addEventListener('submit', function(e) {
-      var nom = document.getElementById('nom').value.trim();
-      var prenom = document.getElementById('prenom').value.trim();
-      var poste = document.getElementById('poste').value.trim();
-      var salaire = document.getElementById('salaire').value;
-      var date_embauche = document.getElementById('date_embauche').value;
-      var error = '';
-      if (!nom) {
-        error = 'Veuillez saisir le nom.';
-        document.getElementById('nom').focus();
-      } else if (!prenom) {
-        error = 'Veuillez saisir le prénom.';
-        document.getElementById('prenom').focus();
-      } else if (!poste) {
-        error = 'Veuillez saisir le poste.';
-        document.getElementById('poste').focus();
-      } else if (!salaire || isNaN(salaire) || parseFloat(salaire) <= 0) {
-        error = 'Salaire invalide.';
-        document.getElementById('salaire').focus();
-      } else if (!date_embauche) {
-        error = 'Veuillez choisir une date d\'embauche.';
-        document.getElementById('date_embauche').focus();
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('employeForm');
+      if (!form) return;
+      const nom = form.querySelector('[name="nom"]');
+      const prenom = form.querySelector('[name="prenom"]');
+      const poste = form.querySelector('[name="poste"]');
+      const salaire = form.querySelector('[name="salaire"]');
+      const date_embauche = form.querySelector('[name="date_embauche"]');
+      const errorDiv = document.getElementById('form-error');
+
+      function validateNom(v) { return v.trim().length > 1; }
+      function validatePrenom(v) { return v.trim().length > 1; }
+      function validatePoste(v) { return v.trim().length > 1; }
+      function validateSalaire(v) { return v && !isNaN(v) && parseFloat(v) >= 0; }
+      function validateDate(v) { return !!v; }
+
+      function checkField(el, validate) {
+        const valid = validate(el.value);
+        el.classList.toggle('input-error', !valid);
+        return valid;
       }
-      if (error) {
-        e.preventDefault();
-        document.getElementById('form-error').textContent = error;
-        document.getElementById('form-error').style.display = 'block';
-        return false;
-      } else {
-        document.getElementById('form-error').style.display = 'none';
+
+      function validateAll() {
+        let ok = true;
+        ok &= checkField(nom, validateNom);
+        ok &= checkField(prenom, validatePrenom);
+        ok &= checkField(poste, validatePoste);
+        ok &= checkField(salaire, validateSalaire);
+        ok &= checkField(date_embauche, validateDate);
+        return !!ok;
       }
+
+      [nom, prenom, poste, salaire, date_embauche].forEach((el, i) => {
+        const validators = [validateNom, validatePrenom, validatePoste, validateSalaire, validateDate];
+        el.addEventListener('input', () => {
+          checkField(el, validators[i]);
+          if (validateAll()) {
+            errorDiv.style.display = 'none';
+          }
+        });
+        el.addEventListener('blur', () => checkField(el, validators[i]));
+      });
+
+      form.addEventListener('submit', function(e) {
+        if (!validateAll()) {
+          e.preventDefault();
+          errorDiv.textContent = "Merci de corriger les champs invalides.";
+          errorDiv.style.display = 'block';
+          return false;
+        } else {
+          errorDiv.style.display = 'none';
+        }
+      });
     });
   </script>
-  <table border="1" cellpadding="5">
+  <table class="admin-table">
     <tr>
       <th>ID</th>
       <th>Nom</th>
@@ -100,10 +170,26 @@ $employes = $conn->query("SELECT * FROM Employes ORDER BY EmployeID DESC")->fetc
         <td><?= htmlspecialchars($e['Poste']) ?></td>
         <td><?= htmlspecialchars($e['Salaire']) ?></td>
         <td><?= htmlspecialchars($e['DateEmbauche']) ?></td>
-        <td><a href="?delete=<?= $e['EmployeID'] ?>" onclick="return confirm('Supprimer cet employé ?')">Supprimer</a></td>
+        <td>
+          <form method="post" onsubmit="return confirm('Supprimer cet employé ?')">
+            <input type="hidden" name="delete_employe" value="<?= $e['EmployeID'] ?>">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+            <button type="submit" class="delete-btn">Supprimer</button>
+          </form>
+        </td>
       </tr>
     <?php endforeach; ?>
   </table>
+  <?php if ($total_pages > 1): ?>
+    <div class="pagination">
+      <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+        <?php if ($i == $page): ?>
+          <strong>[<?= $i ?>]</strong>
+        <?php else: ?>
+          <a href="?page=<?= $i ?>">[<?= $i ?>]</a>
+        <?php endif; ?>
+      <?php endfor; ?>
+    </div>
+  <?php endif; ?>
 </body>
-
 </html>

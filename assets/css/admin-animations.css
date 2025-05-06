@@ -1,0 +1,168 @@
+/* Animations pour l'interface d'administration */
+
+/* Animation de fade-in pour les éléments de page */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dashboard-card,
+.form-section,
+.admin-table {
+  animation: fadeIn 0.6s ease forwards;
+}
+
+.dashboard-cards .dashboard-card:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.dashboard-cards .dashboard-card:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.dashboard-cards .dashboard-card:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.dashboard-cards .dashboard-card:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+/* Animation pour le bouton burger */
+@keyframes burgerAnimation {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.1) rotate(90deg);
+  }
+  100% {
+    transform: scale(1) rotate(180deg);
+  }
+}
+
+.admin-burger-btn:hover {
+  animation: burgerAnimation 0.5s ease;
+}
+
+/* Animation pour le logo */
+@keyframes pulseAnimation {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(206, 18, 18, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(206, 18, 18, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(206, 18, 18, 0);
+  }
+}
+
+.admin-logo:hover {
+  animation: pulseAnimation 1.5s infinite;
+}
+
+/* Animation pour les liens du menu */
+@keyframes slideRight {
+  from {
+    transform: translateX(-10px);
+    opacity: 0.7;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.admin-sidebar nav ul li a:hover {
+  animation: slideRight 0.3s ease forwards;
+}
+
+/* Animation pour les boutons */
+@keyframes buttonPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(206, 18, 18, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(206, 18, 18, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(206, 18, 18, 0);
+  }
+}
+
+button[type="submit"]:hover,
+.main-button:hover {
+  animation: buttonPulse 1.5s infinite;
+}
+
+/* Animation pour les lignes de tableau au survol */
+@keyframes rowHighlight {
+  from {
+    background-color: transparent;
+  }
+  to {
+    background-color: rgba(206, 18, 18, 0.05);
+  }
+}
+
+.admin-table tbody tr:hover {
+  animation: rowHighlight 0.3s ease forwards;
+}
+
+/* Animation pour les messages d'alerte */
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-5px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+.error-message {
+  animation: shake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* Animation douce pour les champs de formulaire */
+input:focus,
+select:focus,
+textarea:focus {
+  transition: all 0.3s ease;
+  transform: translateY(-2px);
+}
+
+/* Animation pour le survol des cards */
+.dashboard-card {
+  transition: all 0.3s ease-in-out;
+}
+
+.dashboard-card:hover::before {
+  animation: slideBg 1s infinite alternate;
+}
+
+@keyframes slideBg {
+  from {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 1;
+  }
+}
