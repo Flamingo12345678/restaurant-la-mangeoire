@@ -13,34 +13,14 @@
  * @sécurité Accès restreint aux administrateurs via session.
  */
 
-session_start();
-if (!isset($_SESSION['admin'])) {
-  header('Location: login.php');
-  exit;
-}
+
+require_once __DIR__ . '/../includes/common.php';
+require_superadmin();
+generate_csrf_token();
 require_once '../db_connexion.php';
 $message = '';
 
-// Journalisation de l'action admin (ajout de client)
-function log_admin_action($action, $details = '')
-{
-  $logfile = __DIR__ . '/../admin/admin_actions.log';
-  $date = date('Y-m-d H:i:s');
-  $user = $_SESSION['admin'] ?? 'inconnu';
-  $entry = "[$date] [$user] $action $details\n";
-  file_put_contents($logfile, $entry, FILE_APPEND | LOCK_EX);
-}
 
-// Contrôle de droits strict : seuls les superadmins peuvent ajouter
-if (!isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'superadmin') {
-  header('Location: index.php?error=forbidden');
-  exit;
-}
-
-// Génération du token CSRF si besoin
-if (empty($_SESSION['csrf_token'])) {
-  $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   // Vérification du token CSRF
@@ -50,10 +30,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   } else {
     $nom = trim($_POST['nom'] ?? '');
     $prenom = trim($_POST['prenom'] ?? '');
-    $email = filter_var($_POST['email'] ?? '', FILTER_VALIDATE_EMAIL);
+    $email = $_POST['email'] ?? '';
     $tel = trim($_POST['telephone'] ?? '');
-    // Validation stricte
-    if ($nom && $prenom && $email && mb_strlen($nom) <= 100 && mb_strlen($prenom) <= 100 && mb_strlen($tel) <= 20) {
+    // Validation centralisée
+    $valid = validate_nom($nom) && validate_prenom($prenom) && validate_email($email) && validate_telephone($tel);
+    if ($valid) {
       try {
         $sql = "INSERT INTO Clients (Nom, Prenom, Email, Telephone) VALUES (?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
@@ -187,14 +168,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?= htmlspecialchars($message) ?>
       </div>
     <?php endif; ?>
-    <form method="post" autocomplete="off">
+    <form method="post" autocomplete="off" id="addClientForm" novalidate>
       <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
-      <input type="text" name="nom" placeholder="Nom" required maxlength="100">
-      <input type="text" name="prenom" placeholder="Prénom" required maxlength="100">
-      <input type="email" name="email" placeholder="Email" required maxlength="100">
-      <input type="text" name="telephone" placeholder="Téléphone" maxlength="20">
+      <input type="text" name="nom" id="nom" placeholder="Nom" required maxlength="100">
+      <input type="text" name="prenom" id="prenom" placeholder="Prénom" required maxlength="100">
+      <input type="email" name="email" id="email" placeholder="Email" required maxlength="100">
+      <input type="text" name="telephone" id="telephone" placeholder="Téléphone" maxlength="20">
+      <div id="form-error" class="alert alert-error" style="display:none;"></div>
       <button type="submit">Ajouter</button>
     </form>
+    <script>
+      // Validation en temps réel pour le formulaire d'ajout de client
+      (function() {
+        const form = document.getElementById('addClientForm');
+        const nom = document.getElementById('nom');
+        const prenom = document.getElementById('prenom');
+        const email = document.getElementById('email');
+        const telephone = document.getElementById('telephone');
+        const errorDiv = document.getElementById('form-error');
+
+        function validateEmail(val) {
+          return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(val);
+        }
+
+        function validateTel(val) {
+          return val === '' || /^[0-9 +().-]{6,20}$/.test(val);
+        }
+
+        function showError(msg) {
+          errorDiv.textContent = msg;
+          errorDiv.style.display = 'block';
+        }
+
+        function clearError() {
+          errorDiv.textContent = '';
+          errorDiv.style.display = 'none';
+        }
+
+        function validateField(field) {
+          if (field === nom && nom.value.trim() === '') {
+            showError('Veuillez saisir le nom.');
+            return false;
+          }
+          if (field === prenom && prenom.value.trim() === '') {
+            showError('Veuillez saisir le prénom.');
+            return false;
+          }
+          if (field === email && (email.value.trim() === '' || !validateEmail(email.value))) {
+            showError('Veuillez saisir un email valide.');
+            return false;
+          }
+          if (field === telephone && !validateTel(telephone.value)) {
+            showError('Veuillez saisir un numéro de téléphone valide.');
+            return false;
+          }
+          clearError();
+          return true;
+        }
+
+        [nom, prenom, email, telephone].forEach(input => {
+          input.addEventListener('input', function() {
+            validateField(this);
+          });
+          input.addEventListener('blur', function() {
+            validateField(this);
+          });
+        });
+
+        form.addEventListener('submit', function(e) {
+          if (!validateField(nom) || !validateField(prenom) || !validateField(email) || !validateField(telephone)) {
+            e.preventDefault();
+            return false;
+          }
+          clearError();
+        });
+      })();
+    </script>
   </div>
 </body>
 

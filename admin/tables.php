@@ -10,11 +10,81 @@ $message = '';
 
 // Initialisation par défaut pour éviter les warnings
 $alerte = '';
+$message = isset($_GET['message']) ? $_GET['message'] : '';
 $total_places = 0;
 $places_restantes = 0;
 $total_reserves = 0;
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['numero'], $_POST['capacite'])) {
+// Fonction pour gérer l'ajout automatique de tables
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajout_tables_types'])) {
+  // Vérifier la capacité restante avant ajout
+  $sql = "SELECT SUM(Capacite) AS total_places FROM TablesRestaurant";
+  $stmt = $conn->query($sql);
+  $total_places = 0;
+  if ($stmt) {
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $total_places = intval($row['total_places']);
+  }
+  $places_restantes = CAPACITE_SALLE - $total_places;
+
+  // Tables standard à créer (2, 4, 6, 8 places)
+  $tables_a_creer = [
+    ['capacite' => 2, 'nombre' => 5],
+    ['capacite' => 4, 'nombre' => 8],
+    ['capacite' => 6, 'nombre' => 5],
+    ['capacite' => 8, 'nombre' => 2]
+  ];
+
+  $total_ajoutees = 0;
+  $total_places_ajoutees = 0;
+
+  // Trouver le dernier numéro de table
+  $sql = "SELECT MAX(NumeroTable) as max_num FROM TablesRestaurant";
+  $stmt = $conn->query($sql);
+  $dernier_numero = 0;
+  if ($stmt) {
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $dernier_numero = intval($row['max_num']);
+  }
+
+  // Préparer la requête d'insertion
+  $sql = "INSERT INTO TablesRestaurant (NumeroTable, NomTable, Capacite) VALUES (?, ?, ?)";
+  $stmt = $conn->prepare($sql);
+
+  // Ajouter les tables
+  foreach ($tables_a_creer as $table_type) {
+    $capacite = $table_type['capacite'];
+    $nombre = $table_type['nombre'];
+
+    for ($i = 0; $i < $nombre; $i++) {
+      // Vérifier si on dépasse la capacité de la salle
+      if ($total_places_ajoutees + $capacite > $places_restantes) {
+        break;
+      }
+
+      $dernier_numero++;
+      $nom_table = "Table " . $dernier_numero;
+      $result = $stmt->execute([$dernier_numero, $nom_table, $capacite]);
+
+      if ($result) {
+        $total_ajoutees++;
+        $total_places_ajoutees += $capacite;
+      }
+    }
+  }
+
+  if ($total_ajoutees > 0) {
+    $message = "$total_ajoutees tables ajoutées automatiquement ($total_places_ajoutees places au total).";
+  } else {
+    $message = "Aucune table n'a pu être ajoutée. Capacité maximale de la salle atteinte.";
+  }
+
+  // Rediriger pour éviter la soumission du formulaire à nouveau lors du rafraîchissement
+  header('Location: tables.php?message=' . urlencode($message));
+  exit;
+}
+// Ajout manuel d'une table
+elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['numero'], $_POST['capacite'])) {
   $numero = intval($_POST['numero']);
   $capacite = intval($_POST['capacite']);
   // Vérifier la capacité restante avant ajout
@@ -30,17 +100,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['numero'], $_POST['cap
     if ($capacite > $places_restantes) {
       $message = 'Impossible d\'ajouter cette table : capacité maximale de la salle atteinte.';
     } else {
-      $sql = "INSERT INTO TablesRestaurant (NumeroTable, Capacite) VALUES (?, ?)";
+      $nom_table = $_POST['nom_table'] ?? '';
+      if (empty($nom_table)) {
+        $nom_table = 'Table ' . $numero;
+      }
+      $sql = "INSERT INTO TablesRestaurant (NumeroTable, NomTable, Capacite) VALUES (?, ?, ?)";
       $stmt = $conn->prepare($sql);
-      $result = $stmt->execute([$numero, $capacite]);
+      $result = $stmt->execute([$numero, $nom_table, $capacite]);
       if ($result) {
-        $message = 'Table ajoutée.';
+        $message = 'Table ajoutée avec succès.';
       } else {
-        $message = 'Erreur lors de l\'ajout.';
+        $message = 'Erreur lors de l\'ajout de la table.';
       }
     }
   } else {
-    $message = 'Champs invalides.';
+    $message = 'Champs invalides. Le numéro et la capacité doivent être des nombres positifs.';
   }
 }
 if (isset($_GET['delete'])) {
@@ -109,289 +183,124 @@ if ($stmt) {
 
 <head>
   <meta charset="UTF-8">
-  <title>Tables</title>
+  <title>Tables - Administration</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+  <link rel="stylesheet" href="../assets/css/admin-animations.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body {
-      background: #f8f9fa;
-      font-family: 'Segoe UI', Arial, sans-serif;
-    }
-
-    .sidebar {
-      background: #1a237e;
-      color: #fff;
-      width: 240px;
-      min-height: 100vh;
-      position: fixed;
-      left: 0;
-      top: 0;
-      display: flex;
-      flex-direction: column;
-      z-index: 10;
-    }
-
-    .sidebar .logo {
-      font-size: 2rem;
-      font-weight: bold;
-      padding: 32px 0 24px 0;
-      text-align: center;
-      letter-spacing: 2px;
-      color: #fff;
-    }
-
-    .sidebar nav ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .sidebar nav ul li {
-      margin: 0;
-    }
-
-    .sidebar nav ul li a {
-      display: flex;
-      align-items: center;
-      color: #fff;
-      text-decoration: none;
-      padding: 16px 32px;
-      font-size: 1.1rem;
-      transition: background 0.2s;
-      border-left: 4px solid transparent;
-    }
-
-    .sidebar nav ul li a.active,
-    .sidebar nav ul li a:hover {
-      background: #283593;
-      border-left: 4px solid #42a5f5;
-      color: #42a5f5;
-    }
-
-    .sidebar nav ul li a i {
-      margin-right: 12px;
-      font-size: 1.3rem;
-    }
-
-    .main-content {
-      margin-left: 240px;
-      min-height: 100vh;
-      background: #f8f9fa;
-      transition: margin-left 0.2s;
-    }
-
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: #fff;
-      padding: 24px 40px 24px 40px;
-      box-shadow: 0 2px 8px #0001;
-      position: sticky;
-      top: 0;
-      z-index: 5;
-    }
-
-    .topbar .search input {
-      border: 1px solid #e0e0e0;
-      border-radius: 24px;
-      padding: 8px 20px;
-      font-size: 1rem;
-      background: #f5f5f5;
-      outline: none;
-      width: 220px;
-      transition: box-shadow 0.2s;
-    }
-
-    .topbar .icons {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-    }
-
-    .topbar .icons img {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: #eee;
-      object-fit: cover;
-      border: 2px solid #e0e0e0;
-    }
-
-    .dashboard-cards {
-      display: flex;
-      gap: 32px;
-      margin-bottom: 32px;
-      flex-wrap: wrap;
-    }
-
-    .dashboard-card {
-      background: #fff;
-      border-radius: 18px;
-      box-shadow: 0 2px 8px #0001;
-      padding: 28px 32px;
-      min-width: 200px;
-      flex: 1 1 200px;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      margin-bottom: 12px;
-    }
-
-    .dashboard-card .card-title {
-      font-size: 1.1rem;
-      color: #757575;
-      margin-bottom: 8px;
-    }
-
-    .dashboard-card .card-value {
-      font-size: 2rem;
-      font-weight: bold;
-      color: #1a237e;
-    }
-
-    .admin-table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 1em;
-      background: #fff;
-      box-shadow: 0 2px 8px #0001;
-      border-radius: 12px;
-      overflow: hidden;
-    }
-
-    .admin-table th,
-    .admin-table td {
-      border: 1px solid #e0e0e0;
-      padding: 12px 16px;
-      text-align: left;
-    }
-
-    .admin-table th {
-      background: #f5f5f5;
-      font-weight: bold;
-    }
-
-    .admin-table tr:nth-child(even) {
-      background: #fafafa;
-    }
-
-    .admin-table tr:hover {
-      background: #e3f2fd;
-    }
-
-    .form-section {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px #0001;
-      padding: 32px;
-      margin-bottom: 32px;
-      max-width: 500px;
-    }
-
-    .form-section input,
-    .form-section button {
-      margin-bottom: 16px;
-      width: 100%;
-      padding: 10px 14px;
-      border-radius: 8px;
-      border: 1px solid #e0e0e0;
-      font-size: 1rem;
-    }
-
-    .form-section button {
-      background: #1a237e;
-      color: #fff;
-      font-weight: bold;
-      border: none;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .form-section button:hover {
-      background: #283593;
-    }
-
-    @media (max-width: 900px) {
-      .main-content {
-        margin-left: 0;
-      }
-
-      .sidebar {
-        position: relative;
-        width: 100%;
-        flex-direction: row;
-        height: auto;
-      }
-
+    /* Styles spécifiques pour la page tables sur mobile */
+    @media (max-width: 768px) {
       .dashboard-cards {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+      }
+
+      .form-group[style*="display: flex"] {
         flex-direction: column;
-        gap: 16px;
+        gap: 10px;
+      }
+
+      .table-responsive-wrapper {
+        margin: 0 -15px;
+        width: calc(100% + 30px);
+        border-radius: 0;
+      }
+
+      .admin-table th:nth-child(1),
+      .admin-table td:nth-child(1) {
+        display: none;
+      }
+
+      .admin-table th,
+      .admin-table td {
+        padding: 10px 8px;
+        font-size: 0.9rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .dashboard-cards {
+        grid-template-columns: 1fr;
+      }
+
+      .admin-table th:nth-child(2),
+      .admin-table td:nth-child(2) {
+        display: none;
       }
     }
   </style>
 </head>
 
 <body>
-  <div class="sidebar">
-    <div class="logo">Tables</div>
-    <nav>
-      <ul>
-        <li><a href="index.php"><i class="bi bi-bar-chart"></i> Analytics</a></li>
-        <li><a href="clients.php"><i class="bi bi-people"></i> Clients</a></li>
-        <li><a href="commandes.php"><i class="bi bi-basket"></i> Commandes</a></li>
-        <li><a href="employes.php"><i class="bi bi-person-badge"></i> Employés</a></li>
-        <li><a href="menus.php"><i class="bi bi-list"></i> Menus</a></li>
-        <li><a href="paiements.php"><i class="bi bi-credit-card"></i> Paiements</a></li>
-        <li><a href="reservations.php"><i class="bi bi-calendar-check"></i> Réservations</a></li>
-        <li><a href="tables.php" class="active"><i class="bi bi-table"></i> Tables</a></li>
-        <li><a href="logout.php"><i class="bi bi-box-arrow-right"></i> Déconnexion</a></li>
-      </ul>
-    </nav>
-  </div>
-  <div class="main-content">
-    <div class="topbar">
-      <div class="icons">
-        <img src="../assets/img/favcon.jpeg" alt="Profil" style="width:50px;height:50px;border-radius:50%;background:#eee;">
+  <?php
+  // Définir le titre de la page
+  $page_title = "Tables";
+
+  // Indiquer que ce fichier est inclus dans une page
+  define('INCLUDED_IN_PAGE', true);
+  include 'header_template.php';
+  ?>
+
+  <!-- Contenu spécifique de la page -->
+  <div class="content-wrapper">
+    <div style="background-color: #f9f9f9; border-radius: 5px;">
+      <h2 style="color: #222; font-size: 23px; margin-bottom: 30px; position: relative;">Gestion des tables</h2>
+    </div>
+    <?php if ($alerte) echo '<div class="alert alert-error"><i class="bi bi-exclamation-triangle"></i> ' . $alerte . '</div>'; ?>
+    <?php if ($message) echo '<div class="alert alert-success"><i class="bi bi-check-circle"></i> ' . $message . '</div>'; ?>
+    <div class="dashboard-cards">
+      <div class="dashboard-card">
+        <div class="card-title">Places totales</div>
+        <div class="card-value"><?php echo $total_places; ?></div>
+      </div>
+      <div class="dashboard-card">
+        <div class="card-title">Places restantes</div>
+        <div class="card-value"><?php echo $places_restantes; ?></div>
+      </div>
+      <div class="dashboard-card">
+        <div class="card-title">Personnes réservées à venir</div>
+        <div class="card-value"><?php echo $total_reserves; ?></div>
+      </div>
+      <div class="dashboard-card">
+        <div class="card-title">Tables disponibles</div>
+        <div class="card-value"><?php echo $nb_tables_libres; ?></div>
+        <?php if (!empty($types_tables_libres)): ?>
+          <div style="font-size:1em;color:#444;margin-top:8px;">
+            <?php foreach ($types_tables_libres as $t): ?>
+              <div><?= $t['nb'] ?> table<?= $t['nb'] > 1 ? 's' : '' ?> de <?= $t['Capacite'] ?> place<?= $t['Capacite'] > 1 ? 's' : '' ?></div>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
       </div>
     </div>
-    <div style="padding:40px;">
-      <h2 style="margin-bottom:32px;">Gestion des tables</h2>
-      <?php if ($alerte) echo $alerte; ?>
-      <?php if ($message) echo '<div class="success-message">' . $message . '</div>'; ?>
-      <div class="dashboard-cards">
-        <div class="dashboard-card">
-          <div class="card-title">Places totales</div>
-          <div class="card-value"><?php echo $total_places; ?></div>
-        </div>
-        <div class="dashboard-card">
-          <div class="card-title">Places restantes</div>
-          <div class="card-value"><?php echo $places_restantes; ?></div>
-        </div>
-        <div class="dashboard-card">
-          <div class="card-title">Personnes réservées à venir</div>
-          <div class="card-value"><?php echo $total_reserves; ?></div>
-        </div>
-        <div class="dashboard-card">
-          <div class="card-title">Tables disponibles</div>
-          <div class="card-value"><?php echo $nb_tables_libres; ?></div>
-          <?php if (!empty($types_tables_libres)): ?>
-            <div style="font-size:1em;color:#444;margin-top:8px;">
-              <?php foreach ($types_tables_libres as $t): ?>
-                <div><?= $t['nb'] ?> table<?= $t['nb'] > 1 ? 's' : '' ?> de <?= $t['Capacite'] ?> place<?= $t['Capacite'] > 1 ? 's' : '' ?></div>
-              <?php endforeach; ?>
-            </div>
-          <?php endif; ?>
-        </div>
-      </div>
-      <div class="form-section">
-        <form method="post">
+    <div class="form-section">
+      <h3 class="section-title">Ajouter une table</h3>
+      <form method="post" class="form-grid">
+        <div class="form-group">
           <input type="number" name="numero" placeholder="Numéro de table" required>
+        </div>
+        <div class="form-group">
           <input type="number" name="capacite" placeholder="Capacité" required>
-          <button type="submit">Ajouter</button>
-          <button type="submit" name="ajout_tables_types">Ajout auto (2,4,6,8 places)</button>
-        </form>
-      </div>
+        </div>
+        <div class="form-group">
+          <input type="text" name="nom_table" placeholder="Nom de la table" required>
+        </div>
+        <div class="form-group" style="grid-column: 1 / -1; display: flex; gap: 15px;">
+          <button type="submit" class="submit-btn">Ajouter</button>
+          <button type="submit" name="ajout_tables_types" class="submit-btn" style="background-color: var(--primary-dark);">Ajout auto (2,4,6,8 places)</button>
+        </div>
+      </form>
+    </div>
+    <h3 class="section-title" style="margin-top: 30px;">Liste des tables</h3>
+    <div class="table-responsive-wrapper">
       <table class="admin-table">
         <thead>
           <tr>
@@ -423,7 +332,11 @@ if ($stmt) {
         </tbody>
       </table>
     </div>
-  </div>
+  </div> <!-- Fermeture du content-wrapper -->
+
+  <?php
+  include 'footer_template.php';
+  ?>
 </body>
 
 </html>

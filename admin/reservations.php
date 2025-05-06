@@ -1,11 +1,9 @@
 <?php
-session_start();
-if (!isset($_SESSION['admin'])) {
-  header('Location: login.php');
-  exit;
-}
 require_once '../db_connexion.php';
-$message = '';
+require_once __DIR__ . '/../includes/common.php';
+require_admin();
+generate_csrf_token();
+
 // Traitement de l'ajout d'une réservation
 if (
   $_SERVER['REQUEST_METHOD'] === 'POST' &&
@@ -31,26 +29,61 @@ if (
 
   // Vérification de la capacité maximale
   if ($total_reserves + $people > $total_places) {
-    $message = "<span class='alert alert-error'>Impossible d'enregistrer la réservation : la capacité maximale de la salle serait dépassée.</span>";
+    set_message('Impossible d\'enregistrer la réservation : la capacité maximale de la salle serait dépassée.', 'error');
   } else {
     // Récupération et validation des champs du formulaire
     $nom = trim($_POST['nom_client']);
-    $email = filter_var($_POST['email_client'], FILTER_VALIDATE_EMAIL);
+    $email = validate_email($_POST['email_client']) ? $_POST['email_client'] : '';
     $date = $_POST['DateReservation'];
     $statut = trim($_POST['statut'] ?? 'Réservée');
     $nb_personnes = intval($_POST['nb_personnes'] ?? 1);
+    $telephone = isset($_POST['telephone']) ? trim($_POST['telephone']) : '';
     if ($nom && $email && $date && $nb_personnes > 0) {
-      // Insertion de la réservation en base de données
-      $sql = "INSERT INTO Reservations (nom_client, email_client, DateReservation, statut, nb_personnes) VALUES (?, ?, ?, ?, ?)";
-      $stmt = $conn->prepare($sql);
-      $result = $stmt->execute([$nom, $email, $date, $statut, $nb_personnes]);
-      if ($result) {
-        $message = 'Réservation ajoutée.';
+      // Recherche du client par email
+      $sql = "SELECT ClientID FROM Clients WHERE Email = ?";
+      $stmt_client = $conn->prepare($sql);
+      $stmt_client->execute([$email]);
+      $client = $stmt_client->fetch(PDO::FETCH_ASSOC);
+      if ($client) {
+        $client_id = $client['ClientID'];
       } else {
-        $message = 'Erreur lors de l\'ajout.';
+        // Ajout du client s'il n'existe pas
+        $sql = "INSERT INTO Clients (Nom, Prenom, Email, Telephone) VALUES (?, '', ?, ?)";
+        $stmt_insert = $conn->prepare($sql);
+        $stmt_insert->execute([$nom, $email, $telephone]);
+        $client_id = $conn->lastInsertId();
+      }
+      // Insertion de la réservation en base de données avec ClientID
+      $sql = "INSERT INTO Reservations (nom_client, email_client, DateReservation, statut, nb_personnes, ClientID, telephone) VALUES (?, ?, ?, ?, ?, ?, ?)";
+      $stmt = $conn->prepare($sql);
+      $result = $stmt->execute([$nom, $email, $date, $statut, $nb_personnes, $client_id, $telephone]);
+      if ($result) {
+        // Récupérer l'ID de la réservation insérée
+        $reservation_id = $conn->lastInsertId();
+        // Association automatique des tables à la réservation et mise à jour du statut
+        if (!empty($_POST['table_ids']) && is_array($_POST['table_ids'])) {
+          foreach ($_POST['table_ids'] as $table_id) {
+            $table_id = intval($table_id);
+            $sql = "INSERT INTO ReservationTables (ReservationID, TableID, nb_places) VALUES (?, ?, ?)";
+            $stmt_assoc = $conn->prepare($sql);
+            $stmt_assoc->execute([$reservation_id, $table_id, 0]); // 0 ou nombre de places attribuées si connu
+            $sql = "UPDATE TablesRestaurant SET Statut = 'Réservée' WHERE TableID = ?";
+            $stmt_update = $conn->prepare($sql);
+            $stmt_update->execute([$table_id]);
+          }
+        }
+        set_message('Réservation ajoutée avec succès.', 'success');
+        header('Location: reservations.php');
+        exit;
+      } else {
+        set_message('Erreur lors de l\'ajout de la réservation.', 'error');
+        header('Location: reservations.php');
+        exit;
       }
     } else {
-      $message = 'Champs invalides.';
+      set_message('Champs invalides pour la réservation.', 'error');
+      header('Location: reservations.php');
+      exit;
     }
   }
 }
@@ -79,10 +112,12 @@ if (isset($_GET['delete'])) {
   $stmt = $conn->prepare($sql);
   $result = $stmt->execute([$id]);
   if ($result) {
-    $message = 'Réservation supprimée.';
+    set_message('Réservation supprimée avec succès.', 'success');
   } else {
-    $message = 'Erreur lors de la suppression.';
+    set_message('Erreur lors de la suppression de la réservation.', 'error');
   }
+  header('Location: reservations.php');
+  exit;
 }
 
 // Traitement de la modification d'une réservation (édition inline)
@@ -137,14 +172,18 @@ if (isset($_POST['edit_id'], $_POST['edit_nom_client'], $_POST['edit_email_clien
       }
     }
     if ($result) {
-      $message = 'Réservation modifiée.';
+      set_message('Réservation modifiée avec succès.', 'success');
       header('Location: reservations.php');
       exit;
     } else {
-      $message = 'Erreur lors de la modification.';
+      set_message('Erreur lors de la modification de la réservation.', 'error');
+      header('Location: reservations.php');
+      exit;
     }
   } else {
-    $message = 'Champs invalides pour la modification.';
+    set_message('Champs invalides pour la modification.', 'error');
+    header('Location: reservations.php');
+    exit;
   }
 }
 
@@ -206,154 +245,117 @@ if ($stmt) {
 
 <head>
   <meta charset="UTF-8">
-  <title>Réservations</title>
+  <title>Reservations - Administration</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+  <link rel="stylesheet" href="../assets/css/admin-animations.css">
+  <link rel="stylesheet" href="../assets/css/reservation-tables.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-  <style>
-    body {
-      background: #f8f9fa;
-      font-family: 'Segoe UI', Arial, sans-serif;
-    }
-
-    .sidebar {
-      background: #1a237e;
-      color: #fff;
-      width: 240px;
-      min-height: 100vh;
-      position: fixed;
-      left: 0;
-      top: 0;
-      display: flex;
-      flex-direction: column;
-      z-index: 10;
-    }
-
-    .sidebar .logo {
-      font-size: 2rem;
-      font-weight: bold;
-      padding: 32px 0 24px 0;
-      text-align: center;
-      letter-spacing: 2px;
-      color: #fff;
-    }
-
-    .sidebar nav ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .sidebar nav ul li {
-      margin: 0;
-    }
-
-    .sidebar nav ul li a {
-      display: flex;
-      align-items: center;
-      color: #fff;
-      text-decoration: none;
-      padding: 16px 32px;
-      font-size: 1.1rem;
-      transition: background 0.2s;
-      border-left: 4px solid transparent;
-    }
-
-    .sidebar nav ul li a.active,
-    .sidebar nav ul li a:hover {
-      background: #283593;
-      border-left: 4px solid #42a5f5;
-      color: #42a5f5;
-    }
-
-    .sidebar nav ul li a i {
-      margin-right: 12px;
-      font-size: 1.3rem;
-    }
-
-    .main-content {
-      margin-left: 240px;
-      min-height: 100vh;
-      background: #f8f9fa;
-      transition: margin-left 0.2s;
-    }
-
-    @media (max-width: 900px) {
-      .main-content {
-        margin-left: 0;
-      }
-
-      .sidebar {
-        position: relative;
-        width: 100%;
-        flex-direction: row;
-        height: auto;
-      }
-    }
-  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
-  <div class="sidebar">
-    <div class="logo">Reservations</div>
-    <nav>
-      <ul>
-        <li><a href="index.php"><i class="bi bi-bar-chart"></i> Analytics</a></li>
-        <li><a href="clients.php"><i class="bi bi-people"></i> Clients</a></li>
-        <li><a href="commandes.php"><i class="bi bi-basket"></i> Commandes</a></li>
-        <li><a href="employes.php"><i class="bi bi-person-badge"></i> Employés</a></li>
-        <li><a href="menus.php"><i class="bi bi-list"></i> Menus</a></li>
-        <li><a href="paiements.php"><i class="bi bi-credit-card"></i> Paiements</a></li>
-        <li><a href="reservations.php" class="active"><i class="bi bi-calendar-check"></i> Réservations</a></li>
-        <li><a href="tables.php"><i class="bi bi-table"></i> Tables</a></li>
-        <li><a href="logout.php"><i class="bi bi-box-arrow-right"></i> Déconnexion</a></li>
-      </ul>
-    </nav>
-  </div>
-  <div class="main-content">
-    <div class="topbar">
-      <div class="icons">
-        <img src="../assets/img/favcon.jpeg" alt="Profil" style="width:50px;height:50px;border-radius:50%;background:#eee;">
+  <?php
+  // Définir le titre de la page
+  $page_title = "Reservations";
+
+  // Indiquer que ce fichier est inclus dans une page
+  define('INCLUDED_IN_PAGE', true);
+  include 'header_template.php';
+  ?>
+
+  <!-- Contenu spécifique de la page -->
+  <div class="content-wrapper">
+    <div style="background-color: #f9f9f9; border-radius: 5px;">
+      <h2 style="color: #222; font-size: 23px; margin-bottom: 50px; position: relative;">Gestion des reservations
+      </h2>
+    </div>
+    <?php display_message(); ?> <!-- Ajout de cette ligne pour afficher les messages -->
+    
+    <!-- Cartes statistiques -->
+    <div class="dashboard-cards">
+      <div class="dashboard-card">
+        <div class="card-title">Total réservations</div>
+        <div class="card-value">
+          <?php echo count($reservations); ?>
+        </div>
+      </div>
+      <div class="dashboard-card">
+        <div class="card-title">Places réservées à venir</div>
+        <div class="card-value">
+          <?php echo isset($total_reserves) ? $total_reserves : 0; ?>
+        </div>
+      </div>
+      <div class="dashboard-card">
+        <div class="card-title">Places totales</div>
+        <div class="card-value">
+          <?php echo isset($total_places) ? $total_places : 0; ?>
+        </div>
       </div>
     </div>
-    <div style="padding:40px;">
-      <h2 style="margin-bottom:32px;">Gestion des réservations</h2>
-      <!-- Cartes statistiques -->
-      <div class="dashboard-cards" style="display:flex;gap:32px;margin-bottom:32px;flex-wrap:wrap;">
-        <div class="dashboard-card" style="background:#fff;border-radius:18px;box-shadow:0 2px 8px #0001;padding:28px 32px;min-width:200px;flex:1 1 200px;display:flex;flex-direction:column;align-items:flex-start;margin-bottom:12px;">
-          <div class="card-title" style="font-size:1.1rem;color:#757575;margin-bottom:8px;">Total réservations</div>
-          <div class="card-value" style="font-size:2rem;font-weight:bold;color:#1a237e;">
-            <?php echo count($reservations); ?>
-          </div>
+
+    <!-- Formulaire d'ajout de réservation -->
+    <h3 class="section-title">Ajouter une réservation</h3>
+    <div class="form-section">
+      <form method="post" class="form-grid">
+        <div class="form-group">
+          <input type="text" name="nom_client" placeholder="Nom du client" required>
         </div>
-        <div class="dashboard-card" style="background:#fff;border-radius:18px;box-shadow:0 2px 8px #0001;padding:28px 32px;min-width:200px;flex:1 1 200px;display:flex;flex-direction:column;align-items:flex-start;margin-bottom:12px;">
-          <div class="card-title" style="font-size:1.1rem;color:#757575;margin-bottom:8px;">Places réservées à venir</div>
-          <div class="card-value" style="font-size:2rem;font-weight:bold;color:#1a237e;">
-            <?php echo isset($total_reserves) ? $total_reserves : 0; ?>
-          </div>
+        <div class="form-group">
+          <input type="email" name="email_client" placeholder="Email du client" required>
         </div>
-        <div class="dashboard-card" style="background:#fff;border-radius:18px;box-shadow:0 2px 8px #0001;padding:28px 32px;min-width:200px;flex:1 1 200px;display:flex;flex-direction:column;align-items:flex-start;margin-bottom:12px;">
-          <div class="card-title" style="font-size:1.1rem;color:#757575;margin-bottom:8px;">Places totales</div>
-          <div class="card-value" style="font-size:2rem;font-weight:bold;color:#1a237e;">
-            <?php echo isset($total_places) ? $total_places : 0; ?>
-          </div>
+        <div class="form-group">
+          <input type="datetime-local" name="DateReservation" placeholder="Date de réservation" required>
         </div>
-      </div>
-      <!-- Formulaire d'ajout de réservation -->
-      <div class="form-section" style="background:#fff;border-radius:12px;box-shadow:0 2px 8px #0001;padding:32px;margin-bottom:32px;max-width:500px;">
-        <form method="post">
-          <input type="text" name="nom_client" placeholder="Nom du client" required style="margin-bottom:16px;width:100%;padding:10px 14px;border-radius:8px;border:1px solid #e0e0e0;font-size:1rem;">
-          <input type="email" name="email_client" placeholder="Email du client" required style="margin-bottom:16px;width:100%;padding:10px 14px;border-radius:8px;border:1px solid #e0e0e0;font-size:1rem;">
-          <input type="datetime-local" name="DateReservation" placeholder="Date de réservation" required style="margin-bottom:16px;width:100%;padding:10px 14px;border-radius:8px;border:1px solid #e0e0e0;font-size:1rem;">
-          <input type="number" name="nb_personnes" placeholder="Nombre de personnes" required style="margin-bottom:16px;width:100%;padding:10px 14px;border-radius:8px;border:1px solid #e0e0e0;font-size:1rem;">
-          <select name="statut" style="margin-bottom:16px;width:100%;padding:10px 14px;border-radius:8px;border:1px solid #e0e0e0;font-size:1rem;">
+        <div class="form-group">
+          <input type="number" name="nb_personnes" placeholder="Nombre de personnes" required>
+        </div>
+        <div class="form-group">
+          <input type="text" name="telephone" placeholder="Téléphone du client" required>
+        </div>
+        <div class="form-group">
+          <select name="statut">
             <option value="Réservée">Réservée</option>
             <option value="Annulée">Annulée</option>
           </select>
-          <button type="submit" style="margin-bottom:16px;width:100%;padding:10px 14px;border-radius:8px;background:#1a237e;color:#fff;font-weight:bold;border:none;cursor:pointer;transition:background 0.2s;">Ajouter</button>
-        </form>
-      </div>
-      <!-- Tableau des réservations -->
-      <table class="admin-table" style="border-collapse:collapse;width:100%;margin-top:1em;background:#fff;box-shadow:0 2px 8px #0001;border-radius:12px;overflow:hidden;">
+        </div>
+
+        <!-- Sélection des tables disponibles -->
+        <div class="form-group" style="grid-column: 1 / -1;">
+          <label class="form-label">Tables disponibles :</label>
+          <div class="tables-container">
+            <?php
+            // Récupérer les tables disponibles
+            $sql = "SELECT * FROM TablesRestaurant WHERE Statut = 'Libre' ORDER BY Capacite ASC";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $tables_disponibles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            if ($tables_disponibles) {
+              foreach ($tables_disponibles as $table) {
+                echo '<div class="table-card">';
+                $label = isset($table['NomTable']) ? $table['NomTable'] : (isset($table['NumeroTable']) ? 'Table ' . $table['NumeroTable'] : 'Table ' . $table['TableID']);
+                echo '<div class="table-title">' . htmlspecialchars($label) . '</div>';
+                echo '<div class="table-capacity">Capacité : ' . intval($table['Capacite']) . ' pers.</div>';
+                echo '<input type="checkbox" name="table_ids[]" value="' . intval($table['TableID']) . '" class="table-checkbox">';
+                echo '</div>';
+              }
+            } else {
+              echo '<div class="alert alert-info">Aucune table disponible.</div>';
+            }
+            ?>
+          </div>
+        </div>
+
+        <div class="form-group" style="grid-column: 1 / -1;">
+          <button type="submit" class="submit-btn">Ajouter la réservation</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Tableau des réservations -->
+    <div class="table-responsive-wrapper">
+      <table class="admin-table">
         <thead>
           <tr>
             <th>ID</th>
@@ -372,36 +374,55 @@ if ($stmt) {
               <td><?= htmlspecialchars($r['nom_client']) ?></td>
               <td><?= htmlspecialchars($r['email_client']) ?></td>
               <td><?= htmlspecialchars($r['DateReservation']) ?></td>
-              <td><?= isset($r['statut']) ? htmlspecialchars($r['statut']) : '' ?></td>
-              <td><?= htmlspecialchars($r['nb_personnes']) ?></td>
               <td>
-                <a href="?delete=<?= $r['ReservationID'] ?>" onclick="return confirm('Supprimer cette réservation ?')"><i class="bi bi-trash"></i></a>
-                <a href="#" class="edit-btn" data-id="<?= $r['ReservationID'] ?>" data-nom="<?= htmlspecialchars($r['nom_client']) ?>" data-email="<?= htmlspecialchars($r['email_client']) ?>" data-date="<?= htmlspecialchars($r['DateReservation']) ?>" data-statut="<?= isset($r['statut']) ? htmlspecialchars($r['statut']) : '' ?>" data-nb="<?= htmlspecialchars($r['nb_personnes']) ?>" style="margin-left:8px;"><i class="bi bi-pencil"></i></a>
+                <span class="status-indicator <?= isset($r['statut']) && strtolower($r['statut']) === 'réservée' ? 'status-reserved' : 'status-cancelled' ?>">
+                  <?= isset($r['statut']) ? htmlspecialchars($r['statut']) : '' ?>
+                </span>
+              </td>
+              <td><?= htmlspecialchars($r['nb_personnes']) ?></td>
+              <td class="action-cell">
+                <a href="?delete=<?= $r['ReservationID'] ?>" onclick="return confirm('Supprimer cette réservation ?')" class="action-icon"><i class="bi bi-trash"></i></a>
+                <a href="#" class="edit-btn action-icon" data-id="<?= $r['ReservationID'] ?>"><i class="bi bi-pencil"></i></a>
               </td>
             </tr>
             <!-- Formulaire d'édition inline -->
-            <tr class="edit-row" id="edit-row-<?= $r['ReservationID'] ?>" style="display:none;background:#e3f2fd;">
+            <tr class="edit-row" id="edit-row-<?= $r['ReservationID'] ?>" style="display:none;">
               <td colspan="7">
-                <form method="post" class="edit-form" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+                <form method="post" class="edit-form form-grid">
                   <input type="hidden" name="edit_id" value="<?= $r['ReservationID'] ?>">
-                  <input type="text" name="edit_nom_client" value="<?= htmlspecialchars($r['nom_client']) ?>" required placeholder="Nom" style="padding:8px 10px;border-radius:6px;border:1px solid #e0e0e0;">
-                  <input type="email" name="edit_email_client" value="<?= htmlspecialchars($r['email_client']) ?>" required placeholder="Email" style="padding:8px 10px;border-radius:6px;border:1px solid #e0e0e0;">
-                  <input type="datetime-local" name="edit_DateReservation" value="<?= str_replace(' ', 'T', htmlspecialchars($r['DateReservation'])) ?>" required style="padding:8px 10px;border-radius:6px;border:1px solid #e0e0e0;">
-                  <input type="number" name="edit_nb_personnes" value="<?= htmlspecialchars($r['nb_personnes']) ?>" required placeholder="Nb pers." style="width:90px;padding:8px 10px;border-radius:6px;border:1px solid #e0e0e0;">
-                  <select name="edit_statut" style="padding:8px 10px;border-radius:6px;border:1px solid #e0e0e0;">
-                    <option value="Réservée" <?= (isset($r['statut']) && $r['statut'] === 'Réservée') ? 'selected' : '' ?>>Réservée</option>
-                    <option value="Annulée" <?= (isset($r['statut']) && $r['statut'] === 'Annulée') ? 'selected' : '' ?>>Annulée</option>
-                  </select>
-                  <button type="submit" style="background:#1a237e;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-weight:bold;">Enregistrer</button>
-                  <button type="button" class="cancel-edit" style="background:#eee;color:#1a237e;border:none;border-radius:6px;padding:8px 18px;font-weight:bold;">Annuler</button>
+                  <div class="form-group">
+                    <input type="text" name="edit_nom_client" value="<?= htmlspecialchars($r['nom_client']) ?>" required placeholder="Nom">
+                  </div>
+                  <div class="form-group">
+                    <input type="email" name="edit_email_client" value="<?= htmlspecialchars($r['email_client']) ?>" required placeholder="Email">
+                  </div>
+                  <div class="form-group">
+                    <input type="datetime-local" name="edit_DateReservation" value="<?= str_replace(' ', 'T', htmlspecialchars($r['DateReservation'])) ?>" required>
+                  </div>
+                  <div class="form-group">
+                    <input type="number" name="edit_nb_personnes" value="<?= htmlspecialchars($r['nb_personnes']) ?>" required placeholder="Nb pers.">
+                  </div>
+                  <div class="form-group">
+                    <select name="edit_statut">
+                      <option value="Réservée" <?= (isset($r['statut']) && $r['statut'] === 'Réservée') ? 'selected' : '' ?>>Réservée</option>
+                      <option value="Annulée" <?= (isset($r['statut']) && $r['statut'] === 'Annulée') ? 'selected' : '' ?>>Annulée</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="display: flex; gap: 10px;">
+                    <button type="submit" class="submit-btn">Enregistrer</button>
+                    <button type="button" class="cancel-edit btn-secondary">Annuler</button>
+                  </div>
                 </form>
               </td>
             </tr>
           <?php endforeach; ?>
         </tbody>
       </table>
-      <script>
-        // Affichage du formulaire d'édition inline
+    </div>
+
+    <script>
+      // Affichage du formulaire d'édition inline
+      document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.edit-btn').forEach(function(btn) {
           btn.addEventListener('click', function(e) {
             e.preventDefault();
@@ -413,15 +434,48 @@ if ($stmt) {
             if (row) row.style.display = '';
           });
         });
+
         document.querySelectorAll('.cancel-edit').forEach(function(btn) {
           btn.addEventListener('click', function(e) {
             e.preventDefault();
             btn.closest('tr').style.display = 'none';
           });
         });
-      </script>
-    </div>
+
+        // Rendre les cartes de table cliquables pour activer la checkbox
+        document.querySelectorAll('.table-card').forEach(function(card) {
+          card.addEventListener('click', function(e) {
+            if (e.target.type !== 'checkbox') {
+              const checkbox = this.querySelector('input[type="checkbox"]');
+              checkbox.checked = !checkbox.checked;
+
+              if (checkbox.checked) {
+                this.classList.add('selected');
+              } else {
+                this.classList.remove('selected');
+              }
+            }
+          });
+        });
+
+        // Mettre à jour l'état visuel des cartes selon l'état des checkboxes
+        document.querySelectorAll('.table-checkbox').forEach(function(checkbox) {
+          checkbox.addEventListener('change', function() {
+            const card = this.closest('.table-card');
+            if (this.checked) {
+              card.classList.add('selected');
+            } else {
+              card.classList.remove('selected');
+            }
+          });
+        });
+      });
+    </script>
   </div>
+
+  <?php
+  include 'footer_template.php';
+  ?>
 </body>
 
 </html>

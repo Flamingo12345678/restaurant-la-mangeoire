@@ -1,9 +1,8 @@
 <?php
-session_start();
-if (!isset($_SESSION['admin'])) {
-  header('Location: login.php');
-  exit;
-}
+$message = '';
+require_once __DIR__ . '/../includes/common.php';
+require_admin();
+generate_csrf_token();
 require_once '../db_connexion.php';
 $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reservation_id'], $_POST['montant'], $_POST['date_paiement'])) {
@@ -24,24 +23,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reservation_id'], $_P
     $message = 'Champs invalides.';
   }
 }
-if (isset($_GET['delete'])) {
-  $id = intval($_GET['delete']);
+// Suppression sécurisée d'un paiement (POST + CSRF + contrôle d'accès)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_paiement_id'], $_POST['csrf_token'])) {
+  if (!verify_csrf_token($_POST['csrf_token'])) {
+    set_message('Token CSRF invalide.', 'error');
+    header('Location: paiements.php');
+    exit;
+  }
+  $id = intval($_POST['delete_paiement_id']);
   $sql = "DELETE FROM Paiements WHERE PaiementID = ?";
   $stmt = $conn->prepare($sql);
-  $result = $stmt->execute([$id]);
-  if ($result) {
-    $message = 'Paiement supprimé.';
+  if ($stmt) {
+    if ($stmt->execute([$id])) {
+      set_message('Paiement supprimé.', 'success');
+    } else {
+      set_message('Erreur lors de la suppression.', 'error');
+    }
   } else {
-    $message = 'Erreur lors de la suppression.';
+    set_message('Erreur lors de la préparation.', 'error');
   }
+  header('Location: paiements.php');
+  exit;
 }
+// Pagination
+$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$per_page = 20;
+$offset = ($page - 1) * $per_page;
+$total_sql = "SELECT COUNT(*) FROM Paiements";
+$total_paiements = $conn->query($total_sql)->fetchColumn();
+$total_pages = ceil($total_paiements / $per_page);
 $paiements = [];
-$sql = "SELECT * FROM Paiements ORDER BY PaiementID DESC";
-$stmt = $conn->query($sql);
-if ($stmt) {
-  while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    $paiements[] = $row;
-  }
+$sql = "SELECT * FROM Paiements ORDER BY PaiementID DESC LIMIT :limit OFFSET :offset";
+$stmt = $conn->prepare($sql);
+$stmt->bindValue(':limit', $per_page, PDO::PARAM_INT);
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+$stmt->execute();
+while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+  $paiements[] = $row;
 }
 ?>
 <!DOCTYPE html>
@@ -49,227 +67,129 @@ if ($stmt) {
 
 <head>
   <meta charset="UTF-8">
-  <title>Paiements</title>
+  <title>Paiements - Administration</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+  <link rel="stylesheet" href="../assets/css/admin-animations.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body {
-      background: #f8f9fa;
-      font-family: 'Segoe UI', Arial, sans-serif;
-    }
-
-    .sidebar {
-      background: #1a237e;
-      color: #fff;
-      width: 240px;
-      min-height: 100vh;
-      position: fixed;
-      left: 0;
-      top: 0;
-      display: flex;
-      flex-direction: column;
-      z-index: 10;
-    }
-
-    .sidebar .logo {
-      font-size: 2rem;
-      font-weight: bold;
-      padding: 32px 0 24px 0;
-      text-align: center;
-      letter-spacing: 2px;
-      color: #fff;
-    }
-
-    .sidebar nav ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .sidebar nav ul li {
-      margin: 0;
-    }
-
-    .sidebar nav ul li a {
-      display: flex;
-      align-items: center;
-      color: #fff;
-      text-decoration: none;
-      padding: 16px 32px;
-      font-size: 1.1rem;
-      transition: background 0.2s;
-      border-left: 4px solid transparent;
-    }
-
-    .sidebar nav ul li a.active,
-    .sidebar nav ul li a:hover {
-      background: #283593;
-      border-left: 4px solid #42a5f5;
-      color: #42a5f5;
-    }
-
-    .sidebar nav ul li a i {
-      margin-right: 12px;
-      font-size: 1.3rem;
-    }
-
-    .main-content {
-      margin-left: 240px;
-      min-height: 100vh;
-      background: #f8f9fa;
-      transition: margin-left 0.2s;
-    }
-
-    @media (max-width: 900px) {
-      .main-content {
-        margin-left: 0;
+    /* Styles spécifiques pour la page paiements sur mobile */
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
       }
 
-      .sidebar {
-        position: relative;
-        width: 100%;
-        flex-direction: row;
-        height: auto;
+      .form-group[style*="grid-column: span"] {
+        grid-column: 1 !important;
       }
-    }
 
-    .success-message {
-      color: #2e7d32;
-      font-weight: bold;
-    }
+      .table-responsive-wrapper {
+        margin: 0 -15px;
+        width: calc(100% + 30px);
+        border-radius: 0;
+      }
 
-    .error-message {
-      color: #c62828;
-      font-weight: bold;
-    }
+      .admin-table th:nth-child(1),
+      .admin-table td:nth-child(1),
+      .admin-table th:nth-child(2),
+      .admin-table td:nth-child(2) {
+        display: none;
+      }
 
-    .admin-table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 1em;
-      background: #fff;
-      box-shadow: 0 2px 8px #0001;
-    }
-
-    .admin-table th,
-    .admin-table td {
-      border: 1px solid #ddd;
-      padding: 8px 12px;
-      text-align: left;
-    }
-
-    .admin-table th {
-      background: #f5f5f5;
-      font-weight: bold;
-    }
-
-    .admin-table tr:nth-child(even) {
-      background: #fafafa;
-    }
-
-    .admin-table tr:hover {
-      background: #f1f8e9;
-    }
-
-    @media (max-width: 700px) {
-
-      .admin-table,
-      .admin-table thead,
-      .admin-table tbody,
       .admin-table th,
-      .admin-table td,
-      .admin-table tr {
-        display: block;
+      .admin-table td {
+        padding: 10px 8px;
+        font-size: 0.9rem;
       }
 
-      .admin-table tr {
-        margin-bottom: 1em;
+      .pagination {
+        flex-wrap: wrap;
+        justify-content: center;
       }
 
-      .admin-table td,
-      .admin-table th {
-        padding: 10px 5px;
-        border: none;
-        border-bottom: 1px solid #eee;
-      }
-
-      .admin-table th {
-        background: #e0e0e0;
+      .pagination a,
+      .pagination strong {
+        margin: 3px;
       }
     }
 
-    .form-section {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px #0001;
-      padding: 32px;
-      margin-bottom: 32px;
-      max-width: 500px;
-    }
+    @media (max-width: 480px) {
 
-    .form-section input,
-    .form-section button {
-      margin-bottom: 16px;
-      width: 100%;
-      padding: 10px 14px;
-      border-radius: 8px;
-      border: 1px solid #e0e0e0;
-      font-size: 1rem;
-    }
-
-    .form-section button {
-      background: #1a237e;
-      color: #fff;
-      font-weight: bold;
-      border: none;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .form-section button:hover {
-      background: #283593;
+      .admin-table th:nth-child(4),
+      .admin-table td:nth-child(4) {
+        display: none;
+      }
     }
   </style>
 </head>
 
 <body>
-  <div class="sidebar">
-    <div class="logo">Paiements</div>
-    <nav>
-      <ul>
-        <li><a href="index.php"><i class="bi bi-bar-chart"></i> Analytics</a></li>
-        <li><a href="clients.php"><i class="bi bi-people"></i> Clients</a></li>
-        <li><a href="commandes.php"><i class="bi bi-basket"></i> Commandes</a></li>
-        <li><a href="employes.php"><i class="bi bi-person-badge"></i> Employés</a></li>
-        <li><a href="menus.php"><i class="bi bi-list"></i> Menus</a></li>
-        <li><a href="paiements.php" class="active"><i class="bi bi-credit-card"></i> Paiements</a></li>
-        <li><a href="reservations.php"><i class="bi bi-calendar-check"></i> Réservations</a></li>
-        <li><a href="tables.php"><i class="bi bi-table"></i> Tables</a></li>
-        <li><a href="logout.php"><i class="bi bi-box-arrow-right"></i> Déconnexion</a></li>
-      </ul>
-    </nav>
-  </div>
-  <div class="main-content">
-    <div class="topbar">
-      <!-- <div class="search">
-        <input type="text" placeholder="Recherche...">
-      </div> -->
-      <div class="icons">
-        <img src="../assets/img/favcon.jpeg" alt="Profil" style="width:50px;height:50px;border-radius:50%;background:#eee;">
-      </div>
+  <?php
+  // Définir le titre de la page
+  $page_title = "Paiements";
+
+  // Indiquer que ce fichier est inclus dans une page
+  define('INCLUDED_IN_PAGE', true);
+  include 'header_template.php';
+  ?>
+
+  <!-- Contenu spécifique de la page -->
+  <div class="content-wrapper">
+    <div style="background-color: #f9f9f9; border-radius: 5px; margin-bottom: 20px;">
+      <h2 style="color: #222; font-size: 23px; margin-bottom: 20px; position: relative;">Gestion des paiements</h2>
     </div>
-    <div style="padding:40px;">
-      <h2>Gestion des paiements</h2>
-      <?php if ($message) echo $message; ?>
-      <!-- Formulaire d'ajout -->
-      <form method="post" style="margin-bottom:24px;" class="form-section">
-        <input type="number" name="reservation_id" placeholder="ID Réservation" required>
-        <input type="number" name="montant" placeholder="Montant" required step="0.01">
-        <input type="date" name="date_paiement" placeholder="Date de paiement" required>
-        <input type="text" name="mode" placeholder="Mode de paiement">
-        <button type="submit">Ajouter</button>
+
+    <?php
+    // Affichage des messages avec icônes
+    if (!empty($_SESSION['flash_message'])) {
+      $type = $_SESSION['flash_message']['type'] === 'success' ? 'alert-success' : 'alert-error';
+      $icon = $_SESSION['flash_message']['type'] === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle';
+      $text = htmlspecialchars($_SESSION['flash_message']['text']);
+      echo "<div class='alert $type'><i class='bi $icon'></i> $text</div>";
+      unset($_SESSION['flash_message']);
+    }
+
+    // Affichage des messages simples
+    if (!empty($message)) {
+      $type = strpos(strtolower($message), 'erreur') !== false ? 'alert-error' : 'alert-success';
+      $icon = strpos(strtolower($message), 'erreur') !== false ? 'bi-exclamation-triangle' : 'bi-check-circle';
+      echo "<div class='alert $type'><i class='bi $icon'></i> " . htmlspecialchars($message) . "</div>";
+    }
+    ?>
+
+    <!-- Formulaire d'ajout -->
+    <div class="form-section">
+      <h3 class="section-title">Ajouter un paiement</h3>
+      <form method="post" class="form-grid">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+        <div class="form-group">
+          <label for="reservation_id">ID Réservation</label>
+          <input type="number" id="reservation_id" name="reservation_id" placeholder="ID Réservation" required>
+        </div>
+        <div class="form-group">
+          <label for="montant">Montant (€)</label>
+          <input type="number" id="montant" name="montant" placeholder="Montant" required step="0.01">
+        </div>
+        <div class="form-group">
+          <label for="date_paiement">Date</label>
+          <input type="date" id="date_paiement" name="date_paiement" placeholder="Date de paiement" required>
+        </div>
+        <div class="form-group">
+          <label for="mode">Mode de paiement</label>
+          <input type="text" id="mode" name="mode" placeholder="Ex: CB, Espèces, Chèque...">
+        </div>
+        <div class="form-group" style="grid-column: 1 / -1;">
+          <button type="submit" class="submit-btn">Ajouter le paiement</button>
+        </div>
       </form>
-      <!-- Tableau des paiements -->
+    </div>
+
+    <!-- Tableau des paiements -->
+    <h3 class="section-title" style="margin-top: 30px;">Liste des paiements</h3>
+    <div class="table-responsive-wrapper">
       <table class="admin-table">
         <thead>
           <tr>
@@ -286,16 +206,40 @@ if ($stmt) {
             <tr>
               <td><?= htmlspecialchars($p['PaiementID']) ?></td>
               <td><?= htmlspecialchars($p['ReservationID']) ?></td>
-              <td><?= htmlspecialchars($p['Montant']) ?></td>
-              <td><?= htmlspecialchars($p['DatePaiement']) ?></td>
-              <td><?= htmlspecialchars($p['ModePaiement']) ?></td>
-              <td><a href="?delete=<?= $p['PaiementID'] ?>" onclick="return confirm('Supprimer ce paiement ?')"><i class="bi bi-trash"></i></a></td>
+              <td><strong><?= number_format(htmlspecialchars($p['Montant']), 2, ',', ' ') ?> €</strong></td>
+              <td><?= date('d/m/Y', strtotime($p['DatePaiement'])) ?></td>
+              <td><?= htmlspecialchars($p['ModePaiement'] ?: 'Non spécifié') ?></td>
+              <td class="action-cell">
+                <form method="post" action="paiements.php" class="delete-form">
+                  <input type="hidden" name="delete_paiement_id" value="<?= htmlspecialchars($p['PaiementID']) ?>">
+                  <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+                  <button type="submit" class="delete-btn" onclick="return confirm('Supprimer ce paiement ?')" title="Supprimer">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </td>
             </tr>
           <?php endforeach; ?>
         </tbody>
       </table>
     </div>
+
+    <?php if ($total_pages > 1): ?>
+      <div class="pagination">
+        <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+          <?php if ($i == $page): ?>
+            <strong class="active-page"><?= $i ?></strong>
+          <?php else: ?>
+            <a href="?page=<?= $i ?>"><?= $i ?></a>
+          <?php endif; ?>
+        <?php endfor; ?>
+      </div>
+    <?php endif; ?>
   </div>
+
+  <?php
+  include 'footer_template.php';
+  ?>
 </body>
 
 </html>

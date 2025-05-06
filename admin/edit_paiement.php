@@ -1,50 +1,43 @@
-<?php
-session_start();
+require_once __DIR__ . '/../includes/common.php';
+require_superadmin();
+generate_csrf_token();
 require_once '../db_connexion.php';
 $message = '';
-function log_admin_action($action, $details = '')
-{
-  $logfile = __DIR__ . '/../admin/admin_actions.log';
-  $date = date('Y-m-d H:i:s');
-  $user = $_SESSION['admin'] ?? 'inconnu';
-  $entry = "[$date] [$user] $action $details\n";
-  file_put_contents($logfile, $entry, FILE_APPEND | LOCK_EX);
-}
-if (!isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'superadmin') {
-  // Contrôle de droits (préparation multi-niveaux)
-}
 $id = intval($_GET['id'] ?? 0);
 if ($id > 0) {
-  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $reservation_id = intval($_POST['reservation_id'] ?? 0);
-    $montant = floatval($_POST['montant'] ?? 0);
-    $date = $_POST['date_paiement'] ?? '';
-    $mode = trim($_POST['mode'] ?? '');
-    if ($reservation_id > 0 && $montant > 0 && $date) {
-      try {
-        $sql = "UPDATE Paiements SET ReservationID=?, Montant=?, DatePaiement=?, ModePaiement=? WHERE PaiementID=?";
-        $stmt = $conn->prepare($sql);
-        $result = $stmt->execute([$reservation_id, $montant, $date, $mode, $id]);
-        if ($result) {
-          $message = 'Paiement modifié.';
-          log_admin_action('Modification paiement', "ID: $id, ReservationID: $reservation_id, Montant: $montant, Date: $date");
-        } else {
-          $message = 'Erreur lors de la modification.';
-          log_admin_action('Erreur modification paiement', "ID: $id, ReservationID: $reservation_id, Montant: $montant, Date: $date");
-        }
-      } catch (PDOException $e) {
-        $message = 'Erreur base de données.';
-        log_admin_action('Erreur PDO modification paiement', $e->getMessage());
-      }
-    } else {
-      $message = 'Champs invalides.';
-    }
-  }
-  $sql = "SELECT * FROM Paiements WHERE PaiementID=?";
-  $stmt = sqlsrv_prepare($conn, $sql, [$id]);
-  $paiement = ($stmt && sqlsrv_execute($stmt)) ? sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC) : null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+$reservation_id = intval($_POST['reservation_id'] ?? 0);
+$montant = floatval($_POST['montant'] ?? 0);
+$date = $_POST['date_paiement'] ?? '';
+$mode = trim($_POST['mode'] ?? '');
+if ($reservation_id > 0 && $montant > 0 && $date) {
+try {
+$sql = "UPDATE Paiements SET ReservationID=?, Montant=?, DatePaiement=?, ModePaiement=? WHERE PaiementID=?";
+$stmt = $conn->prepare($sql);
+$result = $stmt->execute([$reservation_id, $montant, $date, $mode, $id]);
+if ($result) {
+set_message('Paiement modifié.');
+log_admin_action('Modification paiement', "ID: $id, ReservationID: $reservation_id, Montant: $montant, Date: $date");
 } else {
-  $paiement = null;
+set_message('Erreur lors de la modification.', 'error');
+log_admin_action('Erreur modification paiement', "ID: $id, ReservationID: $reservation_id, Montant: $montant, Date: $date");
+}
+} catch (PDOException $e) {
+set_message('Erreur base de données.', 'error');
+log_admin_action('Erreur PDO modification paiement', $e->getMessage());
+}
+} else {
+set_message('Champs invalides.', 'error');
+}
+header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $id);
+exit;
+}
+$sql = "SELECT * FROM Paiements WHERE PaiementID=?";
+$stmt = $conn->prepare($sql);
+$stmt->execute([$id]);
+$paiement = $stmt->fetch(PDO::FETCH_ASSOC);
+} else {
+$paiement = null;
 }
 ?>
 <!DOCTYPE html>
@@ -165,17 +158,14 @@ if ($id > 0) {
   <div class="form-container">
     <a href="paiements.php" class="back-link">&larr; Retour à la liste</a>
     <h1>Modifier un paiement</h1>
-    <?php if ($message): ?>
-      <div class="alert <?= strpos($message, 'modifié') !== false ? 'alert-success' : 'alert-error' ?>">
-        <?= htmlspecialchars($message) ?>
-      </div>
-    <?php endif; ?>
+    <?php display_message(); ?>
     <?php if ($paiement): ?>
       <form method="post" autocomplete="off">
         <input type="number" name="reservation_id" value="<?= htmlspecialchars($paiement['ReservationID']) ?>" placeholder="ID réservation" required>
         <input type="number" name="montant" value="<?= htmlspecialchars($paiement['Montant']) ?>" step="0.01" min="0" placeholder="Montant" required>
         <input type="date" name="date_paiement" value="<?= htmlspecialchars($paiement['DatePaiement']) ?>" required>
         <input type="text" name="mode" value="<?= htmlspecialchars($paiement['ModePaiement']) ?>" placeholder="Mode de paiement">
+        <div id="form-error" class="alert alert-error" style="display:none;"></div>
         <button type="submit">Enregistrer</button>
       </form>
     <?php else: ?>
@@ -183,5 +173,64 @@ if ($id > 0) {
     <?php endif; ?>
   </div>
 </body>
+
+<script>
+  // Validation en temps réel pour le formulaire d'édition de paiement
+  (function() {
+    const form = document.querySelector('.form-container form');
+    if (!form) return;
+    const reservation_id = form.querySelector('input[name="reservation_id"]');
+    const montant = form.querySelector('input[name="montant"]');
+    const date_paiement = form.querySelector('input[name="date_paiement"]');
+    const mode = form.querySelector('input[name="mode"]');
+    const errorDiv = document.getElementById('form-error');
+
+    function showError(msg) {
+      errorDiv.textContent = msg;
+      errorDiv.style.display = 'block';
+    }
+
+    function clearError() {
+      errorDiv.textContent = '';
+      errorDiv.style.display = 'none';
+    }
+
+    function validateField(field) {
+      if (field === reservation_id && (reservation_id.value === '' || isNaN(reservation_id.value) || parseInt(reservation_id.value) < 1)) {
+        showError('ID réservation invalide.');
+        return false;
+      }
+      if (field === montant && (montant.value === '' || isNaN(montant.value) || parseFloat(montant.value) < 0)) {
+        showError('Montant invalide.');
+        return false;
+      }
+      if (field === date_paiement && date_paiement.value === '') {
+        showError('Veuillez choisir une date de paiement.');
+        return false;
+      }
+      if (field === mode && mode.value.trim() === '') {
+        showError('Veuillez saisir le mode de paiement.');
+        return false;
+      }
+      clearError();
+      return true;
+    }
+    [reservation_id, montant, date_paiement, mode].forEach(input => {
+      input.addEventListener('input', function() {
+        validateField(this);
+      });
+      input.addEventListener('blur', function() {
+        validateField(this);
+      });
+    });
+    form.addEventListener('submit', function(e) {
+      if (!validateField(reservation_id) || !validateField(montant) || !validateField(date_paiement) || !validateField(mode)) {
+        e.preventDefault();
+        return false;
+      }
+      clearError();
+    });
+  })();
+</script>
 
 </html>

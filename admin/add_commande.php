@@ -1,63 +1,38 @@
-<?php
-session_start();
-if (!isset($_SESSION['admin'])) {
-  header('Location: login.php');
-  exit;
-}
+require_once __DIR__ . '/../includes/common.php';
+require_superadmin();
 require_once '../db_connexion.php';
 $message = '';
 
-// Journalisation de l'action admin (ajout de commande)
-function log_admin_action($action, $details = '')
-{
-  $logfile = __DIR__ . '/../admin/admin_actions.log';
-  $date = date('Y-m-d H:i:s');
-  $user = $_SESSION['admin'] ?? 'inconnu';
-  $entry = "[$date] [$user] $action $details\n";
-  file_put_contents($logfile, $entry, FILE_APPEND | LOCK_EX);
-}
-
-// Contrôle de droits strict : seuls les superadmins peuvent ajouter
-if (!isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'superadmin') {
-  header('Location: index.php?error=forbidden');
-  exit;
-}
-
-// Génération du token CSRF si besoin
-if (empty($_SESSION['csrf_token'])) {
-  $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  // Vérification du token CSRF
-  if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-    $message = 'Erreur de sécurité (CSRF).';
-    log_admin_action('Tentative CSRF ajout commande');
-  } else {
-    $reservation_id = intval($_POST['reservation_id'] ?? 0);
-    $menu_id = intval($_POST['menu_id'] ?? 0);
-    $quantite = intval($_POST['quantite'] ?? 0);
-    // Validation stricte
-    if ($reservation_id > 0 && $menu_id > 0 && $quantite > 0) {
-      try {
-        $sql = "INSERT INTO Commandes (ReservationID, MenuID, Quantite) VALUES (?, ?, ?)";
-        $stmt = $conn->prepare($sql);
-        $result = $stmt->execute([$reservation_id, $menu_id, $quantite]);
-        if ($result) {
-          $message = 'Commande ajoutée.';
-          log_admin_action('Ajout commande', "ReservationID: $reservation_id, MenuID: $menu_id, Quantité: $quantite");
-        } else {
-          $message = 'Erreur lors de l\'ajout.';
-          log_admin_action('Erreur ajout commande', "ReservationID: $reservation_id, MenuID: $menu_id, Quantité: $quantite");
-        }
-      } catch (PDOException $e) {
-        $message = 'Erreur base de données.';
-        log_admin_action('Erreur PDO ajout commande', 'PDOException');
-      }
-    } else {
-      $message = 'Champs invalides.';
-    }
-  }
+// Vérification du token CSRF
+if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+$message = 'Erreur de sécurité (CSRF).';
+log_admin_action('Tentative CSRF ajout commande');
+} else {
+$reservation_id = intval($_POST['reservation_id'] ?? 0);
+$menu_id = intval($_POST['menu_id'] ?? 0);
+$quantite = $_POST['quantite'] ?? '';
+$valid = validate_quantite($quantite) && $reservation_id > 0 && $menu_id > 0;
+if ($valid) {
+try {
+$sql = "INSERT INTO Commandes (ReservationID, MenuID, Quantite) VALUES (?, ?, ?)";
+$stmt = $conn->prepare($sql);
+$result = $stmt->execute([$reservation_id, $menu_id, $quantite]);
+if ($result) {
+$message = 'Commande ajoutée.';
+log_admin_action('Ajout commande', "ReservationID: $reservation_id, MenuID: $menu_id, Quantité: $quantite");
+} else {
+$message = 'Erreur lors de l\'ajout.';
+log_admin_action('Erreur ajout commande', "ReservationID: $reservation_id, MenuID: $menu_id, Quantité: $quantite");
+}
+} catch (PDOException $e) {
+$message = 'Erreur base de données.';
+log_admin_action('Erreur PDO ajout commande', 'PDOException');
+}
+} else {
+$message = 'Champs invalides.';
+}
+}
 }
 ?>
 <!DOCTYPE html>
@@ -171,13 +146,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?= htmlspecialchars($message) ?>
       </div>
     <?php endif; ?>
-    <form method="post" autocomplete="off">
+    <form method="post" autocomplete="off" id="addCommandeForm" novalidate>
       <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
-      <input type="number" name="reservation_id" placeholder="ID réservation" required min="1">
-      <input type="number" name="menu_id" placeholder="ID menu" required min="1">
-      <input type="number" name="quantite" placeholder="Quantité" required min="1">
+      <input type="number" name="reservation_id" id="reservation_id" placeholder="ID réservation" required min="1">
+      <input type="number" name="menu_id" id="menu_id" placeholder="ID menu" required min="1">
+      <input type="number" name="quantite" id="quantite" placeholder="Quantité" required min="1">
+      <div id="form-error" class="alert alert-error" style="display:none;"></div>
       <button type="submit">Ajouter</button>
     </form>
+    <script>
+      (function() {
+        const form = document.getElementById('addCommandeForm');
+        const reservation_id = document.getElementById('reservation_id');
+        const menu_id = document.getElementById('menu_id');
+        const quantite = document.getElementById('quantite');
+        const errorDiv = document.getElementById('form-error');
+
+        function showError(msg) {
+          errorDiv.textContent = msg;
+          errorDiv.style.display = 'block';
+        }
+
+        function clearError() {
+          errorDiv.textContent = '';
+          errorDiv.style.display = 'none';
+        }
+
+        function validateField(field) {
+          if (field === reservation_id && (reservation_id.value === '' || isNaN(reservation_id.value) || parseInt(reservation_id.value) < 1)) {
+            showError('ID réservation invalide.');
+            return false;
+          }
+          if (field === menu_id && (menu_id.value === '' || isNaN(menu_id.value) || parseInt(menu_id.value) < 1)) {
+            showError('ID menu invalide.');
+            return false;
+          }
+          if (field === quantite && (quantite.value === '' || isNaN(quantite.value) || parseInt(quantite.value) < 1)) {
+            showError('Quantité invalide.');
+            return false;
+          }
+          clearError();
+          return true;
+        }
+        [reservation_id, menu_id, quantite].forEach(input => {
+          input.addEventListener('input', function() {
+            validateField(this);
+          });
+          input.addEventListener('blur', function() {
+            validateField(this);
+          });
+        });
+        form.addEventListener('submit', function(e) {
+          if (!validateField(reservation_id) || !validateField(menu_id) || !validateField(quantite)) {
+            e.preventDefault();
+            return false;
+          }
+          clearError();
+        });
+      })();
+    </script>
   </div>
 </body>
 

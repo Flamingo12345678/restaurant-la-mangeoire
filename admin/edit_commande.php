@@ -1,50 +1,46 @@
-<?php
-session_start();
+require_once __DIR__ . '/../includes/common.php';
+require_superadmin();
+generate_csrf_token();
 require_once '../db_connexion.php';
 $message = '';
-function log_admin_action($action, $details = '')
-{
-  $logfile = __DIR__ . '/../admin/admin_actions.log';
-  $date = date('Y-m-d H:i:s');
-  $user = $_SESSION['admin'] ?? 'inconnu';
-  $entry = "[$date] [$user] $action $details\n";
-  file_put_contents($logfile, $entry, FILE_APPEND | LOCK_EX);
-}
-if (!isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'superadmin') {
-  // Contrôle de droits (préparation multi-niveaux)
-}
 $id = intval($_GET['id'] ?? 0);
 if ($id > 0) {
-  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $reservation_id = intval($_POST['reservation_id'] ?? 0);
-    $menu_id = intval($_POST['menu_id'] ?? 0);
-    $quantite = intval($_POST['quantite'] ?? 0);
-    if ($reservation_id > 0 && $menu_id > 0 && $quantite > 0) {
-      try {
-        $sql = "UPDATE Commandes SET ReservationID=?, MenuID=?, Quantite=? WHERE CommandeID=?";
-        $stmt = $conn->prepare($sql);
-        $result = $stmt->execute([$reservation_id, $menu_id, $quantite, $id]);
-        if ($result) {
-          $message = 'Commande modifiée.';
-          log_admin_action('Modification commande', "ID: $id, ReservationID: $reservation_id, MenuID: $menu_id, Quantité: $quantite");
-        } else {
-          $message = 'Erreur lors de la modification.';
-          log_admin_action('Erreur modification commande', "ID: $id, ReservationID: $reservation_id, MenuID: $menu_id, Quantité: $quantite");
-        }
-      } catch (PDOException $e) {
-        $message = 'Erreur base de données.';
-        log_admin_action('Erreur PDO modification commande', $e->getMessage());
-      }
-    } else {
-      $message = 'Champs invalides.';
-    }
-  }
-  $sql = "SELECT * FROM Commandes WHERE CommandeID=?";
-  $stmt = sqlsrv_prepare($conn, $sql, [$id]);
-  $commande = ($stmt && sqlsrv_execute($stmt)) ? sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC) : null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+$reservation_id = intval($_POST['reservation_id'] ?? 0);
+$menu_id = intval($_POST['menu_id'] ?? 0);
+$quantite = intval($_POST['quantite'] ?? 0);
+if ($reservation_id > 0 && $menu_id > 0 && $quantite > 0) {
+try {
+$sql = "UPDATE Commandes SET ReservationID=?, MenuID=?, Quantite=? WHERE CommandeID=?";
+$stmt = $conn->prepare($sql);
+$result = $stmt->execute([$reservation_id, $menu_id, $quantite, $id]);
+if ($result) {
+set_message('Commande modifiée.', 'success');
+log_admin_action('Modification commande', "ID: $id, ReservationID: $reservation_id, MenuID: $menu_id, Quantité: $quantite");
 } else {
-  $commande = null;
+set_message('Erreur lors de la modification.', 'error');
+log_admin_action('Erreur modification commande', "ID: $id, ReservationID: $reservation_id, MenuID: $menu_id, Quantité: $quantite");
 }
+} catch (PDOException $e) {
+set_message('Erreur base de données.', 'error');
+log_admin_action('Erreur PDO modification commande', $e->getMessage());
+}
+} else {
+set_message('Champs invalides.', 'error');
+}
+header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $id);
+exit;
+}
+$sql = "SELECT * FROM Commandes WHERE CommandeID=?";
+$stmt = $conn->prepare($sql);
+$stmt->execute([$id]);
+$commande = $stmt->fetch(PDO::FETCH_ASSOC);
+} else {
+$commande = null;
+}
+
+echo "<div class='alert $type'>$text</div>";
+unset($_SESSION['flash_message']);
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -164,16 +160,13 @@ if ($id > 0) {
   <div class="form-container">
     <a href="commandes.php" class="back-link">&larr; Retour à la liste</a>
     <h1>Modifier une commande</h1>
-    <?php if ($message): ?>
-      <div class="alert <?= strpos($message, 'modifiée') !== false ? 'alert-success' : 'alert-error' ?>">
-        <?= htmlspecialchars($message) ?>
-      </div>
-    <?php endif; ?>
+    <?php display_message(); ?>
     <?php if ($commande): ?>
       <form method="post" autocomplete="off">
         <input type="number" name="reservation_id" value="<?= htmlspecialchars($commande['ReservationID']) ?>" placeholder="ID réservation" required>
         <input type="number" name="menu_id" value="<?= htmlspecialchars($commande['MenuID']) ?>" placeholder="ID menu" required>
         <input type="number" name="quantite" value="<?= htmlspecialchars($commande['Quantite']) ?>" min="1" placeholder="Quantité" required>
+        <div id="form-error" class="alert alert-error" style="display:none;"></div>
         <button type="submit">Enregistrer</button>
       </form>
     <?php else: ?>
@@ -181,5 +174,59 @@ if ($id > 0) {
     <?php endif; ?>
   </div>
 </body>
+
+<script>
+  // Validation en temps réel pour le formulaire d'édition de commande
+  (function() {
+    const form = document.querySelector('.form-container form');
+    if (!form) return;
+    const reservation_id = form.querySelector('input[name="reservation_id"]');
+    const menu_id = form.querySelector('input[name="menu_id"]');
+    const quantite = form.querySelector('input[name="quantite"]');
+    const errorDiv = document.getElementById('form-error');
+
+    function showError(msg) {
+      errorDiv.textContent = msg;
+      errorDiv.style.display = 'block';
+    }
+
+    function clearError() {
+      errorDiv.textContent = '';
+      errorDiv.style.display = 'none';
+    }
+
+    function validateField(field) {
+      if (field === reservation_id && (reservation_id.value === '' || isNaN(reservation_id.value) || parseInt(reservation_id.value) < 1)) {
+        showError('ID réservation invalide.');
+        return false;
+      }
+      if (field === menu_id && (menu_id.value === '' || isNaN(menu_id.value) || parseInt(menu_id.value) < 1)) {
+        showError('ID menu invalide.');
+        return false;
+      }
+      if (field === quantite && (quantite.value === '' || isNaN(quantite.value) || parseInt(quantite.value) < 1)) {
+        showError('Quantité invalide.');
+        return false;
+      }
+      clearError();
+      return true;
+    }
+    [reservation_id, menu_id, quantite].forEach(input => {
+      input.addEventListener('input', function() {
+        validateField(this);
+      });
+      input.addEventListener('blur', function() {
+        validateField(this);
+      });
+    });
+    form.addEventListener('submit', function(e) {
+      if (!validateField(reservation_id) || !validateField(menu_id) || !validateField(quantite)) {
+        e.preventDefault();
+        return false;
+      }
+      clearError();
+    });
+  })();
+</script>
 
 </html>

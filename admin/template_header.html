@@ -1,0 +1,94 @@
+<!-- Template pour l'en-tête des pages d'administration -->
+
+<!-- Inclure le fichier CSS -->
+<link rel="stylesheet" href="../assets/css/admin.css" />
+
+<!-- Structure HTML -->
+<body>
+  <!-- Bouton burger -->
+  <button
+    id="admin-burger-btn"
+    class="admin-burger-btn"
+    aria-label="Ouvrir le menu"
+  >
+    &#9776;
+  </button>
+
+  <!-- Sidebar -->
+  <div id="admin-sidebar" class="admin-sidebar">
+    <div class="logo">La Mangeoire</div>
+    <nav>
+      <ul>
+        <li>
+          <a href="index.php"><i class="bi bi-house"></i> Tableau de bord</a>
+        </li>
+        <li>
+          <a href="clients.php"><i class="bi bi-people"></i> Clients</a>
+        </li>
+        <!-- ... autres liens ... -->
+      </ul>
+    </nav>
+  </div>
+
+  <!-- Overlay pour mobile -->
+  <div id="admin-sidebar-overlay"></div>
+
+  <!-- Contenu principal -->
+  <div class="admin-main-content">
+    <header class="admin-header">
+      <div class="admin-header-left">
+        <h1 class="sitename">Nom de la page</h1>
+        <a href="../index.html" class="btn-retour-public">
+          <i class="bi bi-arrow-left-circle"></i>
+          <span>Retour au site public</span>
+        </a>
+      </div>
+      <div class="admin-header-right">
+        <img src="../assets/img/favcon.jpeg" alt="Logo" class="admin-logo" />
+      </div>
+    </header>
+
+    <!-- Contenu spécifique de la page -->
+  </div>
+
+  <!-- Script pour la fonctionnalité du menu burger -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const burger = document.getElementById("admin-burger-btn");
+      const sidebar = document.getElementById("admin-sidebar");
+      const overlay = document.getElementById("admin-sidebar-overlay");
+
+      // Ouvre/ferme la sidebar
+      burger.addEventListener("click", function () {
+        sidebar.classList.toggle("open");
+        overlay.style.display = sidebar.classList.contains("open")
+          ? "block"
+          : "none";
+      });
+
+      // Ferme la sidebar lors d'un clic sur un lien
+      sidebar.querySelectorAll("a").forEach((link) => {
+        link.addEventListener("click", function () {
+          if (window.innerWidth <= 900) {
+            sidebar.classList.remove("open");
+            overlay.style.display = "none";
+          }
+        });
+      });
+
+      // Ferme la sidebar avec la touche Escape
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && sidebar.classList.contains("open")) {
+          sidebar.classList.remove("open");
+          overlay.style.display = "none";
+        }
+      });
+
+      // Ferme la sidebar lors d'un clic sur l'overlay
+      overlay.addEventListener("click", function () {
+        sidebar.classList.remove("open");
+        overlay.style.display = "none";
+      });
+    });
+  </script>
+</body>

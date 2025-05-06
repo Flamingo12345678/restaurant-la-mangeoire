@@ -1,57 +1,46 @@
 <?php
-session_start();
-if (!isset($_SESSION['admin'])) {
-  header('Location: login.php');
-  exit;
-}
-require_once '../db_connexion.php';
-function log_admin_action($action, $details = '')
-{
-  $logfile = __DIR__ . '/../admin/admin_actions.log';
-  $date = date('Y-m-d H:i:s');
-  $user = $_SESSION['admin'] ?? 'inconnu';
-  $entry = "[$date] [$user] $action $details\n";
-  file_put_contents($logfile, $entry, FILE_APPEND | LOCK_EX);
-}
-// Contrôle de droits strict : seuls les superadmins peuvent supprimer
-if (!isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'superadmin') {
-  header('Location: index.php?error=forbidden');
-  exit;
-}
-
-// Génération du token CSRF si besoin
-if (empty($_SESSION['csrf_token'])) {
-  $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
+require_once __DIR__ . '/../includes/common.php';
+require_superadmin();
 
 $id = intval($_GET['id'] ?? 0);
-$message = '';
 if ($id > 0 && $_SERVER['REQUEST_METHOD'] === 'POST') {
-  // Vérification du token CSRF
-  if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-    $message = 'Erreur de sécurité (CSRF).';
+  if (!check_csrf_token($_POST['csrf_token'] ?? '')) {
+    set_message('Erreur de sécurité (CSRF).', 'error');
     log_admin_action('Tentative CSRF suppression menu');
-  } else {
-    try {
-      $sql = "DELETE FROM Menus WHERE MenuID=?";
-      $stmt = $conn->prepare($sql);
-      $result = $stmt->execute([$id]);
-      if ($result) {
-        log_admin_action('Suppression menu', "ID: $id");
-        header('Location: menus.php?msg=supprime');
-        exit;
-      } else {
-        $message = "Erreur lors de la suppression.";
-        log_admin_action('Erreur suppression menu', "ID: $id");
-      }
-    } catch (PDOException $e) {
-      $message = "Erreur base de données.";
-      log_admin_action('Erreur PDO suppression menu', 'PDOException');
+    header('Location: menus.php');
+    exit;
+  }
+  // Vérification d'existence du menu
+  $check = $conn->prepare("SELECT COUNT(*) FROM Menus WHERE MenuID=?");
+  $check->execute([$id]);
+  if ($check->fetchColumn() == 0) {
+    set_message('Menu inexistant ou déjà supprimé.', 'error');
+    header('Location: menus.php');
+    exit;
+  }
+  try {
+    $sql = "DELETE FROM Menus WHERE MenuID=?";
+    $stmt = $conn->prepare($sql);
+    $result = $stmt->execute([$id]);
+    if ($result) {
+      set_message('Menu supprimé.');
+      log_admin_action('Suppression menu', "ID: $id");
+    } else {
+      set_message('Erreur lors de la suppression.', 'error');
+      log_admin_action('Erreur suppression menu', "ID: $id");
     }
+    header('Location: menus.php');
+    exit;
+  } catch (PDOException $e) {
+    set_message('Erreur base de données.', 'error');
+    log_admin_action('Erreur PDO suppression menu', $e->getMessage());
+    header('Location: menus.php');
+    exit;
   }
 } else {
   echo "ID invalide.";
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -157,9 +146,7 @@ if ($id > 0 && $_SERVER['REQUEST_METHOD'] === 'POST') {
         <button type="submit" style="background:#b01e28;color:#fff;">Confirmer la suppression</button>
         <a href="menus.php" class="back-link">Annuler</a>
       </form>
-      <?php if ($message): ?>
-        <div class="alert alert-error"> <?= htmlspecialchars($message) ?> </div>
-      <?php endif; ?>
+      <?php display_message(); ?>
     <?php else: ?>
       <div class="alert alert-error">ID invalide.</div>
       <a href="menus.php" class="back-link">Retour</a>

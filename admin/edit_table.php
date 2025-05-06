@@ -14,15 +14,9 @@
  */
 session_start();
 require_once '../db_connexion.php';
+require_once '../validation.php';
+
 $message = '';
-function log_admin_action($action, $details = '')
-{
-  $logfile = __DIR__ . '/../admin/admin_actions.log';
-  $date = date('Y-m-d H:i:s');
-  $user = $_SESSION['admin'] ?? 'inconnu';
-  $entry = "[$date] [$user] $action $details\n";
-  file_put_contents($logfile, $entry, FILE_APPEND | LOCK_EX);
-}
 // Contrôle de droits strict : seuls les superadmins peuvent modifier
 if (!isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'superadmin') {
   header('Location: index.php?error=forbidden');
@@ -40,32 +34,51 @@ if ($id > 0) {
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Vérification du token CSRF
     if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-      $message = 'Erreur de sécurité (CSRF).';
+      set_message('Erreur de sécurité (CSRF).', 'error');
       log_admin_action('Tentative CSRF modification table');
     } else {
       $numero = intval($_POST['numero'] ?? 0);
       $places = intval($_POST['places'] ?? 0);
+      $statut = $_POST['statut'] ?? ($table['Statut'] ?? 'Libre');
+      if (!in_array($statut, ['Libre', 'Réservée', 'Maintenance'])) {
+        $statut = 'Libre';
+      }
+      $nom_table = $_POST['nom_table'] ?? ($table['NomTable'] ?? '');
+      if (empty($nom_table)) {
+        $nom_table = 'Table ' . $numero;
+      }
       // Validation stricte
-      if ($numero > 0 && $places > 0) {
-        try {
-          $sql = "UPDATE TablesRestaurant SET NumeroTable=?, Capacite=? WHERE TableID=?";
-          $stmt = $conn->prepare($sql);
-          $result = $stmt->execute([$numero, $places, $id]);
-          if ($result) {
-            $message = 'Table modifiée.';
-            log_admin_action('Modification table', "ID: $id, Numéro: $numero, Places: $places");
-          } else {
-            $message = 'Erreur lors de la modification.';
-            log_admin_action('Erreur modification table', "ID: $id, Numéro: $numero, Places: $places");
+      if ($numero > 0 && $places > 0 && !empty($nom_table)) {
+        // Contrôle d'unicité du numéro de table (hors table courante)
+        $sql = "SELECT COUNT(*) FROM TablesRestaurant WHERE NumeroTable = ? AND TableID != ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([$numero, $id]);
+        $count = $stmt->fetchColumn();
+        if ($count > 0) {
+          set_message("Ce numéro de table existe déjà.", 'error');
+        } else {
+          try {
+            $sql = "UPDATE TablesRestaurant SET NumeroTable=?, NomTable=?, Capacite=?, Statut=? WHERE TableID=?";
+            $stmt = $conn->prepare($sql);
+            $result = $stmt->execute([$numero, $nom_table, $places, $statut, $id]);
+            if ($result) {
+              set_message('Table modifiée.');
+              log_admin_action('Modification table', "ID: $id, Numéro: $numero, Nom: $nom_table, Places: $places, Statut: $statut");
+            } else {
+              set_message('Erreur lors de la modification.', 'error');
+              log_admin_action('Erreur modification table', "ID: $id, Numéro: $numero, Nom: $nom_table, Places: $places, Statut: $statut");
+            }
+          } catch (PDOException $e) {
+            set_message('Erreur base de données.', 'error');
+            log_admin_action('Erreur PDO modification table', 'PDOException');
           }
-        } catch (PDOException $e) {
-          $message = 'Erreur base de données.';
-          log_admin_action('Erreur PDO modification table', 'PDOException');
         }
       } else {
-        $message = 'Champs invalides.';
+        set_message('Champs invalides.', 'error');
       }
     }
+    header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $id);
+    exit;
   }
   // Récupération des infos de la table (MySQL/PDO)
   $sql = "SELECT * FROM TablesRestaurant WHERE TableID=?";
@@ -193,16 +206,19 @@ if ($id > 0) {
   <div class="form-container">
     <a href="tables.php" class="back-link">&larr; Retour à la liste</a>
     <h1>Modifier une table</h1>
-    <?php if ($message): ?>
-      <div class="alert <?= strpos($message, 'modifiée') !== false ? 'alert-success' : 'alert-error' ?>">
-        <?= htmlspecialchars($message) ?>
-      </div>
-    <?php endif; ?>
+    <?php display_message(); ?>
     <?php if ($table): ?>
       <form method="post" autocomplete="off">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
         <input type="number" name="numero" value="<?= htmlspecialchars($table['NumeroTable'] ?? '') ?>" placeholder="Numéro de table" required min="1">
+        <input type="text" name="nom_table" value="<?= htmlspecialchars($table['NomTable'] ?? '') ?>" placeholder="Nom de la table" required>
         <input type="number" name="places" value="<?= htmlspecialchars($table['Capacite'] ?? '') ?>" placeholder="Nombre de places" required min="1">
+        <select name="statut" required>
+          <option value="Libre" <?= (isset($table['Statut']) && $table['Statut'] === 'Libre') ? 'selected' : '' ?>>Libre</option>
+          <option value="Réservée" <?= (isset($table['Statut']) && $table['Statut'] === 'Réservée') ? 'selected' : '' ?>>Réservée</option>
+          <option value="Maintenance" <?= (isset($table['Statut']) && $table['Statut'] === 'Maintenance') ? 'selected' : '' ?>>Maintenance</option>
+        </select>
+        <div id="form-error" class="alert alert-error" style="display:none;"></div>
         <button type="submit">Enregistrer</button>
       </form>
     <?php else: ?>
@@ -210,5 +226,64 @@ if ($id > 0) {
     <?php endif; ?>
   </div>
 </body>
+
+<script>
+  // Validation en temps réel pour le formulaire d'édition de table
+  (function() {
+    const form = document.querySelector('.form-container form');
+    if (!form) return;
+    const numero = form.querySelector('input[name="numero"]');
+    const nom_table = form.querySelector('input[name="nom_table"]');
+    const places = form.querySelector('input[name="places"]');
+    const statut = form.querySelector('select[name="statut"]');
+    const errorDiv = document.getElementById('form-error');
+
+    function showError(msg) {
+      errorDiv.textContent = msg;
+      errorDiv.style.display = 'block';
+    }
+
+    function clearError() {
+      errorDiv.textContent = '';
+      errorDiv.style.display = 'none';
+    }
+
+    function validateField(field) {
+      if (field === numero && (numero.value === '' || isNaN(numero.value) || parseInt(numero.value) < 1)) {
+        showError('Numéro de table invalide.');
+        return false;
+      }
+      if (field === places && (places.value === '' || isNaN(places.value) || parseInt(places.value) < 1)) {
+        showError('Nombre de places invalide.');
+        return false;
+      }
+      if (field === nom_table && nom_table.value.trim() === '') {
+        showError('Veuillez saisir le nom de la table.');
+        return false;
+      }
+      if (field === statut && !['Libre', 'Réservée', 'Maintenance'].includes(statut.value)) {
+        showError('Statut invalide.');
+        return false;
+      }
+      clearError();
+      return true;
+    }
+    [numero, places, nom_table, statut].forEach(input => {
+      input.addEventListener('input', function() {
+        validateField(this);
+      });
+      input.addEventListener('blur', function() {
+        validateField(this);
+      });
+    });
+    form.addEventListener('submit', function(e) {
+      if (!validateField(numero) || !validateField(places) || !validateField(nom_table) || !validateField(statut)) {
+        e.preventDefault();
+        return false;
+      }
+      clearError();
+    });
+  })();
+</script>
 
 </html>

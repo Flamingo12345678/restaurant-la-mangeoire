@@ -1,51 +1,62 @@
 <?php
-session_start();
-function log_admin_action($action, $details = '')
-{
-  $logfile = __DIR__ . '/../admin/admin_actions.log';
-  $date = date('Y-m-d H:i:s');
-  $user = $_SESSION['admin'] ?? 'inconnu';
-  $entry = "[$date] [$user] $action $details\n";
-  file_put_contents($logfile, $entry, FILE_APPEND | LOCK_EX);
-}
-// Contrôle de droits strict : seuls les superadmins peuvent supprimer
-if (!isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'superadmin') {
-  header('Location: index.php?error=forbidden');
-  exit;
-}
-
-// Génération du token CSRF si besoin
-if (empty($_SESSION['csrf_token'])) {
-  $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
+require_once __DIR__ . '/../includes/common.php';
+require_superadmin();
 
 $id = intval($_GET['id'] ?? 0);
-$message = '';
 if ($id > 0 && $_SERVER['REQUEST_METHOD'] === 'POST') {
-  // Vérification du token CSRF
-  if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-    $message = 'Erreur de sécurité (CSRF).';
+  if (!check_csrf_token($_POST['csrf_token'] ?? '')) {
+    set_message('Erreur de sécurité (CSRF).', 'error');
     log_admin_action('Tentative CSRF suppression employé');
-  } else {
-    try {
-      $sql = "DELETE FROM Employes WHERE EmployeID=?";
-      $stmt = $conn->prepare($sql);
-      $result = $stmt->execute([$id]);
-      if ($result) {
-        log_admin_action('Suppression employé', "ID: $id");
-        header('Location: employes.php?msg=supprime');
-        exit;
-      } else {
-        $message = "Erreur lors de la suppression.";
-        log_admin_action('Erreur suppression employé', "ID: $id");
-      }
-    } catch (PDOException $e) {
-      $message = "Erreur base de données.";
-      log_admin_action('Erreur PDO suppression employé', 'PDOException');
+    header('Location: employes.php');
+    exit;
+  }
+  // Vérification d'existence de l'employé
+  $check = $conn->prepare("SELECT COUNT(*) FROM Employes WHERE EmployeID=?");
+  $check->execute([$id]);
+  if ($check->fetchColumn() == 0) {
+    set_message('Employé inexistant ou déjà supprimé.', 'error');
+    header('Location: employes.php');
+    exit;
+  }
+  try {
+    $sql = "DELETE FROM Employes WHERE EmployeID=?";
+    $stmt = $conn->prepare($sql);
+    $result = $stmt->execute([$id]);
+    if ($result) {
+      set_message('Employé supprimé.');
+      log_admin_action('Suppression employé', "ID: $id");
+    } else {
+      set_message('Erreur lors de la suppression.', 'error');
+      log_admin_action('Erreur suppression employé', "ID: $id");
     }
+    header('Location: employes.php');
+    exit;
+  } catch (PDOException $e) {
+    set_message('Erreur base de données.', 'error');
+    log_admin_action('Erreur PDO suppression employé', $e->getMessage());
+    header('Location: employes.php');
+    exit;
   }
 } else {
   echo "ID invalide.";
+}
+
+// Gestion centralisée des messages
+function set_message($msg, $type = 'success')
+{
+  $_SESSION['flash_message'] = [
+    'text' => $msg,
+    'type' => $type
+  ];
+}
+function display_message()
+{
+  if (!empty($_SESSION['flash_message'])) {
+    $type = $_SESSION['flash_message']['type'] === 'success' ? 'alert-success' : 'alert-error';
+    $text = htmlspecialchars($_SESSION['flash_message']['text']);
+    echo "<div class='alert $type'>$text</div>";
+    unset($_SESSION['flash_message']);
+  }
 }
 ?>
 <!DOCTYPE html>
@@ -152,9 +163,7 @@ if ($id > 0 && $_SERVER['REQUEST_METHOD'] === 'POST') {
         <button type="submit" style="background:#b01e28;color:#fff;">Confirmer la suppression</button>
         <a href="employes.php" class="back-link">Annuler</a>
       </form>
-      <?php if ($message): ?>
-        <div class="alert alert-error"> <?= htmlspecialchars($message) ?> </div>
-      <?php endif; ?>
+      <?php display_message(); ?>
     <?php else: ?>
       <div class="alert alert-error">ID invalide.</div>
       <a href="employes.php" class="back-link">Retour</a>

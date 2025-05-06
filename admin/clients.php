@@ -1,29 +1,31 @@
 <?php
-session_start();
-if (!isset($_SESSION['admin'])) {
-  header('Location: login.php');
-  exit;
-}
 require_once '../db_connexion.php';
+require_once '../includes/common.php';
 
 // Gestion de l'ajout d'un client
 $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nom'], $_POST['prenom'], $_POST['email'])) {
   $nom = trim($_POST['nom']);
   $prenom = trim($_POST['prenom']);
-  $email = filter_var(trim($_POST['email']), FILTER_VALIDATE_EMAIL);
+  $email = validate_email(trim($_POST['email'])) ? trim($_POST['email']) : '';
   $tel = trim($_POST['telephone'] ?? '');
   if ($nom && $prenom && $email) {
     $sql = "INSERT INTO Clients (Nom, Prenom, Email, Telephone) VALUES (?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
     $result = $stmt->execute([$nom, $prenom, $email, $tel]);
     if ($result) {
-      $message = '<span class="success-message">Client ajouté avec succès.</span>';
+      set_message('Client ajouté avec succès.');
+      header('Location: ' . $_SERVER['PHP_SELF']);
+      exit;
     } else {
-      $message = '<span class="error-message">Erreur lors de l\'ajout.</span>';
+      set_message('Erreur lors de l\'ajout.', 'error');
+      header('Location: ' . $_SERVER['PHP_SELF']);
+      exit;
     }
   } else {
-    $message = '<span class="error-message">Champs invalides.</span>';
+    set_message('Champs invalides.', 'error');
+    header('Location: ' . $_SERVER['PHP_SELF']);
+    exit;
   }
 }
 // Suppression d'un client
@@ -33,9 +35,13 @@ if (isset($_GET['delete'])) {
   $stmt = $conn->prepare($sql);
   $result = $stmt->execute([$id]);
   if ($result) {
-    $message = '<span class="success-message">Client supprimé.</span>';
+    set_message('Client supprimé.');
+    header('Location: ' . $_SERVER['PHP_SELF']);
+    exit;
   } else {
-    $message = '<span class="error-message">Erreur lors de la suppression.</span>';
+    set_message('Erreur lors de la suppression.', 'error');
+    header('Location: ' . $_SERVER['PHP_SELF']);
+    exit;
   }
 }
 // Liste des clients
@@ -47,162 +53,153 @@ if ($stmt) {
     $clients[] = $row;
   }
 }
+
+// Gestion centralisée des messages
+// function set_message($msg, $type = 'success')
+// {
+//   $_SESSION['flash_message'] = [
+//     'text' => $msg,
+//     'type' => $type
+//   ];
+// }
+// function display_message()
+// {
+//   if (!empty($_SESSION['flash_message'])) {
+//     $type = $_SESSION['flash_message']['type'] === 'success' ? 'alert-success' : 'alert-error';
+//     $text = htmlspecialchars($_SESSION['flash_message']['text']);
+//     echo "<div class='alert $type'><i class='bi " .
+//       ($_SESSION['flash_message']['type'] === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle') .
+//       "'></i> $text</div>";
+//     unset($_SESSION['flash_message']);
+//   }
+// }
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 
 <head>
   <meta charset="UTF-8">
-  <title>Clients</title>
+  <title>Clients - Administration</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+  <link rel="stylesheet" href="../assets/css/admin-animations.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body {
-      background: #f8f9fa;
-      font-family: 'Segoe UI', Arial, sans-serif;
-    }
-
-    .sidebar {
-      background: #1a237e;
-      color: #fff;
-      width: 240px;
-      min-height: 100vh;
-      position: fixed;
-      left: 0;
-      top: 0;
-      display: flex;
-      flex-direction: column;
-      z-index: 10;
-    }
-
-    .sidebar .logo {
-      font-size: 2rem;
-      font-weight: bold;
-      padding: 32px 0 24px 0;
-      text-align: center;
-      letter-spacing: 2px;
-      color: #fff;
-    }
-
-    .sidebar nav ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .sidebar nav ul li {
-      margin: 0;
-    }
-
-    .sidebar nav ul li a {
-      display: flex;
-      align-items: center;
-      color: #fff;
-      text-decoration: none;
-      padding: 16px 32px;
-      font-size: 1.1rem;
-      transition: background 0.2s;
-      border-left: 4px solid transparent;
-    }
-
-    .sidebar nav ul li a.active,
-    .sidebar nav ul li a:hover {
-      background: #283593;
-      border-left: 4px solid #42a5f5;
-      color: #42a5f5;
-    }
-
-    .sidebar nav ul li a i {
-      margin-right: 12px;
-      font-size: 1.3rem;
-    }
-
-    .main-content {
-      margin-left: 240px;
-      min-height: 100vh;
-      background: #f8f9fa;
-      transition: margin-left 0.2s;
-    }
-
-    @media (max-width: 900px) {
-      .main-content {
-        margin-left: 0;
+    /* Styles spécifiques pour la page clients sur mobile */
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
       }
 
-      .sidebar {
-        position: relative;
-        width: 100%;
-        flex-direction: row;
-        height: auto;
+      .table-responsive-wrapper {
+        margin: 0 -15px;
+        width: calc(100% + 30px);
+        border-radius: 0;
+      }
+
+      .admin-table th:nth-child(1),
+      .admin-table td:nth-child(1) {
+        display: none;
+      }
+
+      .admin-table th,
+      .admin-table td {
+        padding: 10px 8px;
+        font-size: 0.9rem;
+      }
+
+      .admin-table th:nth-child(4),
+      .admin-table td:nth-child(4) {
+        max-width: 120px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    @media (max-width: 480px) {
+
+      .admin-table th:nth-child(5),
+      .admin-table td:nth-child(5) {
+        display: none;
       }
     }
   </style>
 </head>
 
 <body>
-  <div class="sidebar">
-    <div class="logo">Clients</div>
-    <nav>
-      <ul>
-        <li><a href="index.php"><i class="bi bi-bar-chart"></i> Analytics</a></li>
-        <li><a href="clients.php" class="active"><i class="bi bi-people"></i> Clients</a></li>
-        <li><a href="commandes.php"><i class="bi bi-basket"></i> Commandes</a></li>
-        <li><a href="employes.php"><i class="bi bi-person-badge"></i> Employés</a></li>
-        <li><a href="menus.php"><i class="bi bi-list"></i> Menus</a></li>
-        <li><a href="paiements.php"><i class="bi bi-credit-card"></i> Paiements</a></li>
-        <li><a href="reservations.php"><i class="bi bi-calendar-check"></i> Réservations</a></li>
-        <li><a href="tables.php"><i class="bi bi-table"></i> Tables</a></li>
-        <li><a href="logout.php"><i class="bi bi-box-arrow-right"></i> Déconnexion</a></li>
-      </ul>
-    </nav>
-  </div>
-  <div class="main-content">
-    <div class="topbar">
-      <div class="icons">
-        <img src="../assets/img/favcon.jpeg" alt="Profil" style="width:50px;height:50px;border-radius:50%;background:#eee;">
-      </div>
-      <div style="padding:40px;">
-        <h2 style="margin-bottom:32px;">Gestion des clients</h2>
-        <?php if ($message) echo $message; ?>
-        <div style="max-width:100%;margin-bottom:40px;background:#fff;border-radius:16px;box-shadow:0 2px 12px #0001;padding:32px 32px 24px 32px;">
-          <form method="post" class="form-section" style="background:none;box-shadow:none;padding:0;margin-bottom:0;display:flex;gap:24px;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;">
-            <input type="text" name="nom" placeholder="Nom" required style="flex:1 1 180px;min-width:120px;margin-bottom:0;">
-            <input type="text" name="prenom" placeholder="Prénom" required style="flex:1 1 180px;min-width:120px;margin-bottom:0;">
-            <input type="email" name="email" placeholder="Email" required style="flex:1 1 220px;min-width:140px;margin-bottom:0;">
-            <input type="text" name="telephone" placeholder="Téléphone" style="flex:1 1 160px;min-width:120px;margin-bottom:0;">
-            <button type="submit" style="flex:0 0 160px;width:160px;background:#182a7e;color:#fff;font-weight:bold;font-size:1.1em;padding:12px 0;border-radius:8px;">Ajouter</button>
-          </form>
-        </div>
-        <div style="overflow-x:auto;width:100%;">
-          <table class="admin-table" style="width:100%;min-width:900px;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px #0001;background:#fff;">
-            <thead style="background:#f5f5f5;">
-              <tr>
-                <th style="padding:18px 20px;">ID</th>
-                <th style="padding:18px 20px;">Nom</th>
-                <th style="padding:18px 20px;">Prénom</th>
-                <th style="padding:18px 20px;">Email</th>
-                <th style="padding:18px 20px;">Téléphone</th>
-                <th style="padding:18px 20px;">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php foreach ($clients as $c): ?>
-                <tr style="background:#fff;">
-                  <td style="padding:16px 20px;"><?= htmlspecialchars($c['ClientID']) ?></td>
-                  <td style="padding:16px 20px;"><?= htmlspecialchars($c['Nom']) ?></td>
-                  <td style="padding:16px 20px;"><?= htmlspecialchars($c['Prenom']) ?></td>
-                  <td style="padding:16px 20px;"><?= htmlspecialchars($c['Email']) ?></td>
-                  <td style="padding:16px 20px;"><?= htmlspecialchars($c['Telephone']) ?></td>
-                  <td style="padding:16px 20px;text-align:center;">
-                    <a href="?delete=<?= $c['ClientID'] ?>" onclick="return confirm('Supprimer ce client ?')" style="color:#c62828;font-size:1.3em;"><i class="bi bi-trash"></i></a>
-                  </td>
-                </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
-        </div>
-      </div>
+  <?php
+  // Définir le titre de la page
+  $page_title = "Clients";
+
+  // Indiquer que ce fichier est inclus dans une page
+  define('INCLUDED_IN_PAGE', true);
+  include 'header_template.php';
+  ?>
+
+  <!-- Contenu spécifique de la page -->
+  <div class="content-wrapper">
+    <div style="background-color: #f9f9f9; border-radius: 5px;">
+      <h2 style="color: #222; font-size: 23px; margin-bottom: 30px; position: relative;">Gestion des clients</h2>
     </div>
+    <?php display_message(); ?>
+    <div class="form-section">
+      <h3 class="section-title">Ajouter un client</h3>
+      <form method="post" class="form-grid">
+        <div class="form-group">
+          <input type="text" name="nom" placeholder="Nom" required>
+        </div>
+        <div class="form-group">
+          <input type="text" name="prenom" placeholder="Prénom" required>
+        </div>
+        <div class="form-group">
+          <input type="email" name="email" placeholder="Email" required>
+        </div>
+        <div class="form-group">
+          <input type="text" name="telephone" placeholder="Téléphone" required>
+        </div>
+        <div class="form-group" style="grid-column: 1 / -1;">
+          <button type="submit" class="submit-btn">Ajouter le client</button>
+        </div>
+      </form>
+    </div>
+    <h3 class="section-title" style="margin-top: 30px;">Liste des clients</h3>
+    <div class="table-responsive-wrapper">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nom</th>
+            <th>Prénom</th>
+            <th>Email</th>
+            <th>Téléphone</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($clients as $c): ?>
+            <tr>
+              <td><?= htmlspecialchars($c['ClientID']) ?></td>
+              <td><?= htmlspecialchars($c['Nom']) ?></td>
+              <td><?= htmlspecialchars($c['Prenom']) ?></td>
+              <td><?= htmlspecialchars($c['Email']) ?></td>
+              <td><?= htmlspecialchars($c['Telephone']) ?></td>
+              <td class="action-cell">
+                <a href="?delete=<?= $c['ClientID'] ?>" onclick="return confirm('Supprimer ce client ?')" class="action-icon"><i class="bi bi-trash"></i></a>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  </div> <!-- Fermeture du content-wrapper -->
+
+  <?php
+  include 'footer_template.php';
+  ?>
 </body>
 
 </html>
