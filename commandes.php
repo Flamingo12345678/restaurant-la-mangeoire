@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajouter'])) {
     $quantite = $_POST['quantite'] ?? '';
     $valid = validate_quantite($quantite) && validate_numero_table($reservation_id) && validate_numero_table($menu_id);
     if ($valid) {
-      $sql = "INSERT INTO Commandes (ReservationID, MenuID, Quantite) VALUES (?, ?, ?)";
+      $sql = "INSERT INTO Commandes (ReservationID, MenuID, Quantite, DateCommande, Statut) VALUES (?, ?, ?, NOW(), 'En attente')";
       $stmt = $conn->prepare($sql);
       $stmt->execute([$reservation_id, $menu_id, $quantite]);
       set_message('✅ Commande ajoutée avec succès.');

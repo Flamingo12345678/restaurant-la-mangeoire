@@ -1,6 +1,6 @@
 <?php
 session_start();
-if (!isset($_SESSION['admin'])) {
+if (!isset($_SESSION['admin_id']) || $_SESSION['user_type'] !== 'admin') {
   header('Location: login.php');
   exit;
 }

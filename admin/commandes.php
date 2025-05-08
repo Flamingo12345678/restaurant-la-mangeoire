@@ -60,7 +60,10 @@ $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $commandes_per_page;
 $total_commandes = $conn->query("SELECT COUNT(*) FROM Commandes")->fetchColumn();
 $total_pages = ceil($total_commandes / $commandes_per_page);
-$commandes = $conn->query("SELECT * FROM Commandes ORDER BY CommandeID DESC LIMIT $commandes_per_page OFFSET $offset")->fetchAll();
+$commandes = $conn->query("SELECT c.*, CONCAT(c.PrenomClient, ' ', c.NomClient) as Client 
+                               FROM Commandes c 
+                               ORDER BY c.DateCommande DESC 
+                               LIMIT $commandes_per_page OFFSET $offset")->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -118,9 +121,10 @@ $commandes = $conn->query("SELECT * FROM Commandes ORDER BY CommandeID DESC LIMI
         <thead>
           <tr>
             <th style="padding: 15px; text-align: left; border-bottom: 1px solid #eee;">ID</th>
-            <th style="padding: 15px; text-align: left; border-bottom: 1px solid #eee;">Réservation</th>
-            <th style="padding: 15px; text-align: left; border-bottom: 1px solid #eee;">Menu</th>
-            <th style="padding: 15px; text-align: left; border-bottom: 1px solid #eee;">Quantité</th>
+            <th style="padding: 15px; text-align: left; border-bottom: 1px solid #eee;">Date</th>
+            <th style="padding: 15px; text-align: left; border-bottom: 1px solid #eee;">Client</th>
+            <th style="padding: 15px; text-align: left; border-bottom: 1px solid #eee;">Statut</th>
+            <th style="padding: 15px; text-align: left; border-bottom: 1px solid #eee;">Montant</th>
             <th style="padding: 15px; text-align: center; border-bottom: 1px solid #eee;">Actions</th>
           </tr>
         </thead>
@@ -128,9 +132,10 @@ $commandes = $conn->query("SELECT * FROM Commandes ORDER BY CommandeID DESC LIMI
           <?php foreach ($commandes as $c): ?>
             <tr style="transition: background-color 0.2s ease;">
               <td style="padding: 15px; border-bottom: 1px solid #eee;"><?= htmlspecialchars($c['CommandeID']) ?></td>
-              <td style="padding: 15px; border-bottom: 1px solid #eee;"><?= htmlspecialchars($c['ReservationID']) ?></td>
-              <td style="padding: 15px; border-bottom: 1px solid #eee;"><?= htmlspecialchars($c['MenuID']) ?></td>
-              <td style="padding: 15px; border-bottom: 1px solid #eee;"><?= htmlspecialchars($c['Quantite']) ?></td>
+              <td style="padding: 15px; border-bottom: 1px solid #eee;"><?= isset($c['DateCommande']) ? date('d/m/Y H:i', strtotime($c['DateCommande'])) : 'N/A' ?></td>
+              <td style="padding: 15px; border-bottom: 1px solid #eee;"><?= htmlspecialchars($c['Client'] ?: 'N/A') ?></td>
+              <td style="padding: 15px; border-bottom: 1px solid #eee;"><?= htmlspecialchars($c['Statut'] ?: 'N/A') ?></td>
+              <td style="padding: 15px; border-bottom: 1px solid #eee;"><?= number_format($c['MontantTotal'] ?? 0, 0, ',', ' ') ?> XAF</td>
               <td style="padding: 15px; text-align: center; border-bottom: 1px solid #eee;">
                 <form method="post" action="" style="display: inline;">
                   <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">

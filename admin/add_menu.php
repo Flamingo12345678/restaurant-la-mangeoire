@@ -68,22 +68,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Gestion centralisée des messages
-function set_message($msg, $type = 'success')
-{
-  $_SESSION['flash_message'] = [
-    'text' => $msg,
-    'type' => $type
-  ];
-}
-function display_message()
-{
-  if (!empty($_SESSION['flash_message'])) {
-    $type = $_SESSION['flash_message']['type'] === 'success' ? 'alert-success' : 'alert-error';
-    $text = htmlspecialchars($_SESSION['flash_message']['text']);
-    echo "<div class='alert $type'>$text</div>";
-    unset($_SESSION['flash_message']);
-  }
-}
+// These functions are now defined in common.php
+// function set_message and display_message are already included
+
 ?>
 <!DOCTYPE html>
 <html lang="fr">

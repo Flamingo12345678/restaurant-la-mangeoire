@@ -1,19 +1,11 @@
 <?php
-function validate_salaire($salaire)
-{
-  return is_numeric($salaire) && $salaire >= 0;
+// Fichier commun pour la gestion des messages, CSRF, contrôle d'accès et validation
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
-// Journalisation centralisée des actions admin
-function log_admin_action($action, $details = '')
-{
-  $logfile = __DIR__ . '/../admin/admin_actions.log';
-  $date = date('Y-m-d H:i:s');
-  $user = $_SESSION['admin'] ?? 'inconnu';
-  $entry = "[$date] [$user] $action $details\n";
-  file_put_contents($logfile, $entry, FILE_APPEND | LOCK_EX);
-}
-// Fichier commun pour la gestion des messages, CSRF, contrôle d’accès et validation
-session_start();
+
+// Inclure la gestion des cookies
+require_once __DIR__ . '/cookie-consent.php';
 
 // Gestion des messages flash
 function set_message($msg, $type = 'success')
@@ -23,6 +15,7 @@ function set_message($msg, $type = 'success')
     'type' => $type
   ];
 }
+
 function display_message()
 {
   if (!empty($_SESSION['flash_message'])) {
@@ -41,20 +34,22 @@ function generate_csrf_token()
   }
   return $_SESSION['csrf_token'];
 }
+
 function check_csrf_token($token)
 {
   return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
 
-// Contrôle d’accès admin (simple)
+// Contrôle d'accès admin (simple)
 function require_admin()
 {
-  if (!isset($_SESSION['admin'])) {
+  if (!isset($_SESSION['admin_id']) || $_SESSION['user_type'] !== 'admin') {
     header('Location: admin/login.php');
     exit;
   }
 }
-// Contrôle d’accès superadmin
+
+// Contrôle d'accès superadmin
 function require_superadmin()
 {
   if (!isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'superadmin') {
@@ -63,45 +58,100 @@ function require_superadmin()
   }
 }
 
-// Validation centralisée (exemples)
+// Validation centralisée
 function validate_email($email)
 {
   return filter_var($email, FILTER_VALIDATE_EMAIL);
 }
+
 function validate_nom($nom, $max = 100)
 {
   return is_string($nom) && mb_strlen($nom) > 1 && mb_strlen($nom) <= $max;
 }
+
 function validate_prenom($prenom, $max = 100)
 {
   return is_string($prenom) && mb_strlen($prenom) > 1 && mb_strlen($prenom) <= $max;
 }
+
 function validate_telephone($tel)
 {
   return preg_match('/^[0-9]{10,15}$/', $tel);
 }
+
+function validate_code_postal($code)
+{
+  // Validation de code postal français (5 chiffres)
+  return preg_match('/^[0-9]{5}$/', $code);
+}
+
 function validate_date($date)
 {
   return (bool)strtotime($date);
 }
+
 function validate_prix($prix)
 {
   return is_numeric($prix) && $prix >= 0;
 }
+
 function validate_numero_table($num)
 {
   return is_numeric($num) && $num > 0;
 }
+
 function validate_places($places)
 {
-  return is_numeric($places) && $places > 0;
+  return is_numeric($places) && $places > 0 && $places <= 20;
 }
+
+function validate_salaire($salaire)
+{
+  return is_numeric($salaire) && $salaire >= 0;
+}
+
 function validate_quantite($qte)
 {
   return is_numeric($qte) && $qte > 0;
 }
+
 function validate_description($desc, $max = 255)
 {
   return is_string($desc) && mb_strlen($desc) <= $max;
 }
-// Ajoutez d'autres fonctions de validation selon vos besoins
+
+function validate_password_strength($password)
+{
+  // Vérifier la longueur minimale
+  if (strlen($password) < 8) {
+    return false;
+  }
+  
+  // Vérifier la présence d'au moins une lettre majuscule
+  if (!preg_match('/[A-Z]/', $password)) {
+    return false;
+  }
+  
+  // Vérifier la présence d'au moins une lettre minuscule
+  if (!preg_match('/[a-z]/', $password)) {
+    return false;
+  }
+  
+  // Vérifier la présence d'au moins un chiffre
+  if (!preg_match('/[0-9]/', $password)) {
+    return false;
+  }
+  
+  return true;
+}
+
+// Journalisation centralisée des actions admin
+function log_admin_action($action, $details = '')
+{
+  $logfile = __DIR__ . '/../admin/admin_actions.log';
+  $date = date('Y-m-d H:i:s');
+  $user = $_SESSION['admin_id'] ?? 'inconnu';
+  $entry = "[$date] [$user] $action $details\n";
+  file_put_contents($logfile, $entry, FILE_APPEND | LOCK_EX);
+}
+?>

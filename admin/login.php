@@ -1,23 +1,7 @@
 <?php
-session_start();
-// Authentification simple (à renforcer en production)
-$admin_username = 'admin';
-// Mot de passe par défaut : 'admin' (à changer après la première connexion)
-$admin_password_hash = password_hash('admin', PASSWORD_DEFAULT);
-
-if (isset($_POST['username'], $_POST['password'])) {
-  $username = $_POST['username'];
-  $password = $_POST['password'];
-  // Vérification de l'identifiant et du mot de passe
-  if ($username === $admin_username && password_verify($password, $admin_password_hash)) {
-    session_regenerate_id(true);
-    $_SESSION['admin'] = true;
-    header('Location: index.php');
-    exit();
-  } else {
-    $error = 'Identifiants incorrects';
-  }
-}
+// Redirection vers la nouvelle page de connexion unifiée
+header("Location: ../connexion-unifiee.php");
+exit;
 ?>
 <!DOCTYPE html>
 <html lang="fr">

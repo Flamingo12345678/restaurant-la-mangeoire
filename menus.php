@@ -59,15 +59,7 @@ $total_menus = $conn->query("SELECT COUNT(*) FROM Menus")->fetchColumn();
 $total_pages = ceil($total_menus / $menus_per_page);
 $menus = $conn->query("SELECT * FROM Menus ORDER BY MenuID DESC LIMIT $menus_per_page OFFSET $offset")->fetchAll();
 
-function display_message()
-{
-  if (!empty($_SESSION['flash_message'])) {
-    $type = $_SESSION['flash_message']['type'] === 'success' ? 'alert-success' : 'alert-error';
-    $text = htmlspecialchars($_SESSION['flash_message']['text']);
-    echo "<div class='alert $type'>$text</div>";
-    unset($_SESSION['flash_message']);
-  }
-}
+// Removed duplicate function as it's already defined in common.php
 ?>
 <!DOCTYPE html>
 <html lang="fr">

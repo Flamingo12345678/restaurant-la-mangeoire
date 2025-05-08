@@ -113,6 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Créer un compte - La Mangeoire</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/cookie-consent.css">
   <style>
     :root {
       --primary-color: #ce1212;
@@ -380,6 +381,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       });
     });
   </script>
+  
+  <!-- Script pour le système de gestion des cookies -->
+  <script src="assets/js/cookie-consent.js"></script>
 </body>
 
 </html>

@@ -1,0 +1,366 @@
+<?php
+session_start();
+require_once 'db_connexion.php';
+
+// Vérifier si l'utilisateur est connecté en tant que client
+if (!isset($_SESSION['client_id']) || $_SESSION['user_type'] !== 'client') {
+    header("Location: connexion-unifiee.php");
+    exit;
+}
+
+$client_id = $_SESSION['client_id'];
+$success_message = "";
+$error_message = "";
+
+// Récupérer les informations du client
+$query = "SELECT * FROM Clients WHERE ClientID = ?";
+$stmt = $conn->prepare($query);
+$stmt->bindValue(1, $client_id, PDO::PARAM_INT);
+$stmt->execute();
+$client = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// Récupérer les commandes du client
+$commandes_query = "SELECT * FROM Commandes WHERE ClientID = ? ORDER BY DateCommande DESC";
+$commandes_stmt = $conn->prepare($commandes_query);
+$commandes_stmt->bindValue(1, $client_id, PDO::PARAM_INT);
+$commandes_stmt->execute();
+$commandes = $commandes_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Traitement de la mise à jour du profil
+if (isset($_POST['update_profile'])) {
+    $nom = $_POST['nom'];
+    $prenom = $_POST['prenom'];
+    $email = $_POST['email'];
+    $telephone = $_POST['telephone'];
+    $adresse = $_POST['adresse'];
+    
+    $update_query = "UPDATE Clients SET Nom = ?, Prenom = ?, Email = ?, Telephone = ?, Adresse = ? WHERE ClientID = ?";
+    $update_stmt = $conn->prepare($update_query);
+    $update_stmt->bindValue(1, $nom, PDO::PARAM_STR);
+    $update_stmt->bindValue(2, $prenom, PDO::PARAM_STR);
+    $update_stmt->bindValue(3, $email, PDO::PARAM_STR);
+    $update_stmt->bindValue(4, $telephone, PDO::PARAM_STR);
+    $update_stmt->bindValue(5, $adresse, PDO::PARAM_STR);
+    $update_stmt->bindValue(6, $client_id, PDO::PARAM_INT);
+    
+    if ($update_stmt->execute()) {
+        $success_message = "Votre profil a été mis à jour avec succès";
+        
+        // Mettre à jour les données de session
+        $_SESSION['client_nom'] = $nom;
+        $_SESSION['client_prenom'] = $prenom;
+        $_SESSION['client_email'] = $email;
+        
+        // Recharger les informations client
+        $stmt->execute();
+        $client = $stmt->fetch(PDO::FETCH_ASSOC);
+    } else {
+        $error_message = "Erreur lors de la mise à jour du profil";
+    }
+}
+
+// Traitement du changement de mot de passe
+if (isset($_POST['change_password'])) {
+    $current_password = $_POST['current_password'];
+    $new_password = $_POST['new_password'];
+    $confirm_password = $_POST['confirm_password'];
+    
+    if (password_verify($current_password, $client['MotDePasse'])) {
+        if ($new_password === $confirm_password) {
+            $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+            
+            $password_query = "UPDATE Clients SET MotDePasse = ? WHERE ClientID = ?";
+            $password_stmt = $conn->prepare($password_query);
+            $password_stmt->bindValue(1, $hashed_password, PDO::PARAM_STR);
+            $password_stmt->bindValue(2, $client_id, PDO::PARAM_INT);
+            
+            if ($password_stmt->execute()) {
+                $success_message = "Votre mot de passe a été modifié avec succès";
+            } else {
+                $error_message = "Erreur lors de la modification du mot de passe";
+            }
+        } else {
+            $error_message = "Les nouveaux mots de passe ne correspondent pas";
+        }
+    } else {
+        $error_message = "Mot de passe actuel incorrect";
+    }
+}
+
+// Récupérer les paiements du client
+$paiements_query = "SELECT * FROM Paiements WHERE ClientID = ? ORDER BY DatePaiement DESC";
+$paiements_stmt = $conn->prepare($paiements_query);
+$paiements_stmt->bindValue(1, $client_id, PDO::PARAM_INT);
+$paiements_stmt->execute();
+$paiements = $paiements_stmt->fetchAll(PDO::FETCH_ASSOC);
+?>
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Compte - Restaurant La Mangeoire</title>
+    <link rel="stylesheet" href="assets/css/main.css">
+    <style>
+        .account-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .account-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #f5f5f5;
+            margin-right: 5px;
+            border-radius: 5px 5px 0 0;
+        }
+        .tab.active {
+            background-color: #9E2A2B;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 0 0 5px 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="email"], input[type="tel"], input[type="password"], textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .btn {
+            padding: 10px 15px;
+            background-color: #9E2A2B;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn:hover {
+            background-color: #7E1A1B;
+        }
+        .alert {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table th, .table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        .table th {
+            background-color: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <?php include 'includes/common.php'; ?>
+    
+    <div class="account-container">
+        <div class="account-header">
+            <h1>Bienvenue, <?php echo htmlspecialchars($client['Prenom'] . ' ' . $client['Nom']); ?></h1>
+            <a href="deconnexion.php" class="btn">Déconnexion</a>
+        </div>
+        
+        <?php if (!empty($success_message)): ?>
+            <div class="alert alert-success"><?php echo $success_message; ?></div>
+        <?php endif; ?>
+        
+        <?php if (!empty($error_message)): ?>
+            <div class="alert alert-danger"><?php echo $error_message; ?></div>
+        <?php endif; ?>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="openTab(event, 'profile')">Mon Profil</div>
+            <div class="tab" onclick="openTab(event, 'orders')">Mes Commandes</div>
+            <div class="tab" onclick="openTab(event, 'cart')">Mon Panier</div>
+            <div class="tab" onclick="openTab(event, 'menu')">Menu</div>
+            <div class="tab" onclick="openTab(event, 'payments')">Mes Paiements</div>
+        </div>
+        
+        <div id="profile" class="tab-content active">
+            <h2>Mes Informations</h2>
+            <form method="POST" action="">
+                <div class="form-group">
+                    <label for="nom">Nom</label>
+                    <input type="text" id="nom" name="nom" value="<?php echo htmlspecialchars($client['Nom']); ?>" required>
+                </div>
+                <div class="form-group">
+                    <label for="prenom">Prénom</label>
+                    <input type="text" id="prenom" name="prenom" value="<?php echo htmlspecialchars($client['Prenom']); ?>" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($client['Email']); ?>" required>
+                </div>
+                <div class="form-group">
+                    <label for="telephone">Téléphone</label>
+                    <input type="tel" id="telephone" name="telephone" value="<?php echo htmlspecialchars($client['Telephone']); ?>">
+                </div>
+                <div class="form-group">
+                    <label for="adresse">Adresse</label>
+                    <textarea id="adresse" name="adresse" rows="3"><?php echo htmlspecialchars($client['Adresse']); ?></textarea>
+                </div>
+                <button type="submit" name="update_profile" class="btn">Mettre à jour mon profil</button>
+            </form>
+            
+            <h3 style="margin-top: 30px;">Changer mon mot de passe</h3>
+            <form method="POST" action="">
+                <div class="form-group">
+                    <label for="current_password">Mot de passe actuel</label>
+                    <input type="password" id="current_password" name="current_password" required>
+                </div>
+                <div class="form-group">
+                    <label for="new_password">Nouveau mot de passe</label>
+                    <input type="password" id="new_password" name="new_password" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirm_password">Confirmer le nouveau mot de passe</label>
+                    <input type="password" id="confirm_password" name="confirm_password" required>
+                </div>
+                <button type="submit" name="change_password" class="btn">Changer mon mot de passe</button>
+            </form>
+        </div>
+        
+        <div id="orders" class="tab-content">
+            <h2>Mes Commandes</h2>
+            <?php if (count($commandes) > 0): ?>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>N° Commande</th>
+                            <th>Date</th>
+                            <th>Statut</th>
+                            <th>Total</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($commandes as $commande): ?>
+                            <tr class="commande-row" data-id="<?php echo htmlspecialchars($commande['CommandeID']); ?>">
+                                <td><?php echo htmlspecialchars($commande['CommandeID']); ?></td>
+                                <td><?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($commande['DateCommande']))); ?></td>
+                                <td><?php echo htmlspecialchars($commande['Statut']); ?></td>
+                                <td><?php echo htmlspecialchars(number_format($commande['MontantTotal'], 2, ',', ' ')); ?> €</td>
+                                <td class="actions">
+                                    <a href="#" class="view-commande" data-id="<?php echo htmlspecialchars($commande['CommandeID']); ?>">Voir détails</a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php else: ?>
+                <p>Vous n'avez pas encore passé de commande.</p>
+            <?php endif; ?>
+        </div>
+        
+        <div id="cart" class="tab-content">
+            <h2>Mon Panier</h2>
+            <p><a href="panier.php" class="btn">Accéder à mon panier</a></p>
+        </div>
+        
+        <div id="menu" class="tab-content">
+            <h2>Notre Menu</h2>
+            <p><a href="menu.php" class="btn">Voir le menu</a></p>
+        </div>
+        
+        <div id="payments" class="tab-content">
+            <h2>Mes Paiements</h2>
+            <?php if (count($paiements) > 0): ?>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Date</th>
+                            <th>Montant</th>
+                            <th>Méthode</th>
+                            <th>Statut</th>
+                            <th>Commande</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($paiements as $paiement): ?>
+                            <tr>
+                                <td><?php echo $paiement['PaiementID']; ?></td>
+                                <td><?php echo date('d/m/Y H:i', strtotime($paiement['DatePaiement'])); ?></td>
+                                <td><?php echo number_format($paiement['Montant'], 2, ',', ' '); ?> €</td>
+                                <td><?php echo $paiement['Methode']; ?></td>
+                                <td><?php echo $paiement['Statut']; ?></td>
+                                <td>
+                                    <a href="detail-commande.php?id=<?php echo $paiement['CommandeID']; ?>" class="btn">Voir commande</a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php else: ?>
+                <p>Vous n'avez pas encore effectué de paiement.</p>
+            <?php endif; ?>
+        </div>
+    </div>
+    
+    <script>
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            
+            // Masquer tous les contenus d'onglets
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].className = tabcontent[i].className.replace(" active", "");
+            }
+            
+            // Désactiver tous les boutons d'onglets
+            tablinks = document.getElementsByClassName("tab");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            
+            // Afficher l'onglet actif et activer le bouton correspondant
+            document.getElementById(tabName).className += " active";
+            evt.currentTarget.className += " active";
+        }
+    </script>
+    
+    <?php include 'includes/footer.php'; ?>
+</body>
+</html>

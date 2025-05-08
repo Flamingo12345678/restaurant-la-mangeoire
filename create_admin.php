@@ -4,7 +4,7 @@ require_once __DIR__ . '/db_connexion.php';
 
 // Identifiants pour le nouvel administrateur
 $username = 'Admin';
-$email = 'admin@mangeoire.fr'; // Email uniquement pour respecter la structure de la BDD
+$email = 'admin@lamangeoire.fr'; // Email uniquement pour respecter la structure de la BDD
 $password = 'D@@mso_237*';
 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 $nom = 'Administrateur';
