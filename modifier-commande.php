@@ -1,6 +1,10 @@
 <?php
 session_start();
 require_once 'db_connexion.php';
+// Vérifiez que $conn est bien un objet mysqli
+if (!($conn instanceof mysqli)) {
+    die("La connexion à la base de données n'est pas valide. Vérifiez db_connexion.php pour utiliser mysqli.");
+}
 
 // Vérifier si l'utilisateur est connecté en tant que client
 if (!isset($_SESSION['client_id']) || $_SESSION['user_type'] !== 'client') {
@@ -14,6 +18,9 @@ $commande_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 // Vérifier si la commande existe et appartient au client
 $check_query = "SELECT * FROM commandes WHERE id = ? AND client_id = ? AND statut = 'En attente'";
 $check_stmt = $conn->prepare($check_query);
+if (!$check_stmt) {
+    die("Erreur de préparation de la requête : " . $conn->error);
+}
 $check_stmt->bind_param("ii", $commande_id, $client_id);
 $check_stmt->execute();
 $check_result = $check_stmt->get_result();

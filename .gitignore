@@ -1,21 +1,43 @@
+# Fichiers de configuration pour l'environnement de production
+.git/
+
 # Dépendances PHP
-vendor/
+/vendor/
+composer.phar
 
 # Dépendances front-end (si jamais vous utilisez npm/yarn plus tard)
 node_modules/
 
-# Fichiers temporaires et de logs
-*.log
-*.tmp
-.DS_Store
-
-# Fichiers de configuration locaux
+# Fichiers de configuration locaux et variables d'environnement
 .env
 .env.*
+*.config.php
+db_connexion.php
+.htaccess
+.htpasswd
 
-# Fichiers de sauvegarde d’éditeurs
+# Fichiers de log, de debug et temporaires
+*.log
+debug_log.txt
+*.cache
+*.tmp
+.DS_Store
+Thumbs.db
+error_log
+php_errors.log
+
+# Fichiers de sauvegarde d'éditeurs et IDE
 *~
 *.swp
+*.swo
+.idea/
+.vscode/
+*.sublime-*
+.project
+.settings/
+.phpintel/
+.phpstorm.meta.php
+nbproject/
 
 # Fichiers générés par Composer
 composer.lock
@@ -25,21 +47,56 @@ composer.lock
 *.sqlite3
 *.db
 *.sql
+*.bak
+*_backup*
+*_bak*
+*.fixed
+*.fixed2
+*.original
+*.new
 
-# Fichiers de test ou de debug
+# Fichiers de test, de développement ou de debug
+/test/
+/tests/
+*_test.php
 /test_*
+phpunit*.xml
+setup*.php
+reset_*.php
+create_*.php
+init_*.php
+check_db_integrity.php
+execute_sql_update.php
+executer_mise_a_jour_*.php
+update_*.php
+commandes.php.bak
+maintenance_*.php
+force_admin_login.php
+reparer-*.php
 
-# Fichiers de diagrammes générés
-*.erd.json
+# Fichiers de documentation interne ou techniques
+LICENSE
+CHANGELOG
+TODO
+AMELIORATIONS.md
+README*
 
 # Dossiers de build éventuels
 /dist/
 /build/
 
-# Dossiers d’upload temporaires
-/uploads/
+# Dossiers et fichiers d'upload temporaires
+/uploads/*
+/tmp/
 
-# Exclure les fichiers sensibles ou inutiles du dépôt
+# Fichiers sensibles ou spécifiques au développement
 secrets.json
+*_dev.*
+*_local.*
 
-# Ajoutez ici d’autres patterns spécifiques à votre projet si besoin
+# Fichiers de restauration ou de sauvegarde
+admin_restore.php
+*_restore.php
+
+# Fichiers de diagrammes générés
+*.erd.json

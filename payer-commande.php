@@ -20,12 +20,19 @@ function display_cart_message() {
   }
 }
 
-// Check if we have a valid order ID
+// Check if we have a valid order ID or reservation ID
 $order_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-$order = null;
+$reservation_id = isset($_GET['reservation_id']) ? intval($_GET['reservation_id']) : 0;
 
+$order = null;
+$reservation = null;
+$payment_type = ''; // Will be 'order' or 'reservation'
+$payment_amount = 0;
+
+// Get order details if we have an order ID
 if ($order_id > 0) {
-    // Get order details
+    $payment_type = 'order';
+    
     $stmt = $conn->prepare("
         SELECT * FROM Commandes WHERE CommandeID = ?
     ");
@@ -34,17 +41,55 @@ if ($order_id > 0) {
     
     // Get order items
     if ($order) {
-        $stmt = $conn->prepare("
-            SELECT * FROM DetailsCommande WHERE CommandeID = ?
+        $payment_amount = $order['MontantTotal'];
+        
+        // Check if the order already has a payment
+        $payment_check = $conn->prepare("
+            SELECT * FROM Paiements WHERE CommandeID = ? LIMIT 1
         ");
-        $stmt->execute([$order_id]);
-        $order_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $payment_check->execute([$order_id]);
+        if ($payment_check->fetch()) {
+            // Order already paid
+            $_SESSION['message'] = "Cette commande a déjà été payée.";
+            $_SESSION['message_type'] = "info";
+            header("Location: detail-commande.php?id=" . $order_id);
+            exit;
+        }
+    }
+}
+// Get reservation details if we have a reservation ID
+elseif ($reservation_id > 0) {
+    $payment_type = 'reservation';
+    
+    $stmt = $conn->prepare("
+        SELECT * FROM Reservations WHERE ReservationID = ?
+    ");
+    $stmt->execute([$reservation_id]);
+    $reservation = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($reservation) {
+        // For reservations, calculate payment based on deposit amount or fixed fee
+        // This is just an example, adjust based on your business logic
+        $payment_amount = isset($reservation['MontantDepot']) ? $reservation['MontantDepot'] : 10.00;
+        
+        // Check if the reservation already has a payment
+        $payment_check = $conn->prepare("
+            SELECT * FROM Paiements WHERE ReservationID = ? LIMIT 1
+        ");
+        $payment_check->execute([$reservation_id]);
+        if ($payment_check->fetch()) {
+            // Reservation already paid
+            $_SESSION['message'] = "Cette réservation a déjà été payée.";
+            $_SESSION['message_type'] = "info";
+            header("Location: detail-commande.php?reservation_id=" . $reservation_id);
+            exit;
+        }
     }
 }
 
-// If no valid order found, redirect to home
-if (!$order) {
-    $_SESSION['message'] = "Commande non trouvée.";
+// If no valid order or reservation found, redirect to home
+if (!$order && !$reservation) {
+    $_SESSION['message'] = "Commande ou réservation non trouvée.";
     $_SESSION['message_type'] = "error";
     header("Location: index.php");
     exit;
@@ -81,33 +126,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // In a real application, you would integrate with a payment gateway here
         // For now, we'll simulate a successful payment
         
-        // Update order status to paid
-        $stmt = $conn->prepare("
-            UPDATE Commandes 
-            SET Statut = 'Payé', DatePaiement = NOW() 
-            WHERE CommandeID = ?
-        ");
-        $stmt->execute([$order_id]);
+        // Generate a mock transaction number
+        $transaction_number = 'TR-' . time() . '-' . ($payment_type === 'order' ? $order_id : $reservation_id);
         
-        // Store the payment information (in a real app, you would NOT store full card details)
-        $cardLast4 = substr(str_replace(' ', '', $_POST['card_number']), -4);
-        
-        $stmt = $conn->prepare("
-            INSERT INTO Paiements (CommandeID, Montant, MethodePaiement, NumeroTransaction, DatePaiement)
-            VALUES (?, ?, ?, ?, NOW())
-        ");
-        $stmt->execute([
-            $order_id,
-            $order['MontantTotal'],
-            'Carte bancaire',
-            'TR-' . time() . '-' . $order_id // Generate a mock transaction number
-        ]);
-        
-        // Redirect to confirmation page
-        $_SESSION['message'] = "Votre paiement a été traité avec succès. Merci pour votre commande!";
-        $_SESSION['message_type'] = "success";
-        header("Location: confirmation-paiement.php?id=" . $order_id);
-        exit;
+        if ($payment_type === 'order') {
+            // Update order status to paid
+            $stmt = $conn->prepare("
+                UPDATE Commandes 
+                SET Statut = 'Payé', DatePaiement = NOW() 
+                WHERE CommandeID = ?
+            ");
+            $stmt->execute([$order_id]);
+            
+            // Store the payment information (in a real app, you would NOT store full card details)
+            $cardLast4 = substr(str_replace(' ', '', $_POST['card_number']), -4);
+            
+            $stmt = $conn->prepare("
+                INSERT INTO Paiements (CommandeID, Montant, MethodePaiement, NumeroTransaction, DatePaiement)
+                VALUES (?, ?, ?, ?, NOW())
+            ");
+            $stmt->execute([
+                $order_id,
+                $payment_amount,
+                'Carte bancaire',
+                $transaction_number
+            ]);
+            
+            // Redirect to confirmation page
+            $_SESSION['message'] = "Votre paiement a été traité avec succès. Merci pour votre commande!";
+            $_SESSION['message_type'] = "success";
+            header("Location: confirmation-paiement.php?id=" . $order_id);
+            exit;
+        } else {
+            // For reservation payment
+            // Update reservation status to confirm payment
+            $stmt = $conn->prepare("
+                UPDATE Reservations 
+                SET Statut = 'Confirmé', DateMiseAJour = NOW() 
+                WHERE ReservationID = ?
+            ");
+            $stmt->execute([$reservation_id]);
+            
+            // Store the payment information
+            $cardLast4 = substr(str_replace(' ', '', $_POST['card_number']), -4);
+            
+            $stmt = $conn->prepare("
+                INSERT INTO Paiements (ReservationID, Montant, MethodePaiement, NumeroTransaction, DatePaiement)
+                VALUES (?, ?, ?, ?, NOW())
+            ");
+            $stmt->execute([
+                $reservation_id,
+                $payment_amount,
+                'Carte bancaire',
+                $transaction_number
+            ]);
+            
+            // Redirect to confirmation page
+            $_SESSION['message'] = "Votre paiement a été traité avec succès. Votre réservation est confirmée!";
+            $_SESSION['message_type'] = "success";
+            header("Location: confirmation-paiement.php?reservation_id=" . $reservation_id);
+            exit;
+        }
     }
 }
 ?>

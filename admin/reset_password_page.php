@@ -1,13 +1,8 @@
 <?php
 // Ce script ajoute un lien vers la page de réinitialisation du mot de passe dans l'interface admin
 require_once __DIR__ . '/../includes/common.php';
+require_admin();
 require_once '../db_connexion.php';
-
-// Vérifier que l'utilisateur est connecté
-if (!isset($_SESSION['admin'])) {
-  header('Location: login.php');
-  exit;
-}
 
 // Définir le titre de la page
 $page_title = "Changer mon mot de passe";

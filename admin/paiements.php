@@ -5,27 +5,110 @@ require_admin();
 generate_csrf_token();
 require_once '../db_connexion.php';
 $message = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reservation_id'], $_POST['montant'], $_POST['date_paiement'])) {
-  $reservation_id = intval($_POST['reservation_id']);
+
+// Define verify_csrf_token if not already defined
+// Note: Using check_csrf_token is preferred for consistency with other files
+if (!function_exists('check_csrf_token')) {
+  function check_csrf_token($token) {
+    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+  }
+}
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['montant'], $_POST['date_paiement'], $_POST['mode_paiement'])) {
+  // Check the payment type selected by the user
+  $payment_type = isset($_POST['payment_type']) ? $_POST['payment_type'] : 'reservation';
+  
+  // Check if reservation or commande ID is provided based on the payment type
+  $reservation_id = ($payment_type === 'reservation' && !empty($_POST['reservation_id'])) ? intval($_POST['reservation_id']) : null;
+  $commande_id = ($payment_type === 'commande' && !empty($_POST['commande_id'])) ? intval($_POST['commande_id']) : null;
+  
   $montant = floatval($_POST['montant']);
   $date = $_POST['date_paiement'];
-  $mode = trim($_POST['mode'] ?? '');
-  if ($reservation_id > 0 && $montant > 0 && $date) {
-    $sql = "INSERT INTO Paiements (ReservationID, Montant, DatePaiement, ModePaiement) VALUES (?, ?, ?, ?)";
-    $stmt = $conn->prepare($sql);
-    $result = $stmt->execute([$reservation_id, $montant, $date, $mode]);
-    if ($result) {
-      $message = 'Paiement ajouté.';
-    } else {
-      $message = 'Erreur lors de l\'ajout.';
+  $mode = trim($_POST['mode_paiement']);
+  $numero_transaction = !empty($_POST['numero_transaction']) ? trim($_POST['numero_transaction']) : null;
+  
+  // Validate required fields based on payment type
+  $valid = false;
+  if ($payment_type === 'reservation') {
+    $valid = ($reservation_id > 0);
+    
+    // Si le montant n'est pas spécifié, calculer le montant total des commandes pour cette réservation
+    if ($valid && $montant <= 0) {
+      // Inclure le fichier commandes.php pour utiliser la fonction get_total_commandes_by_reservation
+      require_once 'commandes.php';
+      $montant = get_total_commandes_by_reservation($conn, $reservation_id);
+      if ($montant <= 0) {
+        $message = 'Aucune commande trouvée pour cette réservation ou montant total égal à zéro.';
+        $valid = false;
+      }
+    }
+  } elseif ($payment_type === 'commande') {
+    $valid = ($commande_id > 0);
+    
+    // Si le montant n'est pas spécifié, récupérer le montant de la commande
+    if ($valid && $montant <= 0) {
+      $commande_sql = "SELECT COALESCE(MontantTotal, PrixUnitaire * Quantite) as Total FROM Commandes WHERE CommandeID = ?";
+      $commande_stmt = $conn->prepare($commande_sql);
+      $commande_stmt->execute([$commande_id]);
+      $montant = $commande_stmt->fetchColumn();
+      
+      if ($montant <= 0) {
+        $message = 'Montant de la commande invalide ou égal à zéro.';
+        $valid = false;
+      }
+    }
+  }
+  
+  if ($valid && $montant > 0 && $date) {
+    try {
+      // Vérifier si c'est un paiement de type commande
+      if ($payment_type === 'commande' && $commande_id > 0) {
+        // Si c'est une commande, on doit d'abord récupérer la réservation associée (si elle existe)
+        $res_query = "SELECT ReservationID FROM Commandes WHERE CommandeID = ?";
+        $res_stmt = $conn->prepare($res_query);
+        $res_stmt->execute([$commande_id]);
+        $reservation_from_commande = $res_stmt->fetchColumn();
+        
+        // Utiliser la ReservationID associée à la commande, ou rejeter si aucune réservation n'est liée
+        if ($reservation_from_commande) {
+          $reservation_id = $reservation_from_commande;
+        } else {
+          // La base de données requiert un ReservationID, alors lancez une erreur ou modifiez le schéma
+          throw new Exception("La commande n'est pas associée à une réservation. Impossible d'ajouter le paiement.");
+        }
+      }
+      
+      // Vérifier que ReservationID n'est pas NULL
+      if ($reservation_id === null) {
+        throw new Exception("L'ID de réservation ne peut pas être nul.");
+      }
+      
+      $sql = "INSERT INTO Paiements (ReservationID, Montant, DatePaiement, ModePaiement, TransactionID) 
+              VALUES (?, ?, ?, ?, ?)";
+      $stmt = $conn->prepare($sql);
+      $result = $stmt->execute([$reservation_id, $montant, $date, $mode, $numero_transaction]);
+      
+      if ($result) {
+        // Si c'est un paiement pour une commande, mettre à jour le statut de la commande
+        if ($commande_id > 0) {
+          $update_sql = "UPDATE Commandes SET Statut = 'Payé', DatePaiement = ? WHERE CommandeID = ?";
+          $update_stmt = $conn->prepare($update_sql);
+          $update_stmt->execute([$date, $commande_id]);
+        }
+        
+        $message = 'Paiement ajouté avec succès.';
+      } else {
+        $message = 'Erreur lors de l\'ajout du paiement.';
+      }
+    } catch (Exception $e) {
+      $message = 'Erreur: ' . $e->getMessage();
     }
   } else {
-    $message = 'Champs invalides.';
+    $message = 'Veuillez spécifier une ' . ($payment_type === 'reservation' ? 'réservation' : 'commande') . ' valide et des informations de paiement correctes.';
   }
 }
 // Suppression sécurisée d'un paiement (POST + CSRF + contrôle d'accès)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_paiement_id'], $_POST['csrf_token'])) {
-  if (!verify_csrf_token($_POST['csrf_token'])) {
+  if (!check_csrf_token($_POST['csrf_token'])) {
     set_message('Token CSRF invalide.', 'error');
     header('Location: paiements.php');
     exit;
@@ -53,14 +136,20 @@ $total_sql = "SELECT COUNT(*) FROM Paiements";
 $total_paiements = $conn->query($total_sql)->fetchColumn();
 $total_pages = ceil($total_paiements / $per_page);
 $paiements = [];
-$sql = "SELECT * FROM Paiements ORDER BY PaiementID DESC LIMIT :limit OFFSET :offset";
+
+// Modified query to join with Commandes and Reservations to get more information
+$sql = "SELECT p.*, 
+        c.NomClient, c.PrenomClient, c.CommandeID,
+        r.nom_client, r.email_client, r.telephone, r.ReservationID
+        FROM Paiements p
+        LEFT JOIN Reservations r ON p.ReservationID = r.ReservationID
+        LEFT JOIN Commandes c ON r.ReservationID = c.ReservationID
+        ORDER BY p.DatePaiement DESC LIMIT :limit OFFSET :offset";
 $stmt = $conn->prepare($sql);
 $stmt->bindValue(':limit', $per_page, PDO::PARAM_INT);
 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 $stmt->execute();
-while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-  $paiements[] = $row;
-}
+$paiements = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -165,21 +254,57 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
       <h3 class="section-title">Ajouter un paiement</h3>
       <form method="post" class="form-grid">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
-        <div class="form-group">
-          <label for="reservation_id">ID Réservation</label>
-          <input type="number" id="reservation_id" name="reservation_id" placeholder="ID Réservation" required>
+        
+        <!-- Type de paiement -->
+        <div class="form-group" style="grid-column: 1 / -1;">
+          <label>Type de paiement</label>
+          <div style="display: flex; gap: 15px; margin-bottom: 10px;">
+            <div>
+              <input type="radio" id="type_reservation" name="payment_type" value="reservation" checked>
+              <label for="type_reservation">Réservation</label>
+            </div>
+            <div>
+              <input type="radio" id="type_commande" name="payment_type" value="commande">
+              <label for="type_commande">Commande</label>
+            </div>
+          </div>
         </div>
+        
+        <!-- Champs pour le paiement d'une réservation -->
+        <div class="form-group payment-reservation">
+          <label for="reservation_id">ID Réservation</label>
+          <input type="number" id="reservation_id" name="reservation_id" placeholder="ID Réservation">
+        </div>
+        
+        <!-- Champs pour le paiement d'une commande -->
+        <div class="form-group payment-commande" style="display: none;">
+          <label for="commande_id">ID Commande</label>
+          <input type="number" id="commande_id" name="commande_id" placeholder="ID Commande">
+        </div>
+        
+        <!-- Champs communs -->
         <div class="form-group">
           <label for="montant">Montant (€)</label>
           <input type="number" id="montant" name="montant" placeholder="Montant" required step="0.01">
         </div>
         <div class="form-group">
           <label for="date_paiement">Date</label>
-          <input type="date" id="date_paiement" name="date_paiement" placeholder="Date de paiement" required>
+          <input type="date" id="date_paiement" name="date_paiement" value="<?= date('Y-m-d') ?>" required>
         </div>
         <div class="form-group">
-          <label for="mode">Mode de paiement</label>
-          <input type="text" id="mode" name="mode" placeholder="Ex: CB, Espèces, Chèque...">
+          <label for="mode_paiement">Mode de paiement</label>
+          <select id="mode_paiement" name="mode_paiement" required>
+            <option value="">Sélectionner...</option>
+            <option value="Carte bancaire">Carte bancaire</option>
+            <option value="Espèces">Espèces</option>
+            <option value="Chèque">Chèque</option>
+            <option value="Virement">Virement</option>
+            <option value="PayPal">PayPal</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="numero_transaction">N° de transaction</label>
+          <input type="text" id="numero_transaction" name="numero_transaction" placeholder="Numéro de transaction (optionnel)">
         </div>
         <div class="form-group" style="grid-column: 1 / -1;">
           <button type="submit" class="submit-btn">Ajouter le paiement</button>
@@ -194,21 +319,47 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         <thead>
           <tr>
             <th>ID</th>
-            <th>Réservation</th>
+            <th>Type</th>
+            <th>Référence</th>
+            <th>Client</th>
             <th>Montant</th>
             <th>Date</th>
             <th>Mode</th>
+            <th>Transaction</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           <?php foreach ($paiements as $p): ?>
+            <?php 
+              // Dans la version actuelle, tous les paiements sont liés à des réservations
+              $isPaiementReservation = true;
+              $isPaiementCommande = false;
+              
+              // Déterminer le type et la référence
+              $type = 'Réservation';
+              $reference = $p['ReservationID'];
+              
+              // Déterminer le nom du client
+              if (!empty($p['nom_client'])) {
+                $client = htmlspecialchars($p['nom_client']);
+              } else {
+                $client = 'Client non spécifié';
+              }
+            ?>
             <tr>
               <td><?= htmlspecialchars($p['PaiementID']) ?></td>
-              <td><?= htmlspecialchars($p['ReservationID']) ?></td>
+              <td><?= $type ?></td>
+              <td>
+                <a href="reservations.php?id=<?= $p['ReservationID'] ?>" title="Voir la réservation">
+                  #<?= htmlspecialchars($p['ReservationID']) ?>
+                </a>
+              </td>
+              <td><?= $client ?></td>
               <td><strong><?= number_format(htmlspecialchars($p['Montant']), 2, ',', ' ') ?> €</strong></td>
               <td><?= date('d/m/Y', strtotime($p['DatePaiement'])) ?></td>
               <td><?= htmlspecialchars($p['ModePaiement'] ?: 'Non spécifié') ?></td>
+              <td><?= htmlspecialchars($p['TransactionID'] ?: '-') ?></td>
               <td class="action-cell">
                 <form method="post" action="paiements.php" class="delete-form">
                   <input type="hidden" name="delete_paiement_id" value="<?= htmlspecialchars($p['PaiementID']) ?>">
@@ -240,6 +391,154 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
   <?php
   include 'footer_template.php';
   ?>
+
+  <!-- JavaScript for payment form -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Payment type toggle
+      const typeReservation = document.getElementById('type_reservation');
+      const typeCommande = document.getElementById('type_commande');
+      const reservationField = document.querySelector('.payment-reservation');
+      const commandeField = document.querySelector('.payment-commande');
+      const reservationInput = document.getElementById('reservation_id');
+      const commandeInput = document.getElementById('commande_id');
+      const montantInput = document.getElementById('montant');
+
+      // Function to toggle fields based on payment type
+      function togglePaymentFields() {
+        if (typeReservation.checked) {
+          reservationField.style.display = 'block';
+          commandeField.style.display = 'none';
+          reservationInput.required = true;
+          commandeInput.required = false;
+          commandeInput.value = '';
+        } else if (typeCommande.checked) {
+          reservationField.style.display = 'none';
+          commandeField.style.display = 'block';
+          reservationInput.required = false;
+          commandeInput.required = true;
+          reservationInput.value = '';
+        }
+      }
+
+      // Attach event handlers
+      if (typeReservation && typeCommande) {
+        typeReservation.addEventListener('change', togglePaymentFields);
+        typeCommande.addEventListener('change', togglePaymentFields);
+        togglePaymentFields(); // Initial state
+      }
+
+      // Fonction pour récupérer le montant total des commandes d'une réservation
+      function fetchReservationTotal() {
+        const reservationId = reservationInput.value;
+        if (!reservationId) return;
+
+        // Créer un indicateur de chargement
+        let loadingIndicator = document.getElementById('montant-loading');
+        if (!loadingIndicator) {
+          loadingIndicator = document.createElement('div');
+          loadingIndicator.id = 'montant-loading';
+          loadingIndicator.style.marginTop = '5px';
+          loadingIndicator.style.fontSize = '0.9rem';
+          loadingIndicator.style.color = '#666';
+          montantInput.parentNode.appendChild(loadingIndicator);
+        }
+        loadingIndicator.textContent = 'Chargement...';
+
+        // Effectuer une requête AJAX pour récupérer le montant total
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', `get_reservation_total.php?reservation_id=${reservationId}`, true);
+        xhr.onreadystatechange = function() {
+          if (xhr.readyState === 4) {
+            loadingIndicator.textContent = '';
+            if (xhr.status === 200) {
+              try {
+                const response = JSON.parse(xhr.responseText);
+                if (response.success && response.total > 0) {
+                  montantInput.value = response.total;
+                  loadingIndicator.textContent = 'Montant récupéré automatiquement';
+                  loadingIndicator.style.color = 'green';
+                } else {
+                  loadingIndicator.textContent = 'Aucun montant trouvé pour cette réservation';
+                  loadingIndicator.style.color = '#ce1212';
+                }
+              } catch (e) {
+                console.error('Erreur lors du traitement de la réponse:', e);
+                loadingIndicator.textContent = 'Erreur lors de la récupération du montant';
+                loadingIndicator.style.color = '#ce1212';
+              }
+            } else {
+              loadingIndicator.textContent = 'Erreur lors de la récupération du montant';
+              loadingIndicator.style.color = '#ce1212';
+            }
+          }
+        };
+        xhr.send();
+      }
+
+      // Fonction similaire pour les commandes
+      function fetchCommandeTotal() {
+        const commandeId = commandeInput.value;
+        if (!commandeId) return;
+
+        let loadingIndicator = document.getElementById('montant-loading');
+        if (!loadingIndicator) {
+          loadingIndicator = document.createElement('div');
+          loadingIndicator.id = 'montant-loading';
+          loadingIndicator.style.marginTop = '5px';
+          loadingIndicator.style.fontSize = '0.9rem';
+          loadingIndicator.style.color = '#666';
+          montantInput.parentNode.appendChild(loadingIndicator);
+        }
+        loadingIndicator.textContent = 'Chargement...';
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', `get_commande_total.php?commande_id=${commandeId}`, true);
+        xhr.onreadystatechange = function() {
+          if (xhr.readyState === 4) {
+            loadingIndicator.textContent = '';
+            if (xhr.status === 200) {
+              try {
+                const response = JSON.parse(xhr.responseText);
+                if (response.success && response.total > 0) {
+                  montantInput.value = response.total;
+                  loadingIndicator.textContent = 'Montant récupéré automatiquement';
+                  loadingIndicator.style.color = 'green';
+                } else {
+                  loadingIndicator.textContent = 'Aucun montant trouvé pour cette commande';
+                  loadingIndicator.style.color = '#ce1212';
+                }
+              } catch (e) {
+                console.error('Erreur lors du traitement de la réponse:', e);
+                loadingIndicator.textContent = 'Erreur lors de la récupération du montant';
+                loadingIndicator.style.color = '#ce1212';
+              }
+            } else {
+              loadingIndicator.textContent = 'Erreur lors de la récupération du montant';
+              loadingIndicator.style.color = '#ce1212';
+            }
+          }
+        };
+        xhr.send();
+      }
+
+      // Attachement des événements
+      if (reservationInput) {
+        reservationInput.addEventListener('change', fetchReservationTotal);
+        // Si une valeur est déjà sélectionnée
+        if (reservationInput.value) {
+          fetchReservationTotal();
+        }
+      }
+
+      if (commandeInput) {
+        commandeInput.addEventListener('change', fetchCommandeTotal);
+        if (commandeInput.value) {
+          fetchCommandeTotal();
+        }
+      }
+    });
+  </script>
 </body>
 
 </html>

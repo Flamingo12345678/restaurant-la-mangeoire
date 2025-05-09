@@ -27,7 +27,7 @@ $total = 0;
 if (isset($_SESSION['client_id'])) {
     // Get items from database for authenticated users
     $stmt = $conn->prepare("
-        SELECT p.*, m.NomItem, m.Prix, m.Description
+        SELECT p.PanierID, p.UtilisateurID, p.MenuID, IFNULL(p.Quantite, 1) as Quantite, p.DateAjout, m.NomItem, m.Prix, m.Description
         FROM Panier p
         JOIN Menus m ON p.MenuID = m.MenuID
         WHERE p.UtilisateurID = ?

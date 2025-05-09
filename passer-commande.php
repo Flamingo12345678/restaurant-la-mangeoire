@@ -48,7 +48,10 @@ $total = 0;
 if (isset($_SESSION['client_id'])) {
     // Get items from database for authenticated users
     $stmt = $conn->prepare("
-        SELECT p.*, m.NomItem, m.Prix, m.Description
+        SELECT p.PanierID, p.UtilisateurID, p.MenuID, 
+               IFNULL(p.Quantite, 1) as Quantite, 
+               p.DateAjout, 
+               m.NomItem, m.Prix, m.Description
         FROM Panier p
         JOIN Menus m ON p.MenuID = m.MenuID
         WHERE p.UtilisateurID = ?
@@ -56,17 +59,79 @@ if (isset($_SESSION['client_id'])) {
     $stmt->execute([$_SESSION['client_id']]);
     $cart_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Calculate total
-    foreach ($cart_items as $item) {
-        $total += $item['Prix'] * $item['Quantite'];
+    if ($cart_items) {
+        // Loggons le contenu brut du panier pour diagnostic
+        error_log("Panier utilisateur (avant validation): " . print_r($cart_items, true));
+    }
+    
+    // Calculate total and ensure data integrity
+    foreach ($cart_items as $key => $item) {
+        // Ensure all required keys exist with validation stricte
+        if (!isset($item['MenuID']) || empty($item['MenuID'])) {
+            $cart_items[$key]['MenuID'] = 0;
+            error_log("MenuID manquant ou invalide pour l'article à l'index {$key}");
+        }
+        
+        if (!isset($item['Quantite']) || empty($item['Quantite'])) {
+            $cart_items[$key]['Quantite'] = 1;
+            error_log("Quantite manquante ou invalide pour l'article à l'index {$key}, MenuID: {$item['MenuID']}");
+        }
+        
+        if (!isset($item['Prix']) || empty($item['Prix'])) {
+            $cart_items[$key]['Prix'] = 0;
+            error_log("Prix manquant ou invalide pour l'article à l'index {$key}, MenuID: {$item['MenuID']}");
+        }
+        
+        if (!isset($item['NomItem']) || empty($item['NomItem'])) {
+            $cart_items[$key]['NomItem'] = "Inconnu";
+            error_log("NomItem manquant ou invalide pour l'article à l'index {$key}, MenuID: {$item['MenuID']}");
+        }
+        
+        // Convertir explicitement les valeurs numériques
+        $cart_items[$key]['MenuID'] = intval($cart_items[$key]['MenuID']);
+        $cart_items[$key]['Quantite'] = intval($cart_items[$key]['Quantite']);
+        $cart_items[$key]['Prix'] = floatval($cart_items[$key]['Prix']);
+        
+        $total += $cart_items[$key]['Prix'] * $cart_items[$key]['Quantite'];
     }
 } else if (isset($_SESSION['panier']) && !empty($_SESSION['panier'])) {
     // Get items from session for non-authenticated users
     $cart_items = $_SESSION['panier'];
     
-    // Calculate total
-    foreach ($cart_items as $item) {
-        $total += $item['Prix'] * $item['Quantite'];
+    if ($cart_items) {
+        // Loggons le contenu brut du panier pour diagnostic
+        error_log("Panier session (avant validation): " . print_r($cart_items, true));
+    }
+    
+    // Calculate total and ensure data integrity
+    foreach ($cart_items as $key => $item) {
+        // Ensure all required keys exist with validation stricte
+        if (!isset($item['MenuID']) || empty($item['MenuID'])) {
+            $cart_items[$key]['MenuID'] = 0;
+            error_log("Session panier: MenuID manquant ou invalide pour l'article à l'index {$key}");
+        }
+        
+        if (!isset($item['Quantite']) || empty($item['Quantite'])) {
+            $cart_items[$key]['Quantite'] = 1;
+            error_log("Session panier: Quantite manquante ou invalide pour l'article à l'index {$key}, MenuID: {$item['MenuID']}");
+        }
+        
+        if (!isset($item['Prix']) || empty($item['Prix'])) {
+            $cart_items[$key]['Prix'] = 0;
+            error_log("Session panier: Prix manquant ou invalide pour l'article à l'index {$key}, MenuID: {$item['MenuID']}");
+        }
+        
+        if (!isset($item['NomItem']) || empty($item['NomItem'])) {
+            $cart_items[$key]['NomItem'] = "Inconnu";
+            error_log("Session panier: NomItem manquant ou invalide pour l'article à l'index {$key}, MenuID: {$item['MenuID']}");
+        }
+        
+        // Convertir explicitement les valeurs numériques
+        $cart_items[$key]['MenuID'] = intval($cart_items[$key]['MenuID']);
+        $cart_items[$key]['Quantite'] = intval($cart_items[$key]['Quantite']);
+        $cart_items[$key]['Prix'] = floatval($cart_items[$key]['Prix']);
+        
+        $total += $cart_items[$key]['Prix'] * $cart_items[$key]['Quantite'];
     }
 }
 
@@ -115,14 +180,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 VALUES (?, ?, ?, ?, ?, ?)
             ");
             
+            // Debug log - toutes les clés disponibles dans le panier avant le traitement
+            $cart_keys = [];
             foreach ($cart_items as $item) {
-                $sous_total = $item['Prix'] * $item['Quantite'];
+                foreach (array_keys($item) as $key) {
+                    if (!in_array($key, $cart_keys)) {
+                        $cart_keys[] = $key;
+                    }
+                }
+            }
+            error_log("Clés disponibles dans les articles du panier: " . implode(", ", $cart_keys));
+            
+            foreach ($cart_items as $item) {
+                // Log de débogage pour voir les valeurs
+                error_log("Contenu de l'item dans le panier: " . print_r($item, true));
+                
+                // Récupérer les données avec des valeurs par défaut sécurisées
+                $menuID = isset($item['MenuID']) && is_numeric($item['MenuID']) ? intval($item['MenuID']) : 0;
+                $nomItem = isset($item['NomItem']) && !empty($item['NomItem']) ? $item['NomItem'] : "Produit sans nom";
+                $prix = isset($item['Prix']) && is_numeric($item['Prix']) ? floatval($item['Prix']) : 0;
+                $quantite = isset($item['Quantite']) && is_numeric($item['Quantite']) ? intval($item['Quantite']) : 1;
+                
+                // Validation finale avant insertion
+                if ($menuID <= 0) {
+                    throw new Exception("MenuID invalide pour l'article: $nomItem");
+                }
+                
+                if ($quantite <= 0) {
+                    $quantite = 1; // Garantir une quantité minimale
+                }
+                
+                $sous_total = $prix * $quantite;
+                
+                error_log("Insertion DetailsCommande: MenuID={$menuID}, Quantite={$quantite}, Prix={$prix}, SousTotal={$sous_total}");
+                
+                // Exécuter l'insertion avec des valeurs explicitement typées
                 $stmt->execute([
                     $commande_id,
-                    $item['MenuID'],
-                    $item['NomItem'],
-                    $item['Prix'],
-                    $item['Quantite'],
+                    $menuID,
+                    $nomItem,
+                    $prix,
+                    $quantite,
                     $sous_total
                 ]);
             }
@@ -152,7 +250,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } catch (Exception $e) {
             $conn->rollBack();
+            
+            // Log détaillé de l'erreur pour le débogage
+            error_log("Erreur SQL dans passer-commande.php: " . $e->getMessage() . 
+                     " - Code: " . $e->getCode() . 
+                     " - Trace: " . $e->getTraceAsString());
+            
+            // Log du contexte: contenu du panier
+            error_log("Contexte de l'erreur - Contenu du panier: " . print_r($cart_items, true));
+            
+            // Message utilisateur plus convivial, mais conserve les détails techniques pour le débogage
             $errors[] = "Une erreur est survenue lors de l'enregistrement de votre commande: " . $e->getMessage();
+            
+            // En cas d'erreur SQL spécifique liée aux champs manquants
+            if (strpos($e->getMessage(), "Field 'Quantite' doesn't have a default value") !== false) {
+                $errors[] = "Erreur: Quantité manquante pour un ou plusieurs produits. Veuillez vider votre panier et réessayer.";
+                
+                // Option permettant de corriger automatiquement le panier
+                if (isset($_SESSION['client_id'])) {
+                    try {
+                        // Nettoyer le panier en supprimant les éléments problématiques
+                        $clean_stmt = $conn->prepare("DELETE FROM Panier WHERE UtilisateurID = ? AND (Quantite IS NULL OR Quantite <= 0)");
+                        $clean_stmt->execute([$_SESSION['client_id']]);
+                        error_log("Tentative de nettoyage du panier effectuée pour l'utilisateur " . $_SESSION['client_id']);
+                    } catch (Exception $cleanEx) {
+                        error_log("Échec de la tentative de nettoyage du panier: " . $cleanEx->getMessage());
+                    }
+                }
+            }
         }
     }
 }
@@ -257,6 +382,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <li><?php echo $error; ?></li>
                     <?php endforeach; ?>
                 </ul>
+                
+                <?php if (strpos(implode(" ", $errors), "Quantité manquante") !== false || strpos(implode(" ", $errors), "doesn't have a default value") !== false): ?>
+                <div class="mt-3">
+                    <a href="reparer-panier.php?show_results=1" class="btn btn-primary me-2">
+                        <i class="bi bi-wrench"></i> Réparer mon panier
+                    </a>
+                    <a href="vider-panier.php?redirect=passer-commande.php" class="btn btn-warning me-2">
+                        <i class="bi bi-cart-x"></i> Vider mon panier
+                    </a>
+                    <a href="diagnostic-panier.php" class="btn btn-info">
+                        <i class="bi bi-search"></i> Diagnostiquer le problème
+                    </a>
+                </div>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
     </div>

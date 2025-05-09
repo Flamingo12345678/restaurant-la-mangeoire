@@ -20,31 +20,82 @@ function display_cart_message() {
   }
 }
 
-// Check if we have a valid order ID
+// Check if we have a valid order ID or reservation ID
 $order_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-$order = null;
+$reservation_id = isset($_GET['reservation_id']) ? intval($_GET['reservation_id']) : 0;
 
+$order = null;
+$reservation = null;
+$paiement = null;
+$payment_type = '';
+
+// Get order details if we have an order ID
 if ($order_id > 0) {
+    $payment_type = 'order';
+    
     // Get order details
     $stmt = $conn->prepare("
-        SELECT * FROM Commandes WHERE CommandeID = ?
+        SELECT c.*, u.Nom, u.Prenom, u.Email, u.Telephone
+        FROM Commandes c
+        LEFT JOIN Utilisateurs u ON c.UtilisateurID = u.UtilisateurID
+        WHERE c.CommandeID = ?
     ");
     $stmt->execute([$order_id]);
     $order = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    // Get order items
+    // Get payment details
     if ($order) {
         $stmt = $conn->prepare("
-            SELECT * FROM DetailsCommande WHERE CommandeID = ?
+            SELECT * FROM Paiements 
+            WHERE CommandeID = ? 
+            ORDER BY DatePaiement DESC 
+            LIMIT 1
         ");
         $stmt->execute([$order_id]);
-        $order_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $paiement = $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+}
+// Get reservation details if we have a reservation ID
+elseif ($reservation_id > 0) {
+    $payment_type = 'reservation';
+    
+    // Get reservation details
+    $stmt = $conn->prepare("
+        SELECT * FROM Reservations 
+        WHERE ReservationID = ?
+    ");
+    $stmt->execute([$reservation_id]);
+    $reservation = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // Get payment details
+    if ($reservation) {
+        $stmt = $conn->prepare("
+            SELECT * FROM Paiements 
+            WHERE ReservationID = ? 
+            ORDER BY DatePaiement DESC 
+            LIMIT 1
+        ");
+        $stmt->execute([$reservation_id]);
+        $paiement = $stmt->fetch(PDO::FETCH_ASSOC);
     }
 }
 
-// If no valid order found, redirect to home
-if (!$order) {
+// If no valid payment found, redirect to home
+if (!$paiement) {
+    $_SESSION['message'] = "Aucun paiement trouvé.";
+    $_SESSION['message_type'] = "error";
+    header("Location: index.php");
+    exit;
+}
+
+// If order or reservation data is missing, redirect to home
+if ($payment_type === 'order' && !$order) {
     $_SESSION['message'] = "Commande non trouvée.";
+    $_SESSION['message_type'] = "error";
+    header("Location: index.php");
+    exit;
+} elseif ($payment_type === 'reservation' && !$reservation) {
+    $_SESSION['message'] = "Réservation non trouvée.";
     $_SESSION['message_type'] = "error";
     header("Location: index.php");
     exit;
@@ -92,6 +143,11 @@ if (!$order) {
             border-radius: 5px;
             margin-top: 30px;
         }
+        .payment-info {
+            border-left: 4px solid #28a745;
+            padding-left: 15px;
+            margin: 20px 0;
+        }
     </style>
 </head>
 <body>
@@ -116,11 +172,10 @@ if (!$order) {
                         <?php if (isset($_SESSION['client_id'])): ?>
                             <a href="mon-compte.php"><i class="bi bi-person"></i> Mon Compte</a>
                         <?php else: ?>
-                            <a href="admin/login.php"><i class="bi bi-box-arrow-in-right"></i> Connexion</a>
+                            <a href="connexion-unifiee.php"><i class="bi bi-box-arrow-in-right"></i> Connexion</a>
                         <?php endif; ?>
                     </li>
                 </ul>
-                <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
             </nav>
 
             <a class="btn-getstarted" href="index.php#book-a-table">Réserver une Table</a>
@@ -141,66 +196,82 @@ if (!$order) {
                             <i class="bi bi-check-circle"></i>
                         </div>
                         <h2>Paiement Confirmé!</h2>
-                        <p class="lead">Merci pour votre commande. Votre paiement a été traité avec succès.</p>
+                        <?php if ($payment_type === 'order'): ?>
+                            <p class="lead">Merci pour votre commande. Votre paiement a été traité avec succès.</p>
+                        <?php else: ?>
+                            <p class="lead">Merci pour votre réservation. Votre paiement a été traité avec succès.</p>
+                        <?php endif; ?>
                         
-                        <div class="order-details mt-5 text-start">
-                            <h4 class="mb-4">Détails de la commande</h4>
+                        <div class="order-details">
+                            <div class="payment-info">
+                                <h4>Informations de paiement</h4>
+                                <p><strong>Montant payé:</strong> <?php echo number_format($paiement['Montant'], 2, ',', ' '); ?> €</p>
+                                <p><strong>Date du paiement:</strong> <?php echo date('d/m/Y à H:i', strtotime($paiement['DatePaiement'])); ?></p>
+                                <p><strong>Mode de paiement:</strong> <?php echo htmlspecialchars($paiement['MethodePaiement']); ?></p>
+                                <?php if(!empty($paiement['NumeroTransaction'])): ?>
+                                    <p><strong>N° de transaction:</strong> <?php echo htmlspecialchars($paiement['NumeroTransaction']); ?></p>
+                                <?php endif; ?>
+                            </div>
                             
-                            <div class="row mb-3">
+                            <?php if ($payment_type === 'order'): ?>
+                            <!-- Affichage des détails de la commande -->
+                            <h4>Détails de la commande</h4>
+                            <div class="row mb-4">
                                 <div class="col-md-6">
                                     <p><strong>Numéro de commande:</strong> #<?php echo $order['CommandeID']; ?></p>
                                     <p><strong>Date:</strong> <?php echo date('d/m/Y H:i', strtotime($order['DateCommande'])); ?></p>
                                     <p><strong>Statut:</strong> <span class="badge bg-success">Payé</span></p>
                                 </div>
                                 <div class="col-md-6">
-                                    <p><strong>Client:</strong> <?php echo htmlspecialchars($order['PrenomClient'] . ' ' . $order['NomClient']); ?></p>
-                                    <p><strong>Email:</strong> <?php echo htmlspecialchars($order['EmailClient']); ?></p>
-                                    <p><strong>Téléphone:</strong> <?php echo htmlspecialchars($order['TelephoneClient']); ?></p>
+                                    <p><strong>Client:</strong> <?php echo htmlspecialchars($order['Prenom'] . ' ' . $order['Nom']); ?></p>
+                                    <?php if(!empty($order['Email'])): ?>
+                                        <p><strong>Email:</strong> <?php echo htmlspecialchars($order['Email']); ?></p>
+                                    <?php endif; ?>
+                                    <?php if(!empty($order['Telephone'])): ?>
+                                        <p><strong>Téléphone:</strong> <?php echo htmlspecialchars($order['Telephone']); ?></p>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                             
-                            <div class="mb-4">
-                                <p><strong>Adresse de livraison:</strong><br>
-                                <?php echo nl2br(htmlspecialchars($order['AdresseLivraison'])); ?></p>
+                            <p><strong>Montant total:</strong> <?php echo number_format($order['MontantTotal'], 2, ',', ' '); ?> €</p>
+                            
+                            <?php elseif ($payment_type === 'reservation'): ?>
+                            <!-- Affichage des détails de la réservation -->
+                            <h4>Détails de la réservation</h4>
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <p><strong>Numéro de réservation:</strong> #<?php echo $reservation['ReservationID']; ?></p>
+                                    <p><strong>Date de réservation:</strong> <?php echo date('d/m/Y', strtotime($reservation['DateReservation'])); ?></p>
+                                    <p><strong>Heure:</strong> <?php echo date('H:i', strtotime($reservation['HeureReservation'])); ?></p>
+                                    <p><strong>Nombre de personnes:</strong> <?php echo $reservation['NombrePersonnes']; ?></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Client:</strong> <?php echo htmlspecialchars($reservation['ClientPrenom'] . ' ' . $reservation['ClientNom']); ?></p>
+                                    <?php if(!empty($reservation['ClientEmail'])): ?>
+                                        <p><strong>Email:</strong> <?php echo htmlspecialchars($reservation['ClientEmail']); ?></p>
+                                    <?php endif; ?>
+                                    <?php if(!empty($reservation['ClientTelephone'])): ?>
+                                        <p><strong>Téléphone:</strong> <?php echo htmlspecialchars($reservation['ClientTelephone']); ?></p>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                             
-                            <h5 class="mb-3">Articles commandés</h5>
-                            <div class="table-responsive">
-                                <table class="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Produit</th>
-                                            <th class="text-center">Prix</th>
-                                            <th class="text-center">Quantité</th>
-                                            <th class="text-end">Total</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($order_items as $item): ?>
-                                        <tr>
-                                            <td><?php echo htmlspecialchars($item['NomItem']); ?></td>
-                                            <td class="text-center"><?php echo number_format($item['Prix'], 0, ',', ' '); ?> XAF</td>
-                                            <td class="text-center"><?php echo $item['Quantite']; ?></td>
-                                            <td class="text-end"><?php echo number_format($item['SousTotal'], 0, ',', ' '); ?> XAF</td>
-                                        </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <th colspan="3" class="text-end">Total</th>
-                                            <th class="text-end"><?php echo number_format($order['MontantTotal'], 0, ',', ' '); ?> XAF</th>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
+                            <?php if(!empty($reservation['Message'])): ?>
+                                <p><strong>Message:</strong> <?php echo nl2br(htmlspecialchars($reservation['Message'])); ?></p>
+                            <?php endif; ?>
+                            
+                            <p><strong>Statut:</strong> <span class="badge bg-success">Confirmé</span></p>
+                            <?php endif; ?>
                         </div>
                         
                         <div class="mt-5">
                             <p>Un e-mail de confirmation a été envoyé à votre adresse.</p>
                             <div class="d-flex justify-content-center gap-3 mt-4">
                                 <a href="index.php" class="btn btn-primary">Retour à l'accueil</a>
-                                <?php if (isset($_SESSION['client_id'])): ?>
-                                <a href="mon-compte.php" class="btn btn-outline-secondary">Voir mes commandes</a>
+                                <?php if ($payment_type === 'order'): ?>
+                                    <a href="mon-compte.php?tab=orders" class="btn btn-outline-primary">Voir mes commandes</a>
+                                <?php else: ?>
+                                    <a href="mon-compte.php?tab=payments" class="btn btn-outline-primary">Voir mes paiements</a>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -244,46 +315,42 @@ if (!$order) {
                     </div>
                 </div>
 
-                <div class="col-lg-3 col-md-6">
-                    <h4>Suivez Nous</h4>
-                    <div class="social-links d-flex">
-                        <a href="#" class="twitter"><i class="bi bi-twitter-x"></i></a>
-                        <a href="#" class="facebook"><i class="bi bi-facebook"></i></a>
-                        <a href="#" class="instagram"><i class="bi bi-instagram"></i></a>
-                        <a href="#" class="linkedin"><i class="bi bi-linkedin"></i></a>
+                <div class="col-lg-3 col-md-6 d-flex">
+                    <i class="bi bi-credit-card icon"></i>
+                    <div>
+                        <h4>Paiement</h4>
+                        <p>
+                            <strong>Modes acceptés:</strong> <span>CB, Espèces</span><br />
+                            <strong>Paiement sécurisé</strong>
+                        </p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="container copyright text-center mt-4">
-            <p>
-                © <span>Copyright</span>
-                <strong class="px-1 sitename">La Mangeoire</strong>
-                <span>All Rights Reserved</span>
-            </p>
+        <div class="container">
+            <div class="copyright">
+                &copy; Copyright <strong><span>La Mangeoire</span></strong>. Tous droits réservés
+            </div>
             <div class="credits">
-                Designed by <a href="https://bootstrapmade.com/">FLAMINGO</a> Distributed by <a href="https://themewagon.com">JOSEPH</a>
+                <a href="mentions-legales.php">Mentions légales</a> | 
+                <a href="politique-confidentialite.php">Politique de confidentialité</a>
             </div>
         </div>
     </footer>
 
-    <!-- Scroll Top -->
-    <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center">
+    <a href="#" class="scroll-top d-flex align-items-center justify-content-center">
         <i class="bi bi-arrow-up-short"></i>
     </a>
-
-    <!-- Preloader -->
-    <div id="preloader"></div>
 
     <!-- Vendor JS Files -->
     <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="assets/vendor/aos/aos.js"></script>
     <script src="assets/vendor/glightbox/js/glightbox.min.js"></script>
-    <script src="assets/vendor/purecounter/purecounter_vanilla.js"></script>
     <script src="assets/vendor/swiper/swiper-bundle.min.js"></script>
+    <script src="assets/vendor/php-email-form/validate.js"></script>
 
-    <!-- Main JS File -->
+    <!-- Template Main JS File -->
     <script src="assets/js/main.js"></script>
 </body>
 </html>

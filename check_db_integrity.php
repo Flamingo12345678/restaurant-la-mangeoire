@@ -14,9 +14,9 @@
 session_start();
 
 // Vérifier si l'utilisateur est connecté en tant qu'administrateur (sauf s'il est en mode développement)
-$is_dev_mode = ($_SERVER['REMOTE_ADDR'] == '127.0.0.1' || $_SERVER['REMOTE_ADDR'] == '::1');
+$is_dev_mode = (php_sapi_name() === 'cli' || (isset($_SERVER['REMOTE_ADDR']) && ($_SERVER['REMOTE_ADDR'] == '127.0.0.1' || $_SERVER['REMOTE_ADDR'] == '::1')));
 
-if (!$is_dev_mode && (!isset($_SESSION['admin']) || $_SESSION['admin'] !== true || !isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'superadmin')) {
+if (!$is_dev_mode && (!isset($_SESSION['admin_id']) || $_SESSION['user_type'] !== 'admin' || !isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'superadmin')) {
   header('Location: admin/login.php');
   exit;
 }
@@ -386,7 +386,7 @@ if ($error_count > 0 || $warning_count > 0) {
 }
 
 // Liens de retour adaptés selon le contexte (admin ou développement)
-if (isset($_SESSION['admin']) && $_SESSION['admin'] === true) {
+if (isset($_SESSION['admin_id']) && $_SESSION['user_type'] === 'admin') {
   echo "<p><a href='admin/index.php' style='color: #ce1212;'>Retour au tableau de bord admin</a></p>";
 } else {
   echo "<p><a href='index.php' style='color: #ce1212;'>Retour à l'accueil</a></p>";

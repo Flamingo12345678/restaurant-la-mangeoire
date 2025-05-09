@@ -1,6 +1,35 @@
 <?php
-require_once 'includes/common.php'; // Inclure common.php avant tout pour gérer la session
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// Start output buffering to capture any errors
+ob_start();
+
+// Initialiser les variables de débogage
+$debug_mode = isset($_GET['debug']) && $_GET['debug'] == 1;
+$debug_output = '';
+
+// Fonction pour ajouter des informations de débogage
+function add_debug($message) {
+    global $debug_mode, $debug_output;
+    if ($debug_mode) {
+        $debug_output .= $message . "\n";
+    }
+}
+
+require_once 'includes/common.php';
 require_once 'db_connexion.php';
+
+// Vérifier l'état de la connexion PDO
+if ($debug_mode) {
+    try {
+        $conn->query("SELECT 1");
+        add_debug("✅ Database connection is active");
+    } catch (PDOException $e) {
+        add_debug("❌ Database connection error: " . $e->getMessage());
+    }
+}
 
 // Vérifier si l'utilisateur est connecté en tant que client
 if (!isset($_SESSION['client_id']) || $_SESSION['user_type'] !== 'client') {
@@ -14,49 +43,109 @@ $error_message = "";
 
 // Déterminer si l'utilisateur est dans la table Clients ou Utilisateurs
 $user_found = false;
+$using_utilisateurs_table = false;
 
-// Essayer d'abord la table Clients
-$query = "SELECT * FROM Clients WHERE ClientID = ?";
-$stmt = $conn->prepare($query);
-$stmt->bindValue(1, $client_id, PDO::PARAM_INT);
-$stmt->execute();
-$client = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$client) {
-    // Essayer la table Utilisateurs
-    $query = "SELECT * FROM Utilisateurs WHERE UtilisateurID = ?";
+try {
+    // Essayer d'abord la table Clients
+    $query = "SELECT * FROM Clients WHERE ClientID = ?";
     $stmt = $conn->prepare($query);
-    $stmt->bindValue(1, $client_id, PDO::PARAM_INT);
-    $stmt->execute();
+    $stmt->execute([$client_id]);
     $client = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    if ($client) {
-        $user_found = true;
-        $using_utilisateurs_table = true;
-    }
-} else {
-    $user_found = true;
-    $using_utilisateurs_table = false;
-}
 
-if (!$user_found) {
-    $_SESSION = array();
-    session_destroy();
-    header("Location: connexion-unifiee.php?error=profile_not_found");
-    exit;
+    if (!$client) {
+        // Essayer la table Utilisateurs
+        $query = "SELECT * FROM Utilisateurs WHERE UtilisateurID = ?";
+        $stmt = $conn->prepare($query);
+        $stmt->execute([$client_id]);
+        $client = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($client) {
+            $user_found = true;
+            $using_utilisateurs_table = true;
+        }
+    } else {
+        $user_found = true;
+        $using_utilisateurs_table = false;
+    }
+
+    if (!$user_found) {
+        // Journalisation détaillée de l'erreur
+        error_log("User not found for ID: " . $client_id . " in either Clients or Utilisateurs tables");
+        $_SESSION = array();
+        session_destroy();
+        header("Location: connexion-unifiee.php?error=profile_not_found");
+        exit;
+    }
+} catch (PDOException $e) {
+    // Journalisation détaillée de l'erreur avec le code et la requête
+    error_log("Error fetching client data in mon-compte.php: " . $e->getMessage() . 
+              " [Code: " . $e->getCode() . "] - ClientID: " . $client_id);
+    
+    // Déboguer les variables de session
+    error_log("Session data: " . print_r($_SESSION, true));
+    
+    $error_message = "Une erreur est survenue lors de la récupération de vos informations. Veuillez contacter le support.";
+    
+    // Initialiser client comme tableau vide pour éviter les erreurs
+    $client = [];
+    $user_found = false;
 }
 
 // Récupérer les commandes du client
 // Comme la table Commandes utilise UtilisateurID et non ClientID
-$commandes_query = "SELECT c.*, m.NomItem, m.Prix
-                   FROM Commandes c 
-                   LEFT JOIN Menus m ON c.MenuID = m.MenuID 
-                   WHERE c.UtilisateurID = ? 
-                   ORDER BY c.DateCommande DESC";
-$commandes_stmt = $conn->prepare($commandes_query);
-$commandes_stmt->bindValue(1, $client_id, PDO::PARAM_INT);
-$commandes_stmt->execute();
-$commandes = $commandes_stmt->fetchAll(PDO::FETCH_ASSOC);
+try {
+    $commandes_query = "SELECT c.*, m.NomItem, m.Prix
+                       FROM Commandes c 
+                       LEFT JOIN Menus m ON c.MenuID = m.MenuID 
+                       WHERE c.UtilisateurID = ? 
+                       ORDER BY c.DateCommande DESC";
+    $commandes_stmt = $conn->prepare($commandes_query);
+    $commandes_stmt->bindValue(1, $client_id, PDO::PARAM_INT);
+    $commandes_stmt->execute();
+    $commandes = $commandes_stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    if ($debug_mode) {
+        add_debug("✅ Récupération des commandes réussie: " . count($commandes) . " commandes trouvées");
+    }
+} catch (PDOException $e) {
+    // Journalisation détaillée de l'erreur
+    error_log("Error retrieving commandes in mon-compte.php: " . $e->getMessage() . 
+              " [Code: " . $e->getCode() . "] - Query: " . $commandes_query);
+    
+    if ($debug_mode) {
+        add_debug("❌ Erreur lors de la récupération des commandes: " . $e->getMessage());
+    }
+    
+    // Message pour l'utilisateur
+    $error_message = "Une erreur est survenue lors de la récupération de vos commandes.";
+    
+    // Initialiser un tableau vide pour éviter les erreurs
+    $commandes = [];
+    
+    // Plan B : essayer une requête simplifiée
+    try {
+        if ($debug_mode) {
+            add_debug("⚠️ Tentative de requête simplifiée pour les commandes");
+        }
+        
+        $fallback_query = "SELECT CommandeID, DateCommande, Statut, MontantTotal FROM Commandes WHERE UtilisateurID = ? LIMIT 100";
+        $fallback_stmt = $conn->prepare($fallback_query);
+        $fallback_stmt->bindValue(1, $client_id, PDO::PARAM_INT);
+        $fallback_stmt->execute();
+        $commandes = $fallback_stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        if ($debug_mode) {
+            add_debug("✅ Requête simplifiée réussie: " . count($commandes) . " commandes trouvées");
+        }
+    } catch (PDOException $e2) {
+        // Log l'erreur de secours
+        error_log("Fallback commandes query error: " . $e2->getMessage());
+        
+        if ($debug_mode) {
+            add_debug("❌ Échec de la requête simplifiée pour les commandes: " . $e2->getMessage());
+        }
+    }
+}
 
 // Traitement de la mise à jour du profil
 if (isset($_POST['update_profile'])) {
@@ -143,28 +232,86 @@ if (isset($_POST['change_password'])) {
     }
 }
 
+// Start output buffering to capture any errors
+ob_start();
+
 // Récupérer les paiements du client
-// La table Paiements est liée aux réservations, qui sont liées aux clients ou utilisateurs
-if ($using_utilisateurs_table) {
-    // Pour la table Utilisateurs, nous devons vérifier dans les Commandes puis les Reservations
-    $paiements_query = "SELECT p.* 
-                        FROM Paiements p
-                        JOIN Reservations r ON p.ReservationID = r.ReservationID
-                        JOIN Commandes c ON r.ReservationID = c.ReservationID
-                        WHERE c.UtilisateurID = ? 
-                        ORDER BY p.DatePaiement DESC";
-} else {
-    // Pour la table Clients, on peut directement joindre avec les Reservations
-    $paiements_query = "SELECT p.* 
-                        FROM Paiements p
-                        JOIN Reservations r ON p.ReservationID = r.ReservationID
-                        WHERE r.ClientID = ? 
-                        ORDER BY p.DatePaiement DESC";
+// La table Paiements peut être liée soit aux commandes, soit aux réservations
+try {
+    if ($using_utilisateurs_table) {
+        // Pour la table Utilisateurs, chercher tous les paiements liés aux commandes de l'utilisateur
+        // Simplifié - sans UNION ALL pour éviter les problèmes de compatibilité de colonnes
+        $paiements_query = "SELECT p.*, c.CommandeID, NULL as ReservationID, 'Commande' as TypePaiement,
+                            c.DateCommande as DateReference, c.statut, c.MontantTotal, p.DatePaiement
+                            FROM Commandes c
+                            JOIN Paiements p ON p.CommandeID = c.CommandeID
+                            WHERE c.UtilisateurID = ?
+                            ORDER BY p.DatePaiement DESC";
+        $paiements_stmt = $conn->prepare($paiements_query);
+        $paiements_stmt->bindValue(1, $client_id, PDO::PARAM_INT);
+    } else {
+        // Pour la table Clients, chercher tous les paiements liés aux réservations du client
+        $paiements_query = "SELECT p.*, NULL as CommandeID, r.ReservationID, 'Réservation' as TypePaiement,
+                            r.DateReservation as DateReference, r.statut, NULL as MontantTotal, p.DatePaiement
+                            FROM Reservations r
+                            JOIN Paiements p ON p.ReservationID = r.ReservationID
+                            WHERE r.ClientID = ? 
+                            ORDER BY p.DatePaiement DESC";
+        $paiements_stmt = $conn->prepare($paiements_query);
+        $paiements_stmt->bindValue(1, $client_id, PDO::PARAM_INT);
+    }
+    
+    $paiements_stmt->execute();
+    $paiements = $paiements_stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    if ($debug_mode) {
+        add_debug("✅ Récupération des paiements réussie: " . count($paiements) . " paiements trouvés");
+    }
+} catch (PDOException $e) {
+    // Journalisation détaillée de l'erreur
+    error_log("Error retrieving payments in mon-compte.php: " . $e->getMessage() . 
+              " [Code: " . $e->getCode() . "] - Query: " . $paiements_query);
+    
+    if ($debug_mode) {
+        add_debug("❌ Erreur lors de la récupération des paiements: " . $e->getMessage());
+    }
+    
+    // Message pour l'utilisateur
+    $error_message = "Une erreur est survenue lors de la récupération de vos paiements.";
+    
+    // Initialiser un tableau vide pour éviter les erreurs
+    $paiements = [];
+    
+    // Plan B : essayer une requête simplifiée
+    try {
+        if ($debug_mode) {
+            add_debug("⚠️ Tentative de requête simplifiée pour les paiements");
+        }
+        
+        // Requête simplifiée qui devrait fonctionner même si les requêtes complexes échouent
+        $fallback_query = "SELECT PaiementID, Montant, MethodePaiement, DatePaiement 
+                          FROM Paiements 
+                          WHERE ReservationID IN (SELECT ReservationID FROM Reservations WHERE ClientID = ?)
+                          OR CommandeID IN (SELECT CommandeID FROM Commandes WHERE UtilisateurID = ?)
+                          ORDER BY DatePaiement DESC
+                          LIMIT 100";
+        
+        $fallback_stmt = $conn->prepare($fallback_query);
+        $fallback_stmt->execute([$client_id, $client_id]);
+        $paiements = $fallback_stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        if ($debug_mode) {
+            add_debug("✅ Requête simplifiée réussie: " . count($paiements) . " paiements trouvés");
+        }
+    } catch (PDOException $e2) {
+        // Log l'erreur de secours
+        error_log("Fallback query error in mon-compte.php: " . $e2->getMessage());
+        
+        if ($debug_mode) {
+            add_debug("❌ Échec de la requête simplifiée: " . $e2->getMessage());
+        }
+    }
 }
-$paiements_stmt = $conn->prepare($paiements_query);
-$paiements_stmt->bindValue(1, $client_id, PDO::PARAM_INT);
-$paiements_stmt->execute();
-$paiements = $paiements_stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -366,6 +513,13 @@ $paiements = $paiements_stmt->fetchAll(PDO::FETCH_ASSOC);
     </style>
 </head>
 <body>
+    <?php if (!empty($debug_output)): ?>
+    <div style="background-color: #fee; padding: 10px; margin: 10px; border: 1px solid #f00;">
+        <h2>PHP Debug Information:</h2>
+        <pre><?php echo htmlspecialchars($debug_output); ?></pre>
+    </div>
+    <?php endif; ?>
+
     <?php include 'includes/header.php'; ?>
     
     <div class="container">
@@ -491,28 +645,99 @@ $paiements = $paiements_stmt->fetchAll(PDO::FETCH_ASSOC);
         
         <div id="payments" class="tab-content">
             <h2>Mes Paiements</h2>
+            
+            <!-- Filtres pour les paiements -->
+            <div class="filters-container" style="margin-bottom: 20px; background-color: #f9f9f9; padding: 15px; border-radius: 5px;">
+                <h3 style="margin-top: 0; font-size: 16px; margin-bottom: 10px;">Filtrer mes paiements</h3>
+                <form method="get" action="" id="payment-filter-form" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <label for="payment-type">Type:</label>
+                        <select id="payment-type" style="padding: 5px; border-radius: 3px; border: 1px solid #ddd;">
+                            <option value="all">Tous</option>
+                            <option value="commande">Commandes</option>
+                            <option value="reservation">Réservations</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="payment-date">Date:</label>
+                        <select id="payment-date" style="padding: 5px; border-radius: 3px; border: 1px solid #ddd;">
+                            <option value="all">Toutes les dates</option>
+                            <option value="last-month">Dernier mois</option>
+                            <option value="last-3-months">3 derniers mois</option>
+                            <option value="last-year">Dernière année</option>
+                        </select>
+                    </div>
+                    <div>
+                        <button type="button" id="apply-filters" class="btn" style="padding: 5px 10px; margin-top: 0;">Filtrer</button>
+                    </div>
+                </form>
+            </div>
+            
             <?php if (count($paiements) > 0): ?>
-                <table class="table">
+                <table class="table payment-table">
                     <thead>
                         <tr>
                             <th>ID</th>
+                            <th>Type</th>
+                            <th>Référence</th>
                             <th>Date</th>
                             <th>Montant</th>
                             <th>Méthode</th>
-                            <th>Statut</th>
-                            <th>Commande</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($paiements as $paiement): ?>
-                            <tr>
-                                <td><?php echo $paiement['PaiementID']; ?></td>
-                                <td><?php echo date('d/m/Y', strtotime($paiement['DatePaiement'])); ?></td>
-                                <td><?php echo number_format($paiement['Montant'], 2, ',', ' '); ?> €</td>
-                                <td><?php echo $paiement['ModePaiement'] ?? 'Non spécifié'; ?></td>
-                                <td><?php echo $paiement['Statut']; ?></td>
+                            <?php 
+                            // Gestion sécurisée des références
+                            $reference_id = isset($paiement['CommandeID']) && !is_null($paiement['CommandeID']) 
+                                ? $paiement['CommandeID'] 
+                                : (isset($paiement['ReservationID']) && !is_null($paiement['ReservationID']) 
+                                    ? $paiement['ReservationID'] 
+                                    : 'N/A');
+                                    
+                            $reference_type = isset($paiement['CommandeID']) && !is_null($paiement['CommandeID']) 
+                                ? 'commande' 
+                                : (isset($paiement['ReservationID']) && !is_null($paiement['ReservationID']) 
+                                    ? 'reservation' 
+                                    : 'inconnu');
+                                    
+                            // Vérifier si nous avons une référence valide
+                            $has_valid_reference = $reference_id !== 'N/A';
+                            
+                            // URL sécurisée
+                            $reference_url = $has_valid_reference 
+                                ? ($reference_type === 'commande' 
+                                    ? "detail-commande.php?id=" . htmlspecialchars($reference_id)
+                                    : "detail-commande.php?reservation_id=" . htmlspecialchars($reference_id))
+                                : "#";
+                                
+                            // Type de paiement sécurisé
+                            $payment_type = isset($paiement['TypePaiement']) ? htmlspecialchars($paiement['TypePaiement']) : 'Paiement';
+                            
+                            // Date sécurisée
+                            $payment_date = isset($paiement['DatePaiement']) && !empty($paiement['DatePaiement'])
+                                ? htmlspecialchars(date('Y-m-d', strtotime($paiement['DatePaiement'])))
+                                : date('Y-m-d');
+                                
+                            // Format date pour affichage
+                            $display_date = isset($paiement['DatePaiement']) && !empty($paiement['DatePaiement'])
+                                ? htmlspecialchars(date('d/m/Y', strtotime($paiement['DatePaiement'])))
+                                : 'Date inconnue';
+                            ?>
+                            <tr class="payment-row" data-type="<?php echo strtolower($reference_type); ?>" data-date="<?php echo $payment_date; ?>">
+                                <td><?php echo htmlspecialchars($paiement['PaiementID'] ?? 'N/A'); ?></td>
+                                <td><?php echo $payment_type; ?></td>
+                                <td><?php echo $reference_id !== 'N/A' ? '#'.htmlspecialchars($reference_id) : 'N/A'; ?></td>
+                                <td><?php echo $display_date; ?></td>
+                                <td><?php echo isset($paiement['Montant']) ? number_format($paiement['Montant'], 2, ',', ' ') . ' €' : 'N/A'; ?></td>
+                                <td><?php echo htmlspecialchars($paiement['MethodePaiement'] ?? 'Non spécifié'); ?></td>
                                 <td>
-                                    <a href="detail-commande.php?reservation_id=<?php echo $paiement['ReservationID']; ?>" class="btn">Voir détails</a>
+                                    <?php if ($has_valid_reference): ?>
+                                    <a href="<?php echo $reference_url; ?>" class="btn btn-sm">Voir détails</a>
+                                    <?php else: ?>
+                                    <span class="btn btn-sm" style="opacity: 0.5; cursor: not-allowed;">Non disponible</span>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -549,6 +774,66 @@ $paiements = $paiements_stmt->fetchAll(PDO::FETCH_ASSOC);
             history.replaceState(null, null, '?tab=' + tabName);
         }
         
+        // Filtrer les paiements par type et date
+        function filterPayments() {
+            var typeFilter = document.getElementById('payment-type').value;
+            var dateFilter = document.getElementById('payment-date').value;
+            var rows = document.querySelectorAll('.payment-row');
+            
+            var today = new Date();
+            var oneMonthAgo = new Date();
+            oneMonthAgo.setMonth(today.getMonth() - 1);
+            
+            var threeMonthsAgo = new Date();
+            threeMonthsAgo.setMonth(today.getMonth() - 3);
+            
+            var oneYearAgo = new Date();
+            oneYearAgo.setFullYear(today.getFullYear() - 1);
+            
+            rows.forEach(function(row) {
+                var rowType = row.getAttribute('data-type');
+                var rowDate = new Date(row.getAttribute('data-date'));
+                var showRow = true;
+                
+                // Filtre par type
+                if (typeFilter !== 'all' && rowType !== typeFilter) {
+                    showRow = false;
+                }
+                
+                // Filtre par date
+                if (dateFilter === 'last-month' && rowDate < oneMonthAgo) {
+                    showRow = false;
+                } else if (dateFilter === 'last-3-months' && rowDate < threeMonthsAgo) {
+                    showRow = false;
+                } else if (dateFilter === 'last-year' && rowDate < oneYearAgo) {
+                    showRow = false;
+                }
+                
+                row.style.display = showRow ? '' : 'none';
+            });
+            
+            // Afficher un message si aucun résultat
+            var paymentTable = document.querySelector('.payment-table');
+            var noResultsMsg = document.getElementById('no-filtered-results');
+            
+            if (!noResultsMsg) {
+                noResultsMsg = document.createElement('p');
+                noResultsMsg.id = 'no-filtered-results';
+                noResultsMsg.style.display = 'none';
+                noResultsMsg.textContent = 'Aucun paiement ne correspond à ces critères';
+                paymentTable.parentNode.insertBefore(noResultsMsg, paymentTable.nextSibling);
+            }
+            
+            var visibleRows = document.querySelectorAll('.payment-row[style=""]');
+            if (visibleRows.length === 0) {
+                paymentTable.style.display = 'none';
+                noResultsMsg.style.display = 'block';
+            } else {
+                paymentTable.style.display = '';
+                noResultsMsg.style.display = 'none';
+            }
+        }
+        
         // Au chargement de la page, vérifier si un onglet est spécifié dans l'URL
         document.addEventListener('DOMContentLoaded', function() {
             // Récupérer le paramètre tab de l'URL
@@ -567,6 +852,35 @@ $paiements = $paiements_stmt->fetchAll(PDO::FETCH_ASSOC);
             } else {
                 // Par défaut, ouvrir le premier onglet
                 document.querySelector('.tab').click();
+            }
+            
+            // Ajouter des écouteurs d'événements pour les filtres de paiement
+            var applyFiltersBtn = document.getElementById('apply-filters');
+            if (applyFiltersBtn) {
+                applyFiltersBtn.addEventListener('click', filterPayments);
+            }
+            
+            // Appliquer les filtres par défaut au chargement de la page paiements
+            var paymentTypeSelect = document.getElementById('payment-type');
+            var paymentDateSelect = document.getElementById('payment-date');
+            
+            if (paymentTypeSelect && paymentDateSelect) {
+                paymentTypeSelect.addEventListener('change', function() {
+                    if (document.getElementById('payments').classList.contains('active')) {
+                        filterPayments();
+                    }
+                });
+                
+                paymentDateSelect.addEventListener('change', function() {
+                    if (document.getElementById('payments').classList.contains('active')) {
+                        filterPayments();
+                    }
+                });
+                
+                // Appliquer les filtres par défaut si on est sur l'onglet paiements
+                if (activeTab === 'payments') {
+                    setTimeout(filterPayments, 100);
+                }
             }
         });
         

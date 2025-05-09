@@ -1,14 +1,8 @@
 <?php
-session_start();
-if (!isset($_SESSION['admin'])) {
-  header('Location: admin/login.php');
-  exit;
-}
-if (empty($_SESSION['csrf_token'])) {
-  $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
+require_once __DIR__ . '/includes/common.php';
+require_admin();
+generate_csrf_token();
 require_once 'db_connexion.php';
-require_once 'validation.php';
 
 // Ajout d'un menu
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajouter'])) {

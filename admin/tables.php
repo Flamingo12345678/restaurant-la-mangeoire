@@ -1,11 +1,8 @@
 <?php
 define('CAPACITE_SALLE', 100);
+require_once __DIR__ . '/../includes/common.php';
+require_admin();
 require_once '../db_connexion.php';
-session_start();
-if (!isset($_SESSION['admin'])) {
-  header('Location: login.php');
-  exit;
-}
 $message = '';
 
 // Initialisation par défaut pour éviter les warnings
