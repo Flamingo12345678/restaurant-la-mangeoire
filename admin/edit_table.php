@@ -14,7 +14,7 @@
  */
 session_start();
 require_once '../db_connexion.php';
-require_once '../validation.php';
+require_once '../includes/common.php';
 
 $message = '';
 // Contrôle de droits strict : seuls les superadmins peuvent modifier

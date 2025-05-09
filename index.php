@@ -1,3 +1,25 @@
+<?php
+session_start();
+require_once 'includes/common.php';
+require_once 'db_connexion.php';
+
+// Custom function to display cart messages using the session variable format we've set up
+function display_cart_message() {
+  if (isset($_SESSION['message'])) {
+    $message_type = isset($_SESSION['message_type']) ? $_SESSION['message_type'] : 'info';
+    $alert_class = ($message_type == 'error') ? 'alert-danger' : 'alert-success';
+    
+    echo '<div class="alert ' . $alert_class . ' alert-dismissible fade show" role="alert">';
+    echo $_SESSION['message'];
+    echo '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>';
+    echo '</div>';
+    
+    // Clear the message after displaying it
+    unset($_SESSION['message']);
+    unset($_SESSION['message_type']);
+  }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -16,6 +38,8 @@
       href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Amatic+SC:wght@400;700&display=swap"
       rel="stylesheet"
     />
+    <!-- Style pour le système de gestion des cookies -->
+    <link href="assets/css/cookie-consent.css" rel="stylesheet" />
     <!-- Vendor CSS Files -->
     <link
       href="assets/vendor/bootstrap/css/bootstrap.min.css"
@@ -40,7 +64,7 @@
         class="container position-relative d-flex align-items-center justify-content-between"
       >
         <a
-          href="index.html"
+          href="index.php"
           class="logo d-flex align-items-center me-auto me-xl-0"
         >
           <!-- Uncomment the line below if you also wish to use an image logo -->
@@ -59,47 +83,47 @@
             <li><a href="#events">Evenements</a></li>
             <li><a href="#chefs">Chefs</a></li>
             <li><a href="#gallery">Galeries</a></li>
-            <!-- Dropdown -->
-            <!-- <li class="dropdown">
-              <a href="#"
-                ><span>Dropdown</span>
-                <i class="bi bi-chevron-down toggle-dropdown"></i
-              ></a>
-              <ul>
-                <li><a href="#">Dropdown 1</a></li>
-                <li class="dropdown">
-                  <a href="#"
-                    ><span>Deep Dropdown</span>
-                    <i class="bi bi-chevron-down toggle-dropdown"></i
-                  ></a>
-                  <ul>
-                    <li><a href="#">Deep Dropdown 1</a></li>
-                    <li><a href="#">Deep Dropdown 2</a></li>
-                    <li><a href="#">Deep Dropdown 3</a></li>
-                    <li><a href="#">Deep Dropdown 4</a></li>
-                    <li><a href="#">Deep Dropdown 5</a></li>
-                  </ul>
-                </li>
-                <li><a href="#">Dropdown 2</a></li>
-                <li><a href="#">Dropdown 3</a></li>
-                <li><a href="#">Dropdown 4</a></li>
-              </ul>
-            </li> -->
             <li><a href="#contact">Contact</a></li>
+            <li><a href="panier.php"><i class="bi bi-cart"></i> Panier 
+              <?php 
+              $cart_count = 0;
+              if (isset($_SESSION['client_id'])) {
+                // Count from database
+                $stmt = $conn->prepare("SELECT SUM(Quantite) FROM Panier WHERE UtilisateurID = ?");
+                $stmt->execute([$_SESSION['client_id']]);
+                $cart_count = $stmt->fetchColumn() ?: 0;
+              } else if (isset($_SESSION['panier']) && count($_SESSION['panier']) > 0) {
+                // Count from session
+                foreach ($_SESSION['panier'] as $item) {
+                  $cart_count += $item['Quantite'];
+                }
+              }
+              if ($cart_count > 0) {
+                echo '<span class="badge bg-danger rounded-pill">' . $cart_count . '</span>';
+              }
+              ?>
+            </a></li>
             <li>
-              <a href="admin/login.php"
-                ><i class="bi bi-box-arrow-in-right"></i> Connexion admin</a
-              >
+              <?php if (isset($_SESSION['client_id'])): ?>
+                <a href="mon-compte.php"><i class="bi bi-person"></i> Mon Compte</a>
+              <?php else: ?>
+                <a href="admin/login.php"><i class="bi bi-box-arrow-in-right"></i> Connexion</a>
+              <?php endif; ?>
             </li>
           </ul>
           <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
         </nav>
 
-        <a class="btn-getstarted" href="index.html#book-a-table"
+        <a class="btn-getstarted" href="#book-a-table"
           >Réserver une Table</a
         >
       </div>
     </header>
+    
+    <!-- Display success/error messages -->
+    <div class="container mt-2">
+      <?php display_cart_message(); ?>
+    </div>
 
     <main class="main">
       <!-- Hero Section -->
@@ -382,94 +406,199 @@
 
               <div class="row gy-5">
                 <div class="col-lg-4 menu-item">
-                  <a href="assets/img/menu/menu-item-1.png" class="glightbox"
+                  <a href="assets/img/menu/bongo.png" class="glightbox"
                     ><img
-                      src="assets/img/menu/menu-item-1.png"
+                      src="assets/img/menu/bongo.png"
                       class="menu-img img-fluid"
                       alt=""
                   /></a>
-                  <h4>Magnam Tiste</h4>
+                  <h4>Bongo</h4>
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                     <!--ingrediednt-->
                   </p>
                   <p class="price">10000 XAF</p>
                   <!--Prix-->
+                  <form action="ajouter-au-panier.php" method="post" class="mt-2">
+                    <input type="hidden" name="menu_id" value="1">
+                    <input type="hidden" name="action" value="add">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="input-group input-group-sm" style="max-width: 100px;">
+                        <span class="input-group-text">Qté</span>
+                        <input type="number" name="quantite" class="form-control" value="1" min="1">
+                      </div>
+                      <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-cart-plus"></i> Ajouter
+                      </button>
+                    </div>
+                  </form>
                 </div>
                 <!-- Menu Item -->
 
                 <div class="col-lg-4 menu-item">
-                  <a href="assets/img/menu/menu-item-2.png" class="glightbox"
+                  <a href="assets/img/menu/eru.png" class="glightbox"
                     ><img
-                      src="assets/img/menu/menu-item-2.png"
+                      src="assets/img/menu/eru.png"
                       class="menu-img img-fluid"
                       alt=""
                   /></a>
-                  <h4>Aut Luia</h4>
+                  <h4>Eru</h4>
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
                   <p class="price">20000 XAF</p>
+                  <form action="ajouter-au-panier.php" method="post" class="mt-2">
+                    <input type="hidden" name="menu_id" value="2">
+                    <input type="hidden" name="action" value="add">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="input-group input-group-sm" style="max-width: 100px;">
+                        <span class="input-group-text">Qté</span>
+                        <input type="number" name="quantite" class="form-control" value="1" min="1">
+                      </div>
+                      <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-cart-plus"></i> Ajouter
+                      </button>
+                    </div>
+                  </form>
                 </div>
                 <!-- Menu Item -->
 
                 <div class="col-lg-4 menu-item">
-                  <a href="assets/img/menu/menu-item-3.png" class="glightbox"
+                  <a href="assets/img/menu/koki.png" class="glightbox"
                     ><img
-                      src="assets/img/menu/menu-item-3.png"
+                      src="assets/img/menu/koki.png"
                       class="menu-img img-fluid"
                       alt=""
                   /></a>
-                  <h4>Est Eligendi</h4>
+                  <h4>Koki</h4>
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
                   <p class="price">5000 XAF</p>
+                  <form action="ajouter-au-panier.php" method="post" class="mt-2">
+                    <input type="hidden" name="menu_id" value="3">
+                    <input type="hidden" name="action" value="add">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="input-group input-group-sm" style="max-width: 100px;">
+                        <span class="input-group-text">Qté</span>
+                        <input type="number" name="quantite" class="form-control" value="1" min="1">
+                      </div>
+                      <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-cart-plus"></i> Ajouter
+                      </button>
+                    </div>
+                  </form>
                 </div>
                 <!-- Menu Item -->
 
                 <div class="col-lg-4 menu-item">
-                  <a href="assets/img/menu/menu-item-4.png" class="glightbox"
+                  <a href="assets/img/menu/ndole.png" class="glightbox"
                     ><img
-                      src="assets/img/menu/menu-item-4.png"
+                      src="assets/img/menu/ndole.png"
                       class="menu-img img-fluid"
                       alt=""
                   /></a>
-                  <h4>Eos Luibusdam</h4>
+                  <h4>Ndole</h4>
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
                   <p class="price">12000 XAF</p>
+                  <form action="ajouter-au-panier.php" method="post" class="mt-2">
+                    <input type="hidden" name="menu_id" value="4">
+                    <input type="hidden" name="action" value="add">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="input-group input-group-sm" style="max-width: 100px;">
+                        <span class="input-group-text">Qté</span>
+                        <input type="number" name="quantite" class="form-control" value="1" min="1">
+                      </div>
+                      <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-cart-plus"></i> Ajouter
+                      </button>
+                    </div>
+                  </form>
                 </div>
                 <!-- Menu Item -->
 
                 <div class="col-lg-4 menu-item">
-                  <a href="assets/img/menu/menu-item-5.png" class="glightbox"
+                  <a href="assets/img/menu/okok.png" class="glightbox"
                     ><img
-                      src="assets/img/menu/menu-item-5.png"
+                      src="assets/img/menu/okok.png"
                       class="menu-img img-fluid"
                       alt=""
                   /></a>
-                  <h4>Eos Luibusdam</h4>
+                  <h4>Okok</h4>
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
                   <p class="price">12000 XAF</p>
+                  <form action="ajouter-au-panier.php" method="post" class="mt-2">
+                    <input type="hidden" name="menu_id" value="5">
+                    <input type="hidden" name="action" value="add">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="input-group input-group-sm" style="max-width: 100px;">
+                        <span class="input-group-text">Qté</span>
+                        <input type="number" name="quantite" class="form-control" value="1" min="1">
+                      </div>
+                      <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-cart-plus"></i> Ajouter
+                      </button>
+                    </div>
+                  </form>
                 </div>
                 <!-- Menu Item -->
 
                 <div class="col-lg-4 menu-item">
-                  <a href="assets/img/menu/menu-item-6.png" class="glightbox"
+                  <a href="assets/img/menu/poisson_braisé.png" class="glightbox"
                     ><img
-                      src="assets/img/menu/menu-item-6.png"
+                      src="assets/img/menu/poisson_braisé.png"
                       class="menu-img img-fluid"
                       alt=""
                   /></a>
-                  <h4>Laboriosam Direva</h4>
+                  <h4>Poisson Braisé</h4>
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
                   <p class="price">9000 XAF</p>
+                  <form action="ajouter-au-panier.php" method="post" class="mt-2">
+                    <input type="hidden" name="menu_id" value="6">
+                    <input type="hidden" name="action" value="add">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="input-group input-group-sm" style="max-width: 100px;">
+                        <span class="input-group-text">Qté</span>
+                        <input type="number" name="quantite" class="form-control" value="1" min="1">
+                      </div>
+                      <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-cart-plus"></i> Ajouter
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                <div class="col-lg-4 menu-item">
+                  <a href="assets/img/menu/taro.png" class="glightbox"
+                    ><img
+                      src="assets/img/menu/taro.png"
+                      class="menu-img img-fluid"
+                      alt=""
+                  /></a>
+                  <h4>Taro</h4>
+                  <p class="ingredients">
+                    Lorem, deren, trataro, filede, nerada
+                  </p>
+                  <p class="price">20000 XAF</p>
+                  <form action="ajouter-au-panier.php" method="post" class="mt-2">
+                    <input type="hidden" name="menu_id" value="7">
+                    <input type="hidden" name="action" value="add">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="input-group input-group-sm" style="max-width: 100px;">
+                        <span class="input-group-text">Qté</span>
+                        <input type="number" name="quantite" class="form-control" value="1" min="1">
+                      </div>
+                      <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-cart-plus"></i> Ajouter
+                      </button>
+                    </div>
+                  </form>
                 </div>
                 <!-- Menu Item -->
               </div>
@@ -495,6 +624,19 @@
                     Lorem, deren, trataro, filede, nerada
                   </p>
                   <p class="price">5000 XAF</p>
+                  <form action="ajouter-au-panier.php" method="post" class="mt-2">
+                    <input type="hidden" name="menu_id" value="8">
+                    <input type="hidden" name="action" value="add">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="input-group input-group-sm" style="max-width: 100px;">
+                        <span class="input-group-text">Qté</span>
+                        <input type="number" name="quantite" class="form-control" value="1" min="1">
+                      </div>
+                      <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-cart-plus"></i> Ajouter
+                      </button>
+                    </div>
+                  </form>
                 </div>
                 <!-- Menu Item -->
 
@@ -510,6 +652,19 @@
                     Lorem, deren, trataro, filede, nerada
                   </p>
                   <p class="price">14000 XAF</p>
+                  <form action="ajouter-au-panier.php" method="post" class="mt-2">
+                    <input type="hidden" name="menu_id" value="9">
+                    <input type="hidden" name="action" value="add">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="input-group input-group-sm" style="max-width: 100px;">
+                        <span class="input-group-text">Qté</span>
+                        <input type="number" name="quantite" class="form-control" value="1" min="1">
+                      </div>
+                      <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-cart-plus"></i> Ajouter
+                      </button>
+                    </div>
+                  </form>
                 </div>
                 <!-- Menu Item -->
 
@@ -525,6 +680,19 @@
                     Lorem, deren, trataro, filede, nerada
                   </p>
                   <p class="price">15000 XAF</p>
+                  <form action="ajouter-au-panier.php" method="post" class="mt-2">
+                    <input type="hidden" name="menu_id" value="10">
+                    <input type="hidden" name="action" value="add">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="input-group input-group-sm" style="max-width: 100px;">
+                        <span class="input-group-text">Qté</span>
+                        <input type="number" name="quantite" class="form-control" value="1" min="1">
+                      </div>
+                      <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-cart-plus"></i> Ajouter
+                      </button>
+                    </div>
+                  </form>
                 </div>
                 <!-- Menu Item -->
 
@@ -540,6 +708,19 @@
                     Lorem, deren, trataro, filede, nerada
                   </p>
                   <p class="price">12000 XAF</p>
+                  <form action="ajouter-au-panier.php" method="post" class="mt-2">
+                    <input type="hidden" name="menu_id" value="11">
+                    <input type="hidden" name="action" value="add">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="input-group input-group-sm" style="max-width: 100px;">
+                        <span class="input-group-text">Qté</span>
+                        <input type="number" name="quantite" class="form-control" value="1" min="1">
+                      </div>
+                      <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-cart-plus"></i> Ajouter
+                      </button>
+                    </div>
+                  </form>
                 </div>
                 <!-- Menu Item -->
 
@@ -555,6 +736,19 @@
                     Lorem, deren, trataro, filede, nerada
                   </p>
                   <p class="price">12000 XAF</p>
+                  <form action="ajouter-au-panier.php" method="post" class="mt-2">
+                    <input type="hidden" name="menu_id" value="12">
+                    <input type="hidden" name="action" value="add">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="input-group input-group-sm" style="max-width: 100px;">
+                        <span class="input-group-text">Qté</span>
+                        <input type="number" name="quantite" class="form-control" value="1" min="1">
+                      </div>
+                      <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-cart-plus"></i> Ajouter
+                      </button>
+                    </div>
+                  </form>
                 </div>
                 <!-- Menu Item -->
 
@@ -570,6 +764,19 @@
                     Lorem, deren, trataro, filede, nerada
                   </p>
                   <p class="price">9000 XAF</p>
+                  <form action="ajouter-au-panier.php" method="post" class="mt-2">
+                    <input type="hidden" name="menu_id" value="13">
+                    <input type="hidden" name="action" value="add">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="input-group input-group-sm" style="max-width: 100px;">
+                        <span class="input-group-text">Qté</span>
+                        <input type="number" name="quantite" class="form-control" value="1" min="1">
+                      </div>
+                      <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-cart-plus"></i> Ajouter
+                      </button>
+                    </div>
+                  </form>
                 </div>
                 <!-- Menu Item -->
               </div>
@@ -595,6 +802,19 @@
                     Lorem, deren, trataro, filede, nerada
                   </p>
                   <p class="price">9000 XAF</p>
+                  <form action="ajouter-au-panier.php" method="post" class="mt-2">
+                    <input type="hidden" name="menu_id" value="14">
+                    <input type="hidden" name="action" value="add">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="input-group input-group-sm" style="max-width: 100px;">
+                        <span class="input-group-text">Qté</span>
+                        <input type="number" name="quantite" class="form-control" value="1" min="1">
+                      </div>
+                      <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-cart-plus"></i> Ajouter
+                      </button>
+                    </div>
+                  </form>
                 </div>
                 <!-- Menu Item -->
 
@@ -610,6 +830,19 @@
                     Lorem, deren, trataro, filede, nerada
                   </p>
                   <p class="price">9000 XAF</p>
+                  <form action="ajouter-au-panier.php" method="post" class="mt-2">
+                    <input type="hidden" name="menu_id" value="15">
+                    <input type="hidden" name="action" value="add">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="input-group input-group-sm" style="max-width: 100px;">
+                        <span class="input-group-text">Qté</span>
+                        <input type="number" name="quantite" class="form-control" value="1" min="1">
+                      </div>
+                      <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-cart-plus"></i> Ajouter
+                      </button>
+                    </div>
+                  </form>
                 </div>
                 <!-- Menu Item -->
 
@@ -625,6 +858,19 @@
                     Lorem, deren, trataro, filede, nerada
                   </p>
                   <p class="price">9000 XAF</p>
+                  <form action="ajouter-au-panier.php" method="post" class="mt-2">
+                    <input type="hidden" name="menu_id" value="16">
+                    <input type="hidden" name="action" value="add">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="input-group input-group-sm" style="max-width: 100px;">
+                        <span class="input-group-text">Qté</span>
+                        <input type="number" name="quantite" class="form-control" value="1" min="1">
+                      </div>
+                      <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-cart-plus"></i> Ajouter
+                      </button>
+                    </div>
+                  </form>
                 </div>
                 <!-- Menu Item -->
 
@@ -639,7 +885,20 @@
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">9000 XAF</p>
+                  <p class="price">12000 XAF</p>
+                  <form action="ajouter-au-panier.php" method="post" class="mt-2">
+                    <input type="hidden" name="menu_id" value="11">
+                    <input type="hidden" name="action" value="add">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="input-group input-group-sm" style="max-width: 100px;">
+                        <span class="input-group-text">Qté</span>
+                        <input type="number" name="quantite" class="form-control" value="1" min="1">
+                      </div>
+                      <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-cart-plus"></i> Ajouter
+                      </button>
+                    </div>
+                  </form>
                 </div>
                 <!-- Menu Item -->
 
@@ -655,6 +914,19 @@
                     Lorem, deren, trataro, filede, nerada
                   </p>
                   <p class="price">12000 XAF</p>
+                  <form action="ajouter-au-panier.php" method="post" class="mt-2">
+                    <input type="hidden" name="menu_id" value="12">
+                    <input type="hidden" name="action" value="add">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="input-group input-group-sm" style="max-width: 100px;">
+                        <span class="input-group-text">Qté</span>
+                        <input type="number" name="quantite" class="form-control" value="1" min="1">
+                      </div>
+                      <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-cart-plus"></i> Ajouter
+                      </button>
+                    </div>
+                  </form>
                 </div>
                 <!-- Menu Item -->
 
@@ -669,7 +941,20 @@
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">12000 XAF</p>
+                  <p class="price">9000 XAF</p>
+                  <form action="ajouter-au-panier.php" method="post" class="mt-2">
+                    <input type="hidden" name="menu_id" value="13">
+                    <input type="hidden" name="action" value="add">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="input-group input-group-sm" style="max-width: 100px;">
+                        <span class="input-group-text">Qté</span>
+                        <input type="number" name="quantite" class="form-control" value="1" min="1">
+                      </div>
+                      <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-cart-plus"></i> Ajouter
+                      </button>
+                    </div>
+                  </form>
                 </div>
                 <!-- Menu Item -->
               </div>
@@ -1676,5 +1961,8 @@
 
     <!-- Main JS File -->
     <script src="assets/js/main.js"></script>
+    
+    <!-- Script pour le système de gestion des cookies -->
+    <script src="assets/js/cookie-consent.js"></script>
   </body>
 </html>

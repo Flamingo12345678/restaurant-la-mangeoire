@@ -10,7 +10,7 @@ $admin_email = '';
 // Vérifier si la page est appelée depuis une session admin valide ou par un paramètre spécial de sécurité 
 // (ou en mode développement local)
 $is_dev_mode = ($_SERVER['REMOTE_ADDR'] == '127.0.0.1' || $_SERVER['REMOTE_ADDR'] == '::1');
-$is_from_admin = (isset($_SESSION['admin']) && $_SESSION['admin'] === true);
+$is_from_admin = (isset($_SESSION['admin_id']) && $_SESSION['user_type'] === 'admin');
 $has_security_token = (isset($_GET['token']) && $_GET['token'] === 'c7e3a4b9f2d1'); // Token de sécurité
 
 // Rediriger si l'accès n'est pas autorisé et qu'on n'est pas en développement

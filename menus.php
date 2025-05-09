@@ -1,14 +1,8 @@
 <?php
-session_start();
-if (!isset($_SESSION['admin'])) {
-  header('Location: admin/login.php');
-  exit;
-}
-if (empty($_SESSION['csrf_token'])) {
-  $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
+require_once __DIR__ . '/includes/common.php';
+require_admin();
+generate_csrf_token();
 require_once 'db_connexion.php';
-require_once 'validation.php';
 
 // Ajout d'un menu
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajouter'])) {
@@ -59,15 +53,7 @@ $total_menus = $conn->query("SELECT COUNT(*) FROM Menus")->fetchColumn();
 $total_pages = ceil($total_menus / $menus_per_page);
 $menus = $conn->query("SELECT * FROM Menus ORDER BY MenuID DESC LIMIT $menus_per_page OFFSET $offset")->fetchAll();
 
-function display_message()
-{
-  if (!empty($_SESSION['flash_message'])) {
-    $type = $_SESSION['flash_message']['type'] === 'success' ? 'alert-success' : 'alert-error';
-    $text = htmlspecialchars($_SESSION['flash_message']['text']);
-    echo "<div class='alert $type'>$text</div>";
-    unset($_SESSION['flash_message']);
-  }
-}
+// Removed duplicate function as it's already defined in common.php
 ?>
 <!DOCTYPE html>
 <html lang="fr">

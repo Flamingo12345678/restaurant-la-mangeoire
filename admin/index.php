@@ -1,6 +1,6 @@
 <?php
 session_start();
-if (!isset($_SESSION['admin'])) {
+if (!isset($_SESSION['admin_id']) || $_SESSION['user_type'] !== 'admin') {
   header('Location: login.php');
   exit;
 }
@@ -355,9 +355,39 @@ define('INCLUDED_IN_PAGE', true);
           <canvas id="liveTrafficChart" style="width:100%;height:100%;"></canvas>
         </div>
         <script>
-          // Simulation de trafic en direct (exemple, à remplacer par une vraie source si besoin)
-          const ctx = document.getElementById('liveTrafficChart').getContext('2d');
-          let trafficData = [12, 19, 8, 15, 22, 17, 25];
+          // Récupération des données réelles de trafic
+          <?php
+          // Récupérer les 7 derniers jours de réservations
+          $sql = "SELECT DATE(DateReservation) as jour, COUNT(*) as nombre 
+                 FROM Reservations 
+                 WHERE DateReservation >= DATE_SUB(CURRENT_DATE, INTERVAL 6 DAY)
+                 GROUP BY DATE(DateReservation)
+                 ORDER BY jour";
+          
+          $stmt = $conn->query($sql);
+          $trafficArray = [];
+          $labels = [];
+          
+          // Créer un tableau avec tous les jours des 7 derniers jours
+          for ($i = 6; $i >= 0; $i--) {
+            $date = date('Y-m-d', strtotime("-$i days"));
+            $labels[] = date('d/m', strtotime($date));
+            $trafficArray[$date] = 0;
+          }
+          
+          // Remplir avec les données réelles
+          if ($stmt) {
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+              $trafficArray[$row['jour']] = (int)$row['nombre'];
+            }
+          }
+          
+          // Convertir en tableau JavaScript
+          $trafficData = array_values($trafficArray);
+          ?>
+          
+          let trafficData = <?php echo json_encode($trafficData); ?>;
+          let trafficLabels = <?php echo json_encode($labels); ?>;
 
           function calculateScale() {
             // Adapter aux dimensions de l'écran
@@ -366,12 +396,13 @@ define('INCLUDED_IN_PAGE', true);
             canvas.height = canvas.offsetHeight;
             return {
               xPadding: Math.max(15, canvas.width * 0.05),
-              yScale: canvas.height / 30,
+              yScale: canvas.height / (Math.max(...trafficData) * 1.2 || 30),
               xInterval: (canvas.width - 2 * Math.max(15, canvas.width * 0.05)) / (trafficData.length - 1)
             };
           }
 
           function drawTraffic(data) {
+            const ctx = document.getElementById('liveTrafficChart').getContext('2d');
             const {
               xPadding,
               yScale,
@@ -397,6 +428,12 @@ define('INCLUDED_IN_PAGE', true);
               ctx.beginPath();
               ctx.arc(xPadding + i * xInterval, height - data[i] * yScale, 6, 0, 2 * Math.PI);
               ctx.fill();
+              
+              // Ajouter les étiquettes des jours
+              ctx.fillStyle = '#666';
+              ctx.font = '10px Arial';
+              ctx.textAlign = 'center';
+              ctx.fillText(trafficLabels[i], xPadding + i * xInterval, height - 10);
             }
           }
 
@@ -407,37 +444,60 @@ define('INCLUDED_IN_PAGE', true);
 
           // Écouter les changements de taille d'écran
           window.addEventListener('resize', handleResize);
-
+          
+          // Dessiner le graphique initial
+          const ctx = document.getElementById('liveTrafficChart').getContext('2d');
           drawTraffic(trafficData);
 
-          // Mise à jour automatique toutes les 3 secondes (simulation)
+          // Mise à jour automatique toutes les 60 secondes (pour les données réelles)
           setInterval(() => {
-            trafficData.push(Math.floor(Math.random() * 20) + 8);
-            if (trafficData.length > 7) trafficData.shift();
-            drawTraffic(trafficData);
-          }, 3000);
+            fetch('get_traffic_data.php')
+              .then(response => response.json())
+              .then(data => {
+                trafficData = data.traffic;
+                trafficLabels = data.labels;
+                drawTraffic(trafficData);
+              })
+              .catch(error => console.error('Erreur lors de la récupération des données:', error));
+          }, 60000);
         </script>
         <div style="margin-top:24px;" class="stats-summary">
           <h4 style="font-size:0.95rem;color:#666;margin-bottom:15px;border-bottom:1px solid #eee;padding-bottom:8px;">RÉSUMÉ DES PERFORMANCES</h4>
           <div style="display:flex;gap:20px;flex-wrap:wrap;">
+            <?php
+            // Récupérer le nombre total de ventes (paiements)
+            $sql = "SELECT COUNT(*) as total FROM Paiements";
+            $stmt = $conn->query($sql);
+            $venteTotal = $stmt ? $stmt->fetchColumn() : 0;
+            
+            // Récupérer le nombre total de commandes
+            $sql = "SELECT COUNT(*) as total FROM Commandes";
+            $stmt = $conn->query($sql);
+            $commandesTotal = $stmt ? $stmt->fetchColumn() : 0;
+            
+            // Récupérer le montant total des revenus
+            $sql = "SELECT COALESCE(SUM(Montant), 0) as total FROM Paiements";
+            $stmt = $conn->query($sql);
+            $revenusTotal = $stmt ? $stmt->fetchColumn() : 0;
+            ?>
             <div style="flex:1;min-width:120px;display:flex;align-items:center;margin-bottom:15px;background:#f9f9f9;padding:15px;border-radius:10px;">
               <span style="display:inline-block;width:45px;height:45px;background:#2E93fA;border-radius:50%;text-align:center;line-height:45px;margin-right:12px;flex-shrink:0;color:#fff;"><i class="bi bi-bag"></i></span>
               <div>
-                <b style="font-size:1.2rem;display:block;">9 600</b>
+                <b style="font-size:1.2rem;display:block;"><?= number_format($venteTotal, 0, ',', ' ') ?></b>
                 <span style="color:#666;font-size:0.9rem;">Ventes totales</span>
               </div>
             </div>
             <div style="flex:1;min-width:120px;display:flex;align-items:center;margin-bottom:15px;background:#f9f9f9;padding:15px;border-radius:10px;">
               <span style="display:inline-block;width:45px;height:45px;background:#F3632B;border-radius:50%;text-align:center;line-height:45px;margin-right:12px;flex-shrink:0;color:#fff;"><i class="bi bi-cart"></i></span>
               <div>
-                <b style="font-size:1.2rem;display:block;">6 900</b>
+                <b style="font-size:1.2rem;display:block;"><?= number_format($commandesTotal, 0, ',', ' ') ?></b>
                 <span style="color:#666;font-size:0.9rem;">Commandes totales</span>
               </div>
             </div>
             <div style="flex:1;min-width:120px;display:flex;align-items:center;margin-bottom:15px;background:#f9f9f9;padding:15px;border-radius:10px;">
               <span style="display:inline-block;width:45px;height:45px;background:#9675CE;border-radius:50%;text-align:center;line-height:45px;margin-right:12px;flex-shrink:0;color:#fff;"><i class="bi bi-currency-euro"></i></span>
               <div>
-                <b style="font-size:1.2rem;display:block;">3 800 €</b>
+                <b style="font-size:1.2rem;display:block;"><?= number_format($revenusTotal, 2, ',', ' ') ?> €</b>
                 <span style="color:#666;font-size:0.9rem;">Revenus totaux</span>
               </div>
             </div>
