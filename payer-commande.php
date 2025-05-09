@@ -40,21 +40,64 @@ if ($order_id > 0) {
     $order = $stmt->fetch(PDO::FETCH_ASSOC);
     
     // Get order items
-    if ($order) {
-        $payment_amount = $order['MontantTotal'];
-        
-        // Check if the order already has a payment
-        $payment_check = $conn->prepare("
-            SELECT * FROM Paiements WHERE CommandeID = ? LIMIT 1
-        ");
-        $payment_check->execute([$order_id]);
-        if ($payment_check->fetch()) {
-            // Order already paid
-            $_SESSION['message'] = "Cette commande a déjà été payée.";
-            $_SESSION['message_type'] = "info";
-            header("Location: detail-commande.php?id=" . $order_id);
-            exit;
+    $order_items = [];
+    if ($order && $order_id > 0) {
+        // Correction de la requête pour utiliser le nom correct de la colonne dans la table Menus
+        try {
+            // D'abord, vérifiez la structure de la table Menus
+            $columns_query = $conn->prepare("SHOW COLUMNS FROM Menus");
+            $columns_query->execute();
+            $columns = $columns_query->fetchAll(PDO::FETCH_COLUMN, 0);
+            
+            // Déterminez la colonne à utiliser pour le nom du menu
+            $name_column = 'Nom'; // Par défaut
+            if (in_array('NomMenu', $columns)) {
+                $name_column = 'NomMenu';
+            } elseif (in_array('Nom', $columns)) {
+                $name_column = 'Nom'; 
+            } elseif (in_array('LibelleMenu', $columns)) {
+                $name_column = 'LibelleMenu';
+            }
+            
+            // Maintenant utilisez la colonne correcte dans votre requête
+            $items_stmt = $conn->prepare("
+                SELECT dc.*, m.$name_column as NomItem 
+                FROM DetailsCommande dc
+                LEFT JOIN Menus m ON dc.MenuID = m.MenuID
+                WHERE dc.CommandeID = ?
+            ");
+            $items_stmt->execute([$order_id]);
+            $order_items = $items_stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            // En cas d'erreur, utilisez une requête simplifiée sans joindre la table Menus
+            $items_stmt = $conn->prepare("
+                SELECT dc.* 
+                FROM DetailsCommande dc
+                WHERE dc.CommandeID = ?
+            ");
+            $items_stmt->execute([$order_id]);
+            $order_items = $items_stmt->fetchAll(PDO::FETCH_ASSOC);
         }
+        
+        // Assurer que NomItem existe pour chaque élément
+        foreach ($order_items as $key => $item) {
+            if (!isset($item['NomItem']) || $item['NomItem'] === null) {
+                $order_items[$key]['NomItem'] = 'Article #' . $item['MenuID'];
+            }
+        }
+    }
+    
+    // Check if the order already has a payment
+    $payment_check = $conn->prepare("
+        SELECT * FROM Paiements WHERE CommandeID = ? LIMIT 1
+    ");
+    $payment_check->execute([$order_id]);
+    if ($payment_check->fetch()) {
+        // Order already paid
+        $_SESSION['message'] = "Cette commande a déjà été payée.";
+        $_SESSION['message_type'] = "info";
+        header("Location: detail-commande.php?id=" . $order_id);
+        exit;
     }
 }
 // Get reservation details if we have a reservation ID

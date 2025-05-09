@@ -23,9 +23,12 @@ if (isset($_GET['id'])) {
     $commande_id = $_GET['id'];
     
     // Vérifier que cette commande appartient bien à l'utilisateur connecté
-    $check_query = "SELECT c.*, m.NomItem, m.Prix, m.Description
+    $check_query = "SELECT c.CommandeID, c.DateCommande, c.Statut, c.MontantTotal, c.UtilisateurID, c.ReservationID,
+                   dc.MenuID, dc.Quantite, dc.Prix as PrixUnitaire, dc.SousTotal,
+                   m.NomItem, m.Description
                    FROM Commandes c
-                   LEFT JOIN Menus m ON c.MenuID = m.MenuID
+                   LEFT JOIN DetailsCommande dc ON c.CommandeID = dc.CommandeID 
+                   LEFT JOIN Menus m ON dc.MenuID = m.MenuID
                    WHERE c.CommandeID = ? AND c.UtilisateurID = ?";
     $check_stmt = $conn->prepare($check_query);
     $check_stmt->execute([$commande_id, $client_id]);
@@ -106,8 +109,9 @@ if (isset($_GET['id'])) {
 } // <-- Ajout de l'accolade manquante pour fermer le elseif (isset($_GET['reservation_id'])) 
 
 // Calculer le total
+$total = 0;
 foreach ($commandes as $commande) {
-    $total += $commande['Prix'] * $commande['Quantite'];
+    $total += ($commande['PrixUnitaire'] ?? 0) * ($commande['Quantite'] ?? 1);
 }
 ?>
 
@@ -252,29 +256,29 @@ foreach ($commandes as $commande) {
                 <?php if (isset($_GET['id']) && !empty($commandes)): ?>
                     <div class="info-box">
                         <h2>Informations de commande</h2>
-                        <p><strong>Numéro de commande :</strong> #<?php echo htmlspecialchars($commandes[0]['CommandeID']); ?></p>
+                        <p><strong>Numéro de commande :</strong> #<?php echo htmlspecialchars($commandes[0]['CommandeID'] ?? ''); ?></p>
                         <p><strong>Date :</strong> <?php echo isset($commandes[0]['DateCommande']) ? date('d/m/Y à H:i', strtotime($commandes[0]['DateCommande'])) : 'Non disponible'; ?></p>
                         <p><strong>Statut :</strong> <?php echo htmlspecialchars($commandes[0]['Statut'] ?? 'Non spécifié'); ?></p>
                         <?php if(isset($commandes[0]['MontantTotal']) && $commandes[0]['MontantTotal'] > 0): ?>
-                        <p><strong>Montant total :</strong> <?php echo number_format($commandes[0]['MontantTotal'], 2, ',', ' '); ?> €</p>
+                        <p><strong>Montant total :</strong> <?php echo number_format($commandes[0]['MontantTotal'] ?? 0, 2, ',', ' '); ?> €</p>
                         <?php endif; ?>
                     </div>
                     
                     <?php if ($paiement): ?>
                     <div class="info-box" style="border-left-color: #28a745;">
                         <h2>Informations de paiement</h2>
-                        <p><strong>Date de paiement :</strong> <?php echo date('d/m/Y à H:i', strtotime($paiement['DatePaiement'])); ?></p>
-                        <p><strong>Montant payé :</strong> <?php echo number_format($paiement['Montant'], 2, ',', ' '); ?> €</p>
-                        <p><strong>Mode de paiement :</strong> <?php echo htmlspecialchars($paiement['MethodePaiement']); ?></p>
+                        <p><strong>Date de paiement :</strong> <?php echo isset($paiement['DatePaiement']) ? date('d/m/Y à H:i', strtotime($paiement['DatePaiement'])) : 'Non disponible'; ?></p>
+                        <p><strong>Montant payé :</strong> <?php echo number_format($paiement['Montant'] ?? 0, 2, ',', ' '); ?> €</p>
+                        <p><strong>Mode de paiement :</strong> <?php echo htmlspecialchars($paiement['MethodePaiement'] ?? ''); ?></p>
                         <?php if(!empty($paiement['NumeroTransaction'])): ?>
-                        <p><strong>N° de transaction :</strong> <?php echo htmlspecialchars($paiement['NumeroTransaction']); ?></p>
+                        <p><strong>N° de transaction :</strong> <?php echo htmlspecialchars($paiement['NumeroTransaction'] ?? ''); ?></p>
                         <?php endif; ?>
                     </div>
                     <?php elseif (isset($commandes[0]['Statut']) && $commandes[0]['Statut'] != 'Payé'): ?>
                     <div class="info-box" style="border-left-color: #ffc107;">
                         <h2>Paiement</h2>
                         <p>Cette commande n'a pas encore été payée.</p>
-                        <p><a href="payer-commande.php?id=<?php echo htmlspecialchars($commandes[0]['CommandeID']); ?>" class="btn" style="margin-top: 10px;">Procéder au paiement</a></p>
+                        <p><a href="payer-commande.php?id=<?php echo htmlspecialchars($commandes[0]['CommandeID'] ?? ''); ?>" class="btn" style="margin-top: 10px;">Procéder au paiement</a></p>
                     </div>
                     <?php endif; ?>
                 <?php endif; ?>
@@ -282,7 +286,7 @@ foreach ($commandes as $commande) {
                 <?php if ($reservation): ?>
                     <div class="info-box">
                         <h2>Informations de réservation</h2>
-                        <p><strong>Date :</strong> <?php echo date('d/m/Y à H:i', strtotime($reservation['DateReservation'])); ?></p>
+                        <p><strong>Date :</strong> <?php echo isset($reservation['DateReservation']) ? date('d/m/Y à H:i', strtotime($reservation['DateReservation'])) : 'Non disponible'; ?></p>
                         <p><strong>Nom :</strong> <?php echo htmlspecialchars($reservation['nom_client'] ?? 'Non spécifié'); ?></p>
                         <p><strong>Email :</strong> <?php echo htmlspecialchars($reservation['email_client'] ?? 'Non spécifié'); ?></p>
                         <p><strong>Nombre de personnes :</strong> <?php echo htmlspecialchars($reservation['nb_personnes'] ?? 'Non spécifié'); ?></p>
@@ -306,16 +310,16 @@ foreach ($commandes as $commande) {
                             <tbody>
                                 <?php foreach ($commandes as $commande): ?>
                                     <tr>
-                                        <td><?php echo htmlspecialchars($commande['NomItem']); ?></td>
+                                        <td><?php echo htmlspecialchars($commande['NomItem'] ?? ''); ?></td>
                                         <td><?php echo htmlspecialchars($commande['Description'] ?? ''); ?></td>
-                                        <td><?php echo number_format($commande['Prix'], 2, ',', ' '); ?> €</td>
-                                        <td><?php echo htmlspecialchars($commande['Quantite']); ?></td>
-                                        <td><?php echo number_format($commande['Prix'] * $commande['Quantite'], 2, ',', ' '); ?> €</td>
+                                        <td><?php echo number_format($commande['PrixUnitaire'] ?? 0, 2, ',', ' '); ?> €</td>
+                                        <td><?php echo htmlspecialchars($commande['Quantite'] ?? 1); ?></td>
+                                        <td><?php echo number_format(($commande['PrixUnitaire'] ?? 0) * ($commande['Quantite'] ?? 1), 2, ',', ' '); ?> €</td>
                                     </tr>
                                 <?php endforeach; ?>
                                 <tr class="total-row">
                                     <td colspan="4" class="text-right"><strong>Total</strong></td>
-                                    <td><strong><?php echo number_format($total, 2, ',', ' '); ?> €</strong></td>
+                                    <td><strong><?php echo number_format($total ?? 0, 2, ',', ' '); ?> €</strong></td>
                                 </tr>
                             </tbody>
                         </table>
