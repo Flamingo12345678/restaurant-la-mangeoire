@@ -242,7 +242,52 @@ Notification automatique du système de contact - La Mangeoire
                      $message_data['nom'] . " (" . $message_data['email'] . ") - " . 
                      $message_data['objet'] . "\n";
         
-        file_put_contents(__DIR__ . '/../logs/email_notifications.log', $log_entry, FILE_APPEND | LOCK_EX);
+        $this->writeToLogFile('email_notifications.log', $log_entry);
+    }
+    
+    /**
+     * Fonction utilitaire pour écrire dans les fichiers de log
+     * Crée automatiquement le dossier logs s'il n'existe pas
+     * Gestion robuste pour les environnements de production
+     */
+    private function writeToLogFile($filename, $content) {
+        try {
+            $logs_dir = __DIR__ . '/../logs';
+            
+            // Vérifier et créer le dossier logs si nécessaire
+            if (!is_dir($logs_dir)) {
+                if (!mkdir($logs_dir, 0755, true)) {
+                    // Si impossible de créer le dossier, utiliser le dossier temporaire système
+                    $logs_dir = sys_get_temp_dir() . '/restaurant_logs';
+                    if (!is_dir($logs_dir)) {
+                        mkdir($logs_dir, 0755, true);
+                    }
+                }
+            }
+            
+            // Vérifier les permissions d'écriture
+            if (!is_writable($logs_dir)) {
+                // Fallback vers le dossier temporaire système
+                $logs_dir = sys_get_temp_dir() . '/restaurant_logs';
+                if (!is_dir($logs_dir)) {
+                    mkdir($logs_dir, 0755, true);
+                }
+            }
+            
+            $log_file = $logs_dir . '/' . $filename;
+            
+            // Écriture sécurisée avec gestion d'erreur
+            $result = file_put_contents($log_file, $content, FILE_APPEND | LOCK_EX);
+            
+            if ($result === false) {
+                // Dernière tentative avec error_log système
+                error_log("Restaurant La Mangeoire - Impossible d'écrire le log dans $log_file: $content");
+            }
+            
+        } catch (Exception $e) {
+            // Fallback ultime : utiliser error_log système
+            error_log("Restaurant La Mangeoire - Erreur logging (" . $e->getMessage() . "): $content");
+        }
     }
     
     public function logNewMessage($message_data) {
@@ -251,13 +296,7 @@ Notification automatique du système de contact - La Mangeoire
                      $message_data['nom'] . " (" . $message_data['email'] . ") - " . 
                      $message_data['objet'] . "\n";
         
-        // Créer le dossier logs s'il n'existe pas
-        $logs_dir = __DIR__ . '/../logs';
-        if (!is_dir($logs_dir)) {
-            mkdir($logs_dir, 0755, true);
-        }
-        
-        file_put_contents($logs_dir . '/contact_messages.log', $log_entry, FILE_APPEND | LOCK_EX);
+        $this->writeToLogFile('contact_messages.log', $log_entry);
     }
     
     /**
