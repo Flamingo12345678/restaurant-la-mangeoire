@@ -2,6 +2,11 @@
 require_once __DIR__ . '/includes/common.php';
 require_once 'db_connexion.php';
 
+// Gérer le paramètre de redirection
+if (isset($_GET['redirect']) && !empty($_GET['redirect'])) {
+    $_SESSION['redirect_after_login'] = $_GET['redirect'];
+}
+
 // Initialisation des variables
 $message = '';
 $email = '';
@@ -93,9 +98,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $_SESSION['user_nom'] = $nom;
       $_SESSION['user_prenom'] = $prenom;
 
-      // Redirection vers la page principale avec un message de succès
+      // Redirection vers la page de destination ou la page principale
       set_message("Votre compte a été créé avec succès. Bienvenue chez La Mangeoire !", "success");
-      header("Location: index.php");
+      
+      // Gérer la redirection après inscription
+      if (isset($_SESSION['redirect_after_login'])) {
+        $redirect_url = $_SESSION['redirect_after_login'];
+        unset($_SESSION['redirect_after_login']);
+        header("Location: " . $redirect_url);
+      } else {
+        header("Location: index.php");
+      }
       exit;
     } catch (PDOException $e) {
       $message = "Une erreur est survenue lors de la création de votre compte. Veuillez réessayer plus tard.";

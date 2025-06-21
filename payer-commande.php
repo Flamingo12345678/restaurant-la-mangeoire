@@ -6,6 +6,18 @@ require_once 'db_connexion.php';
 require_once 'includes/stripe-config.php';
 require_once 'includes/paypal-config.php';
 
+// SÉCURITÉ : Vérifier que l'utilisateur est connecté
+if (!isset($_SESSION['user_id'])) {
+    $_SESSION['message'] = "Vous devez être connecté pour effectuer un paiement. Veuillez créer un compte ou vous connecter.";
+    $_SESSION['message_type'] = "error";
+    
+    // Stocker l'URL de redirection pour revenir après connexion
+    $_SESSION['redirect_after_login'] = $_SERVER['REQUEST_URI'];
+    
+    header("Location: connexion-unifiee.php");
+    exit;
+}
+
 // Custom function to display cart messages
 function display_cart_message() {
   if (isset($_SESSION['message'])) {

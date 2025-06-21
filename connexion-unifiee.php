@@ -19,6 +19,11 @@ require_once 'db_connexion.php';
 
 // La session est déjà démarrée dans security_utils.php via config.php
 
+// Gérer le paramètre de redirection
+if (isset($_GET['redirect']) && !empty($_GET['redirect'])) {
+    $_SESSION['redirect_after_login'] = $_GET['redirect'];
+}
+
 // Vérifier si l'utilisateur est déjà connecté, le rediriger vers la page appropriée
 // Sauf si on force une nouvelle connexion avec force_new=1
 $force_new = isset($_GET['force_new']) && $_GET['force_new'] == '1';
@@ -153,13 +158,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !is_ip_blacklisted()) {
                 reset_failed_login_attempts($email, null, 'client');
                 
                 // Connexion réussie pour client
+                $_SESSION['user_id'] = $client['ClientID'];
+                $_SESSION['user_nom'] = $client['Nom'];
+                $_SESSION['user_prenom'] = $client['Prenom'];
+                $_SESSION['user_email'] = $client['Email'];
+                $_SESSION['user_type'] = 'client';
+                
+                // Compatibilité avec l'ancien système (à supprimer plus tard)
                 $_SESSION['client_id'] = $client['ClientID'];
                 $_SESSION['client_nom'] = $client['Nom'];
                 $_SESSION['client_prenom'] = $client['Prenom'];
                 $_SESSION['client_email'] = $client['Email'];
-                $_SESSION['user_type'] = 'client';
                 
-                header("Location: mon-compte.php");
+                // Gérer la redirection après connexion
+                if (isset($_SESSION['redirect_after_login'])) {
+                    $redirect_url = $_SESSION['redirect_after_login'];
+                    unset($_SESSION['redirect_after_login']);
+                    header("Location: " . $redirect_url);
+                } else {
+                    header("Location: mon-compte.php");
+                }
                 exit;
             } else {
                 // Enregistrer la tentative de connexion échouée
@@ -182,13 +200,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !is_ip_blacklisted()) {
                     reset_failed_login_attempts($email, null, 'client');
                     
                     // Connexion réussie pour utilisateur
+                    $_SESSION['user_id'] = $user['UtilisateurID'];
+                    $_SESSION['user_nom'] = $user['Nom'];
+                    $_SESSION['user_prenom'] = $user['Prenom'];
+                    $_SESSION['user_email'] = $user['Email'];
+                    $_SESSION['user_type'] = 'client';
+                    
+                    // Compatibilité avec l'ancien système (à supprimer plus tard)
                     $_SESSION['client_id'] = $user['UtilisateurID'];
                     $_SESSION['client_nom'] = $user['Nom'];
                     $_SESSION['client_prenom'] = $user['Prenom'];
                     $_SESSION['client_email'] = $user['Email'];
-                    $_SESSION['user_type'] = 'client';
                     
-                    header("Location: mon-compte.php");
+                    // Gérer la redirection après connexion
+                    if (isset($_SESSION['redirect_after_login'])) {
+                        $redirect_url = $_SESSION['redirect_after_login'];
+                        unset($_SESSION['redirect_after_login']);
+                        header("Location: " . $redirect_url);
+                    } else {
+                        header("Location: mon-compte.php");
+                    }
                     exit;
                 } else {
                     // Enregistrer la tentative de connexion échouée
