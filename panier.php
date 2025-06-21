@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'includes/common.php';
+require_once 'includes/currency_manager.php';
 require_once 'db_connexion.php';
 
 // Custom function to display cart messages
@@ -184,7 +185,7 @@ if (isset($_SESSION['client_id'])) {
                             <div class="col-md-4">
                                 <h4><?php echo htmlspecialchars($item['NomItem']); ?></h4>
                                 <p class="text-muted"><?php echo isset($item['Description']) ? htmlspecialchars($item['Description']) : ''; ?></p>
-                                <p class="price"><?php echo number_format($item['Prix'], 0, ',', ' '); ?> XAF</p>
+                                <p class="price"><?php echo CurrencyManager::formatPrice($item['Prix'], true); ?></p>
                             </div>
                             <div class="col-md-3">
                                 <form action="ajouter-au-panier.php" method="post">
@@ -200,7 +201,7 @@ if (isset($_SESSION['client_id'])) {
                                 </form>
                             </div>
                             <div class="col-md-2 text-end">
-                                <p class="fw-bold"><?php echo number_format($item['Prix'] * $item['Quantite'], 0, ',', ' '); ?> XAF</p>
+                                <p class="fw-bold"><?php echo CurrencyManager::formatPrice($item['Prix'] * $item['Quantite'], true); ?></p>
                             </div>
                             <div class="col-md-1 text-end">
                                 <form action="ajouter-au-panier.php" method="post">
@@ -222,16 +223,16 @@ if (isset($_SESSION['client_id'])) {
                             <div class="card-body">
                                 <div class="d-flex justify-content-between mb-3">
                                     <span>Sous-total:</span>
-                                    <span><?php echo number_format($total, 0, ',', ' '); ?> XAF</span>
+                                    <span><?php echo CurrencyManager::formatPrice($total, true); ?></span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-3">
                                     <span>Frais de livraison:</span>
-                                    <span>0 XAF</span>
+                                    <span><?php echo CurrencyManager::formatPrice(0); ?></span>
                                 </div>
                                 <hr>
                                 <div class="d-flex justify-content-between mb-3 fw-bold">
                                     <span>Total:</span>
-                                    <span><?php echo number_format($total, 0, ',', ' '); ?> XAF</span>
+                                    <span><?php echo CurrencyManager::formatPrice($total, true); ?></span>
                                 </div>
                                 
                                 <?php if (isset($_SESSION['client_id'])): ?>

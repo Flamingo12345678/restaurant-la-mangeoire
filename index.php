@@ -2,6 +2,16 @@
 session_start();
 require_once 'includes/common.php';
 require_once 'db_connexion.php';
+require_once 'includes/currency_manager.php';
+
+// Gestion du changement de devise
+if (isset($_GET['currency'])) {
+    if (CurrencyManager::setCurrency($_GET['currency'])) {
+        // Rediriger pour supprimer le paramètre de l'URL
+        header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?'));
+        exit;
+    }
+}
 
 // Custom function to display cart messages using the session variable format we've set up
 function display_cart_message() {
@@ -19,6 +29,28 @@ function display_cart_message() {
     unset($_SESSION['message_type']);
   }
 }
+
+// Récupérer les prix des menus depuis la base de données
+$menu_prices = [];
+try {
+  $stmt = $conn->prepare("SELECT MenuID, NomItem, Prix FROM Menus");
+  $stmt->execute();
+  $menus = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  
+  foreach ($menus as $menu) {
+    $menu_prices[$menu['MenuID']] = [
+      'nom' => $menu['NomItem'],
+      'prix' => $menu['Prix'],
+      'prix_formate' => CurrencyManager::formatPrice($menu['Prix'], true)
+    ];
+  }
+} catch (PDOException $e) {
+  error_log("Erreur récupération prix menus: " . $e->getMessage());
+}
+
+// Obtenir les informations de devise actuelle
+$current_currency = CurrencyManager::getCurrentCurrency();
+$user_country = CurrencyManager::detectCountry();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -109,6 +141,20 @@ function display_cart_message() {
               <?php else: ?>
                 <a href="connexion-unifiee.php"><i class="bi bi-box-arrow-in-right"></i> Connexion</a>
               <?php endif; ?>
+            </li>
+            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="bi bi-currency-exchange"></i> <?php echo $current_currency['symbol']; ?>
+              </a>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="?currency=CM"><span class="fi fi-cm"></span> FCFA (Cameroun)</a></li>
+                <li><a class="dropdown-item" href="?currency=FR"><span class="fi fi-fr"></span> € (Euro)</a></li>
+                <li><a class="dropdown-item" href="?currency=US"><span class="fi fi-us"></span> $ (USD)</a></li>
+                <li><a class="dropdown-item" href="?currency=GB"><span class="fi fi-gb"></span> £ (GBP)</a></li>
+                <li><a class="dropdown-item" href="?currency=CA"><span class="fi fi-ca"></span> C$ (CAD)</a></li>
+                <li><a class="dropdown-item" href="?currency=CH"><span class="fi fi-ch"></span> CHF (Suisse)</a></li>
+                <li><a class="dropdown-item" href="?currency=AU"><span class="fi fi-au"></span> A$ (AUD)</a></li>
+              </ul>
             </li>
           </ul>
           <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
@@ -408,10 +454,10 @@ function display_cart_message() {
                     Lorem, deren, trataro, filede, nerada
                     <!--ingrediednt-->
                   </p>
-                  <p class="price">18 €</p>
+                  <p class="price"><?php echo isset($menu_prices[5]) ? $menu_prices[5]['prix_formate'] : CurrencyManager::formatPrice(9.20, true); ?></p>
                   <!--Prix-->
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
-                    <input type="hidden" name="menu_id" value="1">
+                    <input type="hidden" name="menu_id" value="5">
                     <input type="hidden" name="action" value="add">
                     <div class="d-flex justify-content-between align-items-center">
                       <div class="input-group input-group-sm" style="max-width: 100px;">
@@ -437,7 +483,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">19 €</p>
+                  <p class="price"><?php echo isset($menu_prices[2]) ? $menu_prices[2]['prix_formate'] : CurrencyManager::formatPrice(14.80, true); ?></p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
                     <input type="hidden" name="menu_id" value="2">
                     <input type="hidden" name="action" value="add">
@@ -465,7 +511,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">17 €</p>
+                  <p class="price"><?php echo isset($menu_prices[3]) ? $menu_prices[3]['prix_formate'] : CurrencyManager::formatPrice(8.50, true); ?></p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
                     <input type="hidden" name="menu_id" value="3">
                     <input type="hidden" name="action" value="add">
@@ -493,9 +539,9 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">20 €</p>
+                  <p class="price"><?php echo isset($menu_prices[1]) ? $menu_prices[1]['prix_formate'] : CurrencyManager::formatPrice(15.50, true); ?></p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
-                    <input type="hidden" name="menu_id" value="4">
+                    <input type="hidden" name="menu_id" value="1">
                     <input type="hidden" name="action" value="add">
                     <div class="d-flex justify-content-between align-items-center">
                       <div class="input-group input-group-sm" style="max-width: 100px;">
@@ -521,9 +567,9 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">17 €</p>
+                  <p class="price"><?php echo isset($menu_prices[4]) ? $menu_prices[4]['prix_formate'] : CurrencyManager::formatPrice(12.90, true); ?></p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
-                    <input type="hidden" name="menu_id" value="5">
+                    <input type="hidden" name="menu_id" value="4">
                     <input type="hidden" name="action" value="add">
                     <div class="d-flex justify-content-between align-items-center">
                       <div class="input-group input-group-sm" style="max-width: 100px;">
@@ -549,9 +595,9 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">17 €</p>
+                  <p class="price"><?php echo isset($menu_prices[7]) ? $menu_prices[7]['prix_formate'] : CurrencyManager::formatPrice(18.90, true); ?></p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
-                    <input type="hidden" name="menu_id" value="6">
+                    <input type="hidden" name="menu_id" value="7">
                     <input type="hidden" name="action" value="add">
                     <div class="d-flex justify-content-between align-items-center">
                       <div class="input-group input-group-sm" style="max-width: 100px;">
@@ -576,9 +622,9 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">16 €</p>
+                  <p class="price"><?php echo isset($menu_prices[6]) ? $menu_prices[6]['prix_formate'] : CurrencyManager::formatPrice(7.80, true); ?></p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
-                    <input type="hidden" name="menu_id" value="7">
+                    <input type="hidden" name="menu_id" value="6">
                     <input type="hidden" name="action" value="add">
                     <div class="d-flex justify-content-between align-items-center">
                       <div class="input-group input-group-sm" style="max-width: 100px;">

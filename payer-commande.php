@@ -2,6 +2,7 @@
 session_start();
 require_once 'vendor/autoload.php'; // Charger l'autoloader en premier
 require_once 'includes/common.php';
+require_once 'includes/currency_manager.php';
 require_once 'db_connexion.php';
 require_once 'includes/stripe-config.php';
 require_once 'includes/paypal-config.php';
@@ -100,6 +101,11 @@ if ($order_id > 0) {
                 $order_items[$key]['NomItem'] = 'Article #' . $item['MenuID'];
             }
         }
+    }
+    
+    // Définir le montant de paiement pour les commandes
+    if ($order) {
+        $payment_amount = $order['MontantTotal'];
     }
     
     // Check if the order already has a payment
@@ -549,7 +555,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payment_method'])) {
                                     </button>
                                 </li>
                                 <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="paypal-tab" data-bs-toggle="tab" data-bs-target="#paypal-panel" type="button" role="tab" aria-controls="paypal-panel" aria-selected="false">
+                                    <button class="nav-link" id="paypal-tab" data-bs-toggle="tab" data-bs-target="#paypal-panel" type="button" aria-controls="paypal-panel" aria-selected="false">
                                         <i class="bi bi-paypal me-2"></i>Payer avec PayPal
                                     </button>
                                 </li>
@@ -577,7 +583,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payment_method'])) {
                                         <input type="hidden" name="payment_method" value="stripe">
                                         <div class="d-grid">
                                             <button type="submit" class="btn btn-primary btn-lg">
-                                                <i class="bi bi-lock-fill me-2"></i>Payer <?php echo number_format($payment_amount, 0, ',', ' '); ?> XAF avec Stripe
+                                                <i class="bi bi-lock-fill me-2"></i>Payer <?php echo CurrencyManager::formatPrice($payment_amount, true); ?> avec Stripe
                                             </button>
                                         </div>
                                     </form>
@@ -599,7 +605,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payment_method'])) {
                                         <input type="hidden" name="payment_method" value="paypal">
                                         <div class="d-grid">
                                             <button type="submit" class="btn btn-primary btn-lg" style="background-color: #0070ba; border-color: #0070ba;">
-                                                <i class="bi bi-paypal me-2"></i>Payer <?php echo number_format($payment_amount, 0, ',', ' '); ?> XAF avec PayPal
+                                                <i class="bi bi-paypal me-2"></i>Payer <?php echo CurrencyManager::formatPrice($payment_amount, true); ?> avec PayPal
                                             </button>
                                         </div>
                                     </form>
@@ -640,7 +646,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payment_method'])) {
                                         </div>
                                         
                                         <div class="d-grid">
-                                            <button type="submit" class="btn btn-primary btn-lg">Payer <?php echo number_format($payment_amount, 0, ',', ' '); ?> XAF</button>
+                                            <button type="submit" class="btn btn-primary btn-lg">Payer <?php echo CurrencyManager::formatPrice($payment_amount, true); ?></button>
                                         </div>
                                     </form>
                                 </div>
@@ -658,7 +664,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payment_method'])) {
                                     <?php foreach ($order_items as $item): ?>
                                     <div class="d-flex justify-content-between mb-2">
                                         <span><?php echo htmlspecialchars($item['NomItem']); ?> x <?php echo $item['Quantite']; ?></span>
-                                        <span><?php echo number_format($item['SousTotal'], 0, ',', ' '); ?> XAF</span>
+                                        <span><?php echo CurrencyManager::formatPrice($item['SousTotal'], true); ?></span>
                                     </div>
                                     <?php endforeach; ?>
                                     
@@ -666,7 +672,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payment_method'])) {
                                     
                                     <div class="d-flex justify-content-between fw-bold">
                                         <span>Total:</span>
-                                        <span><?php echo number_format($order['MontantTotal'], 0, ',', ' '); ?> XAF</span>
+                                        <span><?php echo CurrencyManager::formatPrice($order['MontantTotal'], true); ?></span>
                                     </div>
                                 </div>
                                 
