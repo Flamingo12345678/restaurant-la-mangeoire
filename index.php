@@ -1523,13 +1523,18 @@ $user_country = CurrencyManager::detectCountry();
               data-aos-delay="200"
             >
               <form
-                action="forms/book-a-table.php"
-                method="post"
+                action="reserver-table.php"
+                method="get"
                 role="form"
                 class="php-email-form"
               >
+                <div class="text-center mb-4">
+                  <h3>Réservation Rapide</h3>
+                  <p class="text-muted">Remplissez ce formulaire pour réserver votre table</p>
+                </div>
+                
                 <div class="row gy-4">
-                  <div class="col-lg-4 col-md-6">
+                  <div class="col-lg-6 col-md-6">
                     <input
                       type="text"
                       name="name"
@@ -1539,7 +1544,7 @@ $user_country = CurrencyManager::detectCountry();
                       required=""
                     />
                   </div>
-                  <div class="col-lg-4 col-md-6">
+                  <div class="col-lg-6 col-md-6">
                     <input
                       type="email"
                       class="form-control"
@@ -1549,7 +1554,7 @@ $user_country = CurrencyManager::detectCountry();
                       required=""
                     />
                   </div>
-                  <div class="col-lg-4 col-md-6">
+                  <div class="col-lg-6 col-md-6">
                     <input
                       type="text"
                       class="form-control"
@@ -1559,33 +1564,37 @@ $user_country = CurrencyManager::detectCountry();
                       required=""
                     />
                   </div>
-                  <div class="col-lg-4 col-md-6">
-                    <input
-                      type="date"
-                      name="date"
-                      class="form-control"
-                      id="date"
-                      placeholder="Date"
-                      required=""
-                    />
-                  </div>
-                  <div class="col-lg-4 col-md-6">
-                    <input
-                      type="time"
-                      class="form-control"
-                      name="time"
-                      id="time"
-                      placeholder="Heure"
-                      required=""
-                    />
-                  </div>
-                  <div class="col-lg-4 col-md-6">
+                  <div class="col-lg-6 col-md-6">
                     <input
                       type="number"
                       class="form-control"
                       name="people"
                       id="people"
                       placeholder="# Nombre de Personnes"
+                      min="1"
+                      required=""
+                    />
+                  </div>
+                  <div class="col-lg-6 col-md-6">
+                    <input
+                      type="date"
+                      name="date"
+                      class="form-control"
+                      id="date"
+                      placeholder="Date"
+                      min="<?php echo date('Y-m-d'); ?>"
+                      required=""
+                    />
+                  </div>
+                  <div class="col-lg-6 col-md-6">
+                    <input
+                      type="time"
+                      class="form-control"
+                      name="time"
+                      id="time"
+                      placeholder="Heure"
+                      min="11:00"
+                      max="23:00"
                       required=""
                     />
                   </div>
@@ -1595,19 +1604,27 @@ $user_country = CurrencyManager::detectCountry();
                   <textarea
                     class="form-control"
                     name="message"
-                    rows="5"
-                    placeholder="Message"
+                    rows="3"
+                    placeholder="Message (optionnel)"
                   ></textarea>
                 </div>
 
-                <div class="text-center mt-3">
-                  <div class="loading">Loading</div>
-                  <div class="error-message"></div>
-                  <div class="sent-message">
-                    Your booking request was sent. We will call back or send an
-                    Email to confirm your reservation. Thank you!
+                <div class="text-center mt-4">
+                  <div class="row">
+                    <div class="col-md-6 mb-2">
+                      <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-calendar-check"></i> Réservation Complète
+                      </button>
+                    </div>
+                    <div class="col-md-6">
+                      <a href="reserver-table.php" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-arrow-right"></i> Formulaire Détaillé
+                      </a>
+                    </div>
                   </div>
-                  <button type="submit">Réserver une Table</button>
+                  <small class="text-muted mt-2 d-block">
+                    Nous vous contacterons pour confirmer votre réservation
+                  </small>
                 </div>
               </form>
             </div>
@@ -1770,6 +1787,24 @@ $user_country = CurrencyManager::detectCountry();
         <!-- End Section Title -->
 
         <div class="container" data-aos="fade-up" data-aos-delay="100">
+          <?php
+          // Affichage des messages de succès/erreur pour le formulaire de contact
+          if (isset($_SESSION['contact_success'])) {
+              echo '<div class="alert alert-success alert-dismissible fade show" role="alert">
+                      <i class="bi bi-check-circle-fill"></i> ' . $_SESSION['contact_success'] . '
+                      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>';
+              unset($_SESSION['contact_success']);
+          }
+          if (isset($_SESSION['contact_error'])) {
+              echo '<div class="alert alert-danger alert-dismissible fade show" role="alert">
+                      <i class="bi bi-exclamation-triangle-fill"></i> ' . $_SESSION['contact_error'] . '
+                      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>';
+              unset($_SESSION['contact_error']);
+          }
+          ?>
+          
           <div class="mb-5">
             <iframe
               style="width: 100%; height: 400px"
@@ -1897,7 +1932,7 @@ $user_country = CurrencyManager::detectCountry();
                 <div class="loading">Loading</div>
                 <div class="error-message"></div>
                 <div class="sent-message">
-                  Your message has been sent. Thank you!
+                  Votre message a été envoyé avec succès !
                 </div>
 
                 <button type="submit">Envoyer le Message</button>
