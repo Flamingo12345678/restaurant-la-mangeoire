@@ -1,0 +1,89 @@
+/* Styles pour les pages d'authentification (connexion, inscription) */
+
+/* Styles pour les notices et les informations */
+.info-paragraph {
+  margin: 5px 0 0 0;
+  font-size: 0.9em;
+}
+
+/* Styles pour les liens dans les pages d'authentification */
+.auth-link {
+  color: #ce1212;
+  text-decoration: none;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+}
+
+/* Style pour les conteneurs de liens */
+.auth-links-container {
+  margin-top: 20px;
+  text-align: center;
+}
+
+/* Style pour les messages d'erreur */
+.error-container {
+  background-color: #fee;
+  padding: 10px;
+  margin: 10px;
+  border: 1px solid #f00;
+  border-radius: 4px;
+}
+
+/* Styles pour les groupes de formulaires en flex */
+.form-row-flex {
+  display: flex;
+  gap: 15px;
+}
+
+.form-group-flex {
+  flex: 1;
+}
+
+/* Styles pour les titres de section */
+.section-title {
+  margin-top: 30px;
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+/* Styles pour les filtres */
+.filters-container {
+  margin-bottom: 20px;
+  background-color: #f9f9f9;
+  padding: 15px;
+  border-radius: 5px;
+}
+
+.filter-title {
+  margin-top: 0;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.filter-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Style pour les sélecteurs dans les formulaires */
+.form-select {
+  padding: 5px;
+  border-radius: 3px;
+  border: 1px solid #ddd;
+}
+
+/* Style pour le bouton de filtre */
+.filter-button {
+  padding: 5px 10px;
+  margin-top: 0;
+}
+
+/* Style pour les boutons désactivés */
+.btn-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

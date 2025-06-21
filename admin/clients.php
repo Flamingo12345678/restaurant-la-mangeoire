@@ -1,4 +1,6 @@
 <?php
+
+require_once 'check_admin_access.php';
 require_once '../db_connexion.php';
 require_once '../includes/common.php';
 
@@ -142,8 +144,8 @@ if ($stmt) {
 
   <!-- Contenu spécifique de la page -->
   <div class="content-wrapper">
-    <div style="background-color: #f9f9f9; border-radius: 5px;">
-      <h2 style="color: #222; font-size: 23px; margin-bottom: 30px; position: relative;">Gestion des clients</h2>
+    <div class="admin-section-container">
+      <h2 class="admin-section-title">Gestion des clients</h2>
     </div>
     <?php display_message(); ?>
     <div class="form-section">
@@ -161,12 +163,12 @@ if ($stmt) {
         <div class="form-group">
           <input type="text" name="telephone" placeholder="Téléphone" required>
         </div>
-        <div class="form-group" style="grid-column: 1 / -1;">
+        <div class="form-group admin-form-group-full">
           <button type="submit" class="submit-btn">Ajouter le client</button>
         </div>
       </form>
     </div>
-    <h3 class="section-title" style="margin-top: 30px;">Liste des clients</h3>
+    <h3 class="section-title admin-subsection-title">Liste des clients</h3>
     <div class="table-responsive-wrapper">
       <table class="admin-table">
         <thead>

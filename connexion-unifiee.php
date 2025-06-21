@@ -1,14 +1,38 @@
 <?php
-// Ne pas démarrer une session si elle existe déjà
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
+// Activer la mise en tampon de sortie pour éviter les erreurs "headers already sent"
+ob_start();
+
+// Inclure la configuration de session avant toute sortie
+require_once dirname(__FILE__) . '/includes/session_config.php';
+
+// Démarrer la session si ce n'est pas déjà fait et si c'est possible
+if (session_status() === PHP_SESSION_NONE) {
+    @session_start();
 }
+// Note: session.cookie_secure devrait être à 1 en production avec HTTPS
+
+// Inclure le fichier de sécurité pour l'administration qui inclut config.php
+require_once 'admin/includes/security_utils.php';
+
+// Inclure la connexion à la base de données
 require_once 'db_connexion.php';
 
+// La session est déjà démarrée dans security_utils.php via config.php
+
 // Vérifier si l'utilisateur est déjà connecté, le rediriger vers la page appropriée
-if (isset($_SESSION['user_type'])) {
+// Sauf si on force une nouvelle connexion avec force_new=1
+$force_new = isset($_GET['force_new']) && $_GET['force_new'] == '1';
+
+if (!$force_new && isset($_SESSION['user_type'])) {
     if ($_SESSION['user_type'] === 'admin') {
-        header("Location: admin/index.php");
+        // Si une page de redirection est définie, l'utiliser, sinon aller au tableau de bord
+        if (isset($_SESSION['redirect_after_login'])) {
+            $redirect_url = $_SESSION['redirect_after_login'];
+            unset($_SESSION['redirect_after_login']);
+            header("Location: $redirect_url");
+        } else {
+            header("Location: admin/index.php");
+        }
         exit;
     } elseif ($_SESSION['user_type'] === 'client') {
         header("Location: mon-compte.php");
@@ -16,11 +40,42 @@ if (isset($_SESSION['user_type'])) {
     }
 }
 
-$error_message = "";
+// Si on force une nouvelle connexion, détruire la session existante
+if ($force_new && session_status() === PHP_SESSION_ACTIVE) {
+    // Sauvegarder temporairement les informations pour le log
+    $user_type = $_SESSION['user_type'] ?? 'inconnu';
+    $user_id = $_SESSION['admin_id'] ?? ($_SESSION['client_id'] ?? 0);
+    $user_email = $_SESSION['admin_email'] ?? ($_SESSION['client_email'] ?? 'inconnu');
+    
+    // Journaliser la déconnexion forcée
+    log_unauthorized_access("Réinitialisation forcée de session ($user_type, ID: $user_id, Email: $user_email)", __FILE__);
+    
+    // Détruire la session
+    $_SESSION = array();
+    session_destroy();
+    
+    // Redémarrer une nouvelle session
+    session_start();
+    $_SESSION['last_regenerate'] = time();
+}
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
+// Vérifier si l'IP est sur liste noire
+if (is_ip_blacklisted()) {
+    // Afficher un message d'erreur approprié
+    $error_message = "Votre adresse IP a été temporairement bloquée en raison de trop nombreuses tentatives de connexion échouées. Veuillez réessayer plus tard.";
+} else {
+    $error_message = "";
+}
+
+// Déterminer si la demande vient de l'interface admin
+$is_admin_login = isset($_POST['admin_login']) || (isset($_GET['admin']) && $_GET['admin'] == '1');
+
+if ($_SERVER["REQUEST_METHOD"] == "POST" && !is_ip_blacklisted()) {
     $email = $_POST['email'];
     $password = $_POST['password'];
+    
+    // Déterminer si la demande vient de l'interface admin
+    $is_admin_login = isset($_POST['admin_login']) || (isset($_GET['admin']) && $_GET['admin'] == '1');
     
     // Vérifier d'abord dans la table admin
     $admin_query = "SELECT * FROM Administrateurs WHERE Email = ?";
@@ -32,16 +87,55 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($admin) {
         // C'est un administrateur
         if (password_verify($password, $admin['MotDePasse'])) {
+            // Réinitialiser les tentatives de connexion échouées
+            reset_failed_login_attempts($email, null, 'admin');
+            
             // Connexion réussie pour admin
             $_SESSION['admin_id'] = $admin['AdminID'];
             $_SESSION['admin_nom'] = $admin['Nom'];
             $_SESSION['admin_prenom'] = $admin['Prenom'];
             $_SESSION['admin_email'] = $admin['Email'];
+            $_SESSION['admin_role'] = !empty($admin['Role']) ? $admin['Role'] : 'admin'; // Utiliser le rôle de la DB ou admin par défaut
             $_SESSION['user_type'] = 'admin';
             
-            header("Location: admin/index.php");
+            // Mettre à jour la date de dernière connexion
+            try {
+                // Vérifier d'abord si la colonne existe
+                $check_column = $conn->query("SHOW COLUMNS FROM Administrateurs LIKE 'DerniereConnexion'");
+                if ($check_column->rowCount() > 0) {
+                    $update_query = "UPDATE Administrateurs SET DerniereConnexion = NOW() WHERE AdminID = ?";
+                    $update_stmt = $conn->prepare($update_query);
+                    $update_stmt->execute([$admin['AdminID']]);
+                } else {
+                    // Rediriger vers la page de mise à jour de la structure
+                    header("Location: update_administrateurs_table.php");
+                    exit;
+                }
+            } catch (PDOException $e) {
+                // Si une erreur se produit, la journaliser mais continuer
+                error_log("Erreur lors de la mise à jour de la dernière connexion: " . $e->getMessage());
+            }
+            
+            // Enregistrer l'heure de la dernière activité et régénération
+            $_SESSION['last_activity'] = time();
+            $_SESSION['last_regenerate'] = time();
+            
+            // Journal de sécurité
+            log_unauthorized_access("Connexion d'administrateur réussie", __FILE__);
+            
+            // Rediriger vers la page d'origine si elle existe, sinon vers le tableau de bord
+            if (isset($_SESSION['redirect_after_login'])) {
+                $redirect_url = $_SESSION['redirect_after_login'];
+                unset($_SESSION['redirect_after_login']);
+                header("Location: $redirect_url");
+            } else {
+                header("Location: admin/index.php");
+            }
             exit;
         } else {
+            // Enregistrer la tentative de connexion échouée
+            check_failed_login_attempts($email, 'admin');
+            
             $error_message = "Mot de passe incorrect";
         }
     } else {
@@ -55,6 +149,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if ($client && isset($client['MotDePasse'])) {
             // C'est un client avec mot de passe dans la table Clients
             if (password_verify($password, $client['MotDePasse'])) {
+                // Réinitialiser les tentatives de connexion échouées
+                reset_failed_login_attempts($email, null, 'client');
+                
                 // Connexion réussie pour client
                 $_SESSION['client_id'] = $client['ClientID'];
                 $_SESSION['client_nom'] = $client['Nom'];
@@ -65,6 +162,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 header("Location: mon-compte.php");
                 exit;
             } else {
+                // Enregistrer la tentative de connexion échouée
+                check_failed_login_attempts($email, 'client');
+                
                 $error_message = "Mot de passe incorrect";
             }
         } else {
@@ -78,6 +178,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             if ($user) {
                 // C'est un utilisateur
                 if (password_verify($password, $user['MotDePasse'])) {
+                    // Réinitialiser les tentatives de connexion échouées
+                    reset_failed_login_attempts($email, null, 'client');
+                    
                     // Connexion réussie pour utilisateur
                     $_SESSION['client_id'] = $user['UtilisateurID'];
                     $_SESSION['client_nom'] = $user['Nom'];
@@ -88,9 +191,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     header("Location: mon-compte.php");
                     exit;
                 } else {
+                    // Enregistrer la tentative de connexion échouée
+                    check_failed_login_attempts($email, 'client');
+                    
                     $error_message = "Mot de passe incorrect";
                 }
             } else {
+                if ($is_admin_login) {
+                    // Tentative d'accès à un compte administrateur inexistant
+                    check_failed_login_attempts($email, 'admin');
+                } else {
+                    // Tentative d'accès à un compte client inexistant
+                    check_failed_login_attempts($email, 'client');
+                }
                 $error_message = "Utilisateur non trouvé";
             }
         }
@@ -105,176 +218,75 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connexion - Restaurant La Mangeoire</title>
     <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/auth-modern.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <link rel="stylesheet" href="assets/css/cookie-consent.css">
-    <style>
-        body {
-            background-color: #f0f2f5;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            height: 100vh;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .back-link {
-            padding: 15px;
-            color: #ce1212;
-            text-decoration: none;
-            font-weight: 500;
-            display: inline-block;
-        }
-        
-        .back-link:hover {
-            text-decoration: underline;
-        }
-        
-        .login-container {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        
-        .login-card {
-            background-color: white;
-            border-radius: 16px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 400px;
-            padding: 40px 20px;
-            text-align: center;
-        }
-        
-        .logo-container {
-            margin-bottom: 20px;
-        }
-        
-        .logo {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            padding: 5px;
-            background-color: #fff1f1;
-            box-shadow: 0 0 0 5px rgba(206, 18, 18, 0.1);
-        }
-        
-        h2 {
-            color: #ce1212;
-            margin-bottom: 30px;
-            font-size: 2.5rem;
-            font-weight: 600;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-            position: relative;
-        }
-        
-        .form-icon {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #777;
-            font-size: 1.2rem;
-        }
-        
-        .form-group input {
-            width: 100%;
-            padding: 15px 15px 15px 45px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 1rem;
-            box-sizing: border-box;
-            background-color: #f8f8f8;
-        }
-        
-        .form-group input:focus {
-            outline: none;
-            border-color: #ce1212;
-            background-color: #fff;
-        }
-        
-        .btn-submit {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            padding: 15px;
-            background-color: #ce1212;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 20px;
-        }
-        
-        .btn-submit:hover {
-            background-color: #b01010;
-        }
-        
-        .btn-icon {
-            margin-right: 10px;
-        }
-        
-        .error-message {
-            color: #ce1212;
-            background-color: #ffeaea;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            text-align: left;
-        }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
 </head>
-<body>
+<body class="auth-page">
     <a href="index.php" class="back-link">
         <i class="bi bi-arrow-left-circle"></i> Retour au site public
     </a>
     
-    <div class="login-container">
-        <div class="login-card">
+    <div class="auth-container">
+        <div class="auth-card">
             <div class="logo-container">
-                <img src="assets/img/favcon.jpeg" alt="Logo La Mangeoire" class="logo">
+                <img src="assets/img/favcon.jpeg" alt="Logo La Mangeoire" class="auth-logo">
             </div>
             
-            <h2>Connexion</h2>
+            <h2 class="auth-title">Connexion</h2>
             
             <?php if (!empty($error_message)): ?>
-                <div class="error-message">
+                <div class="auth-error-message">
                     <i class="bi bi-exclamation-circle"></i> <?php echo $error_message; ?>
                 </div>
             <?php endif; ?>
             
             <form method="POST" action="">
-                <div class="form-group">
-                    <i class="bi bi-person form-icon"></i>
+                <div class="auth-form-group">
+                    <i class="bi bi-person auth-form-icon"></i>
                     <input type="email" id="email" name="email" placeholder="Email" required>
                 </div>
                 
-                <div class="form-group">
-                    <i class="bi bi-lock form-icon"></i>
+                <div class="auth-form-group">
+                    <i class="bi bi-lock auth-form-icon"></i>
                     <input type="password" id="password" name="password" placeholder="Mot de passe" required>
                 </div>
                 
-                <button type="submit" class="btn-submit">
-                    <i class="bi bi-box-arrow-in-right btn-icon"></i> Connexion
+                <?php if (isset($_GET['admin']) && $_GET['admin'] == '1'): ?>
+                    <input type="hidden" name="admin_login" value="1">
+                    <div class="auth-notice">
+                        <strong><i class="bi bi-shield-lock"></i> Connexion administrateur</strong>
+                        <p style="margin: 8px 0 0 0; font-size: 0.95em;">Vous vous connectez à l'interface d'administration.</p>
+                    </div>
+                <?php endif; ?>
+
+                <button type="submit" class="auth-btn">
+                    <i class="bi bi-box-arrow-in-right auth-btn-icon"></i> Connexion
                 </button>
             </form>
             
-            <div style="margin-top: 20px; text-align: center;">
-                <p><a href="mot-de-passe-oublie.php" style="color: #ce1212; text-decoration: none;">Mot de passe oublié ?</a></p>
-                <p>Pas encore de compte ? <a href="inscription.php" style="color: #ce1212; text-decoration: none;">S'inscrire</a></p>
+            <div class="auth-footer">
+                <p><a href="mot-de-passe-oublie.php" class="forgotten-password">Mot de passe oublié ?</a></p>
+                
+                <p style="margin-top: 15px; color: #666;">
+                    Pas encore de compte ? <a href="inscription.php" class="auth-link">S'inscrire</a>
+                </p>
+                
+                <?php if (!isset($_GET['admin']) || $_GET['admin'] != '1'): ?>
+                    <p style="margin-top: 15px; color: #666;">
+                        <a href="connexion-employe.php" class="auth-link">
+                            <i class="bi bi-person-badge"></i> Connexion employé
+                        </a>
+                    </p>
+                <?php endif; ?>
             </div>
         </div>
     </div>
     
     <!-- Script pour le système de gestion des cookies -->
     <script src="assets/js/cookie-consent.js"></script>
+    <script src="assets/js/harmonize-auth-styles.js"></script>
 </body>
 </html>

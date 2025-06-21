@@ -1,4 +1,5 @@
 require_once __DIR__ . '/../includes/common.php';
+require_once __DIR__ . '/includes/security_utils.php';
 require_superadmin();
 require_once '../db_connexion.php';
 $message = '';

@@ -128,32 +128,32 @@ $reservations = $conn->query("SELECT * FROM Reservations ORDER BY ReservationID 
         <td><?= htmlspecialchars($r['email_client']) ?></td>
         <td><?= htmlspecialchars($r['DateReservation']) ?></td>
         <td>
-          <form method="post" style="display:inline;">
+          <form method="post" class="inline-form">
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
             <input type="hidden" name="edit_id" value="<?= $r['ReservationID'] ?>">
-            <select name="edit_statut" onchange="this.form.submit()" style="padding:2px 6px;">
+            <select name="edit_statut" onchange="this.form.submit()" class="select-status">
               <option value="Réservée" <?= ($r['statut'] === 'Réservée') ? 'selected' : '' ?>>Réservée</option>
               <option value="Annulée" <?= ($r['statut'] === 'Annulée') ? 'selected' : '' ?>>Annulée</option>
             </select>
           </form>
         </td>
         <td>
-          <form method="post" style="display:inline;" onsubmit="return confirm('Supprimer cette réservation ?');">
+          <form method="post" class="inline-form" onsubmit="return confirm('Supprimer cette réservation ?');">
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
             <input type="hidden" name="delete_reservation" value="<?= $r['ReservationID'] ?>">
-            <button type="submit" style="background:none;border:none;color:#b01e28;cursor:pointer;">Supprimer</button>
+            <button type="submit" class="btn-link">Supprimer</button>
           </form>
         </td>
       </tr>
     <?php endforeach; ?>
   </table>
   <?php if ($total_pages > 1): ?>
-    <div class="pagination" style="margin:20px 0;">
+    <div class="pagination">
       <?php for ($i = 1; $i <= $total_pages; $i++): ?>
         <?php if ($i == $page): ?>
-          <strong style="margin:0 5px; color:#1976d2;">[<?= $i ?>]</strong>
+          <strong class="pagination-current">[<?= $i ?>]</strong>
         <?php else: ?>
-          <a href="?page=<?= $i ?>" style="margin:0 5px;">[<?= $i ?>]</a>
+          <a href="?page=<?= $i ?>" class="pagination-link">[<?= $i ?>]</a>
         <?php endif; ?>
       <?php endfor; ?>
     </div>

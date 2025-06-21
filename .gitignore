@@ -19,6 +19,7 @@ db_connexion.php
 # Fichiers de log, de debug et temporaires
 *.log
 debug_log.txt
+logs/
 *.cache
 *.tmp
 .DS_Store

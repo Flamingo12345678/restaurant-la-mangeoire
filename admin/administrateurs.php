@@ -1,4 +1,6 @@
 <?php
+
+require_once 'check_admin_access.php';
 require_once __DIR__ . '/../includes/common.php';
 require_superadmin();
 generate_csrf_token();
@@ -240,126 +242,61 @@ try {
   <link rel="stylesheet" href="../assets/css/main.css">
   <link rel="stylesheet" href="../assets/css/admin.css">
   <link rel="stylesheet" href="../assets/css/admin-animations.css">
+  <link rel="stylesheet" href="../assets/css/admin-inline-fixes.css">
+  <link rel="stylesheet" href="../assets/css/employes-admin.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    .admin-card {
-      margin-bottom: 30px;
+    /* Styles directs pour les boutons d'action avec priorité maximale */
+    .actions-column {
+      text-align: center;
+      white-space: nowrap;
     }
-
-    .admin-role {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      margin-left: 8px;
-    }
-
-    .admin-role.superadmin {
-      background-color: #ff4757;
-      color: #fff;
-    }
-
-    .admin-role.admin {
-      background-color: #1e90ff;
-      color: #fff;
-    }
-
-    .admin-action-btn {
+    
+    .action-button {
       margin-right: 5px;
-    }
-
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background-color: rgba(0, 0, 0, 0.5);
-    }
-
-    .modal-content {
-      background-color: #fff;
-      margin: 10% auto;
-      padding: 20px;
-      border-radius: 8px;
-      width: 80%;
-      max-width: 600px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-      animation: modalFadeIn 0.3s;
-    }
-
-    @keyframes modalFadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(-50px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .close-modal {
-      color: #aaa;
-      float: right;
-      font-size: 28px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .close-modal:hover {
-      color: #000;
-    }
-
-    .modal-header {
-      padding-bottom: 15px;
-      margin-bottom: 15px;
-      border-bottom: 1px solid #eee;
-    }
-
-    .modal-title {
-      margin: 0;
-      font-size: 1.5rem;
-    }
-
-    .form-group {
-      margin-bottom: 15px;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: 500;
-    }
-
-    .form-control {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ddd;
+      width: 32px;
+      height: 32px;
       border-radius: 4px;
-      font-size: 1rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 0;
     }
-
-    .form-text {
-      display: block;
-      margin-top: 5px;
-      font-size: 0.85rem;
-      color: #666;
+    
+    .action-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     }
-
-    .btn-container {
-      margin-top: 20px;
-      text-align: right;
+    
+    .edit-action {
+      background-color: #3498db !important;
+      color: white !important;
     }
-
-    .current-user {
-      background-color: #f8f9fa;
+    
+    .edit-action:hover {
+      background-color: #2980b9 !important;
+    }
+    
+    .reset-action {
+      background-color: #f39c12 !important;
+      color: white !important;
+    }
+    
+    .reset-action:hover {
+      background-color: #d68910 !important;
+    }
+    
+    .delete-action {
+      background-color: #e74c3c !important;
+      color: white !important;
+    }
+    
+    .delete-action:hover {
+      background-color: #c0392b !important;
     }
   </style>
 </head>
@@ -410,17 +347,17 @@ try {
                       </span>
                     </td>
                     <td><?php echo date('d/m/Y H:i', strtotime($admin['DateCreation'])); ?></td>
-                    <td>
-                      <button type="button" class="btn btn-sm btn-primary admin-action-btn"
+                    <td class="actions-column">
+                      <button type="button" class="admin-action-btn edit-action" data-color="blue" title="Modifier" 
                         onclick="openEditModal(<?php echo $admin['AdminID']; ?>, '<?php echo htmlspecialchars(addslashes($admin['Email'])); ?>', '<?php echo htmlspecialchars(addslashes($admin['Nom'])); ?>', '<?php echo htmlspecialchars(addslashes($admin['Prenom'])); ?>', '<?php echo $admin['Role']; ?>')">
                         <i class="bi bi-pencil"></i>
                       </button>
-                      <button type="button" class="btn btn-sm btn-warning admin-action-btn"
+                      <button type="button" class="admin-action-btn reset-action" data-color="orange" title="Réinitialiser le mot de passe"
                         onclick="openResetPasswordModal(<?php echo $admin['AdminID']; ?>, '<?php echo htmlspecialchars(addslashes($admin['Email'])); ?>')">
                         <i class="bi bi-key"></i>
                       </button>
                       <?php if ($admin['AdminID'] != ($_SESSION['admin_id'] ?? 0)): ?>
-                        <button type="button" class="btn btn-sm btn-danger admin-action-btn"
+                        <button type="button" class="admin-action-btn delete-action" data-color="red" title="Supprimer"
                           onclick="openDeleteModal(<?php echo $admin['AdminID']; ?>, '<?php echo htmlspecialchars(addslashes($admin['Email'])); ?>')">
                           <i class="bi bi-trash"></i>
                         </button>
@@ -448,54 +385,56 @@ try {
       <div class="modal-header">
         <h3 class="modal-title"><i class="bi bi-person-plus"></i> Ajouter un administrateur</h3>
       </div>
-      <form method="POST" action="administrateurs.php" id="addAdminForm">
-        <input type="hidden" name="action" value="ajouter">
-        <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+      <div class="modal-body">
+        <form method="POST" action="administrateurs.php" id="addAdminForm">
+          <input type="hidden" name="action" value="ajouter">
+          <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
 
-        <div class="form-group">
-          <label for="email">Email</label>
-          <input type="email" class="form-control" id="email" name="email" required>
-        </div>
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" class="form-control" id="email" name="email" required>
+          </div>
 
-        <div class="form-group">
-          <label for="nom">Nom</label>
-          <input type="text" class="form-control" id="nom" name="nom" required>
-        </div>
+          <div class="form-group">
+            <label for="nom">Nom</label>
+            <input type="text" class="form-control" id="nom" name="nom" required>
+          </div>
 
-        <div class="form-group">
-          <label for="prenom">Prénom</label>
-          <input type="text" class="form-control" id="prenom" name="prenom" required>
-        </div>
+          <div class="form-group">
+            <label for="prenom">Prénom</label>
+            <input type="text" class="form-control" id="prenom" name="prenom" required>
+          </div>
 
-        <div class="form-group">
-          <label for="role">Rôle</label>
-          <select class="form-control" id="role" name="role" required>
-            <option value="admin">Administrateur</option>
-            <option value="superadmin">Super Administrateur</option>
-          </select>
-          <small class="form-text">
-            Les super administrateurs ont un accès complet à toutes les fonctionnalités.
-          </small>
-        </div>
+          <div class="form-group">
+            <label for="role">Rôle</label>
+            <select class="form-control" id="role" name="role" required>
+              <option value="admin">Administrateur</option>
+              <option value="superadmin">Super Administrateur</option>
+            </select>
+            <small class="form-text">
+              Les super administrateurs ont un accès complet à toutes les fonctionnalités.
+            </small>
+          </div>
 
-        <div class="form-group">
-          <label for="password">Mot de passe</label>
-          <input type="password" class="form-control" id="password" name="password" required>
-          <small class="form-text">
-            Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre.
-          </small>
-        </div>
+          <div class="form-group">
+            <label for="password">Mot de passe</label>
+            <input type="password" class="form-control" id="password" name="password" required>
+            <small class="form-text">
+              Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre.
+            </small>
+          </div>
 
-        <div class="form-group">
-          <label for="confirm_password">Confirmer le mot de passe</label>
-          <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
-        </div>
+          <div class="form-group">
+            <label for="confirm_password">Confirmer le mot de passe</label>
+            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+          </div>
 
-        <div class="btn-container">
-          <button type="button" class="btn btn-secondary" onclick="closeModal('addAdminModal')">Annuler</button>
-          <button type="submit" class="btn btn-primary">Ajouter</button>
-        </div>
-      </form>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('addAdminModal')">Annuler</button>
+            <button type="submit" class="btn btn-primary">Ajouter</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -506,42 +445,44 @@ try {
       <div class="modal-header">
         <h3 class="modal-title"><i class="bi bi-pencil"></i> Modifier un administrateur</h3>
       </div>
-      <form method="POST" action="administrateurs.php" id="editAdminForm">
-        <input type="hidden" name="action" value="modifier">
-        <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
-        <input type="hidden" name="admin_id" id="edit_admin_id">
+      <div class="modal-body">
+        <form method="POST" action="administrateurs.php" id="editAdminForm">
+          <input type="hidden" name="action" value="modifier">
+          <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+          <input type="hidden" name="admin_id" id="edit_admin_id">
 
-        <div class="form-group">
-          <label for="edit_email">Email</label>
-          <input type="email" class="form-control" id="edit_email" name="email" required>
-        </div>
+          <div class="form-group">
+            <label for="edit_email">Email</label>
+            <input type="email" class="form-control" id="edit_email" name="email" required>
+          </div>
 
-        <div class="form-group">
-          <label for="edit_nom">Nom</label>
-          <input type="text" class="form-control" id="edit_nom" name="nom" required>
-        </div>
+          <div class="form-group">
+            <label for="edit_nom">Nom</label>
+            <input type="text" class="form-control" id="edit_nom" name="nom" required>
+          </div>
 
-        <div class="form-group">
-          <label for="edit_prenom">Prénom</label>
-          <input type="text" class="form-control" id="edit_prenom" name="prenom" required>
-        </div>
+          <div class="form-group">
+            <label for="edit_prenom">Prénom</label>
+            <input type="text" class="form-control" id="edit_prenom" name="prenom" required>
+          </div>
 
-        <div class="form-group">
-          <label for="edit_role">Rôle</label>
-          <select class="form-control" id="edit_role" name="role" required>
-            <option value="admin">Administrateur</option>
-            <option value="superadmin">Super Administrateur</option>
-          </select>
-          <small class="form-text">
-            Les super administrateurs ont un accès complet à toutes les fonctionnalités.
-          </small>
-        </div>
+          <div class="form-group">
+            <label for="edit_role">Rôle</label>
+            <select class="form-control" id="edit_role" name="role" required>
+              <option value="admin">Administrateur</option>
+              <option value="superadmin">Super Administrateur</option>
+            </select>
+            <small class="form-text">
+              Les super administrateurs ont un accès complet à toutes les fonctionnalités.
+            </small>
+          </div>
 
-        <div class="btn-container">
-          <button type="button" class="btn btn-secondary" onclick="closeModal('editAdminModal')">Annuler</button>
-          <button type="submit" class="btn btn-primary">Modifier</button>
-        </div>
-      </form>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('editAdminModal')">Annuler</button>
+            <button type="submit" class="btn btn-primary">Modifier</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -552,30 +493,32 @@ try {
       <div class="modal-header">
         <h3 class="modal-title"><i class="bi bi-key"></i> Réinitialiser le mot de passe</h3>
       </div>
-      <p id="reset_password_email" class="mb-3"></p>
-      <form method="POST" action="administrateurs.php" id="resetPasswordForm">
-        <input type="hidden" name="action" value="reset_password">
-        <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
-        <input type="hidden" name="admin_id" id="reset_admin_id">
+      <div class="modal-body">
+        <p id="reset_password_email" class="mb-3"></p>
+        <form method="POST" action="administrateurs.php" id="resetPasswordForm">
+          <input type="hidden" name="action" value="reset_password">
+          <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+          <input type="hidden" name="admin_id" id="reset_admin_id">
 
-        <div class="form-group">
-          <label for="reset_password">Nouveau mot de passe</label>
-          <input type="password" class="form-control" id="reset_password" name="password" required>
-          <small class="form-text">
-            Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre.
-          </small>
-        </div>
+          <div class="form-group">
+            <label for="reset_password">Nouveau mot de passe</label>
+            <input type="password" class="form-control" id="reset_password" name="password" required>
+            <small class="form-text">
+              Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre.
+            </small>
+          </div>
 
-        <div class="form-group">
-          <label for="reset_confirm_password">Confirmer le mot de passe</label>
-          <input type="password" class="form-control" id="reset_confirm_password" name="confirm_password" required>
-        </div>
+          <div class="form-group">
+            <label for="reset_confirm_password">Confirmer le mot de passe</label>
+            <input type="password" class="form-control" id="reset_confirm_password" name="confirm_password" required>
+          </div>
 
-        <div class="btn-container">
-          <button type="button" class="btn btn-secondary" onclick="closeModal('resetPasswordModal')">Annuler</button>
-          <button type="submit" class="btn btn-primary">Réinitialiser</button>
-        </div>
-      </form>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('resetPasswordModal')">Annuler</button>
+            <button type="submit" class="btn btn-primary">Réinitialiser</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -586,126 +529,27 @@ try {
       <div class="modal-header">
         <h3 class="modal-title"><i class="bi bi-trash"></i> Supprimer un administrateur</h3>
       </div>
-      <p>Êtes-vous sûr de vouloir supprimer l'administrateur <strong id="delete_admin_email"></strong> ?</p>
-      <p class="text-danger">Cette action est irréversible.</p>
+      <div class="modal-body">
+        <p>Êtes-vous sûr de vouloir supprimer l'administrateur <strong id="delete_admin_email"></strong> ?</p>
+        <p class="text-danger">Cette action est irréversible.</p>
 
-      <form method="POST" action="administrateurs.php" id="deleteAdminForm">
-        <input type="hidden" name="action" value="supprimer">
-        <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
-        <input type="hidden" name="admin_id" id="delete_admin_id">
+        <form method="POST" action="administrateurs.php" id="deleteAdminForm">
+          <input type="hidden" name="action" value="supprimer">
+          <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+          <input type="hidden" name="admin_id" id="delete_admin_id">
 
-        <div class="btn-container">
-          <button type="button" class="btn btn-secondary" onclick="closeModal('deleteAdminModal')">Annuler</button>
-          <button type="submit" class="btn btn-danger">Supprimer</button>
-        </div>
-      </form>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('deleteAdminModal')">Annuler</button>
+            <button type="submit" class="btn btn-danger">Supprimer</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
+  <!-- Champ caché pour stocker l'ID de l'admin actuel -->
+  <input type="hidden" id="current_admin_id" value="<?php echo isset($_SESSION['admin_id']) ? $_SESSION['admin_id'] : 0; ?>">
+
   <?php include 'footer_template.php'; ?>
-
-  <script src="../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <script src="../assets/js/main.js"></script>
-  <script>
-    function openModal(modalId) {
-      document.getElementById(modalId).style.display = 'block';
-      document.body.style.overflow = 'hidden';
-    }
-
-    function closeModal(modalId) {
-      document.getElementById(modalId).style.display = 'none';
-      document.body.style.overflow = 'auto';
-    }
-
-    function openEditModal(id, email, nom, prenom, role) {
-      document.getElementById('edit_admin_id').value = id;
-      document.getElementById('edit_email').value = email;
-      document.getElementById('edit_nom').value = nom;
-      document.getElementById('edit_prenom').value = prenom;
-      document.getElementById('edit_role').value = role;
-
-      // Désactiver le champ de rôle si c'est l'utilisateur courant
-      const currentUserId = <?php echo isset($_SESSION['admin_id']) ? $_SESSION['admin_id'] : 0; ?>;
-      if (id === currentUserId) {
-        document.getElementById('edit_role').disabled = true;
-        document.getElementById('edit_role').value = 'superadmin';
-      } else {
-        document.getElementById('edit_role').disabled = false;
-      }
-
-      openModal('editAdminModal');
-    }
-
-    function openResetPasswordModal(id, email) {
-      document.getElementById('reset_admin_id').value = id;
-      document.getElementById('reset_password_email').textContent = `Réinitialisation du mot de passe pour: ${email}`;
-      openModal('resetPasswordModal');
-    }
-
-    function openDeleteModal(id, email) {
-      document.getElementById('delete_admin_id').value = id;
-      document.getElementById('delete_admin_email').textContent = email;
-      openModal('deleteAdminModal');
-    }
-
-    // Fermer les modales quand on clique en dehors
-    window.onclick = function(event) {
-      const modals = document.getElementsByClassName('modal');
-      for (let i = 0; i < modals.length; i++) {
-        if (event.target === modals[i]) {
-          modals[i].style.display = 'none';
-          document.body.style.overflow = 'auto';
-        }
-      }
-    };
-
-    // Validation des mots de passe
-    document.addEventListener('DOMContentLoaded', function() {
-      // Formulaire d'ajout
-      const addPasswordField = document.getElementById('password');
-      const addConfirmPasswordField = document.getElementById('confirm_password');
-
-      if (addPasswordField && addConfirmPasswordField) {
-        addConfirmPasswordField.addEventListener('input', function() {
-          if (this.value === addPasswordField.value) {
-            this.setCustomValidity('');
-          } else {
-            this.setCustomValidity('Les mots de passe ne correspondent pas');
-          }
-        });
-
-        addPasswordField.addEventListener('input', function() {
-          if (addConfirmPasswordField.value && this.value !== addConfirmPasswordField.value) {
-            addConfirmPasswordField.setCustomValidity('Les mots de passe ne correspondent pas');
-          } else {
-            addConfirmPasswordField.setCustomValidity('');
-          }
-        });
-      }
-
-      // Formulaire de réinitialisation
-      const resetPasswordField = document.getElementById('reset_password');
-      const resetConfirmPasswordField = document.getElementById('reset_confirm_password');
-
-      if (resetPasswordField && resetConfirmPasswordField) {
-        resetConfirmPasswordField.addEventListener('input', function() {
-          if (this.value === resetPasswordField.value) {
-            this.setCustomValidity('');
-          } else {
-            this.setCustomValidity('Les mots de passe ne correspondent pas');
-          }
-        });
-
-        resetPasswordField.addEventListener('input', function() {
-          if (resetConfirmPasswordField.value && this.value !== resetConfirmPasswordField.value) {
-            resetConfirmPasswordField.setCustomValidity('Les mots de passe ne correspondent pas');
-          } else {
-            resetConfirmPasswordField.setCustomValidity('');
-          }
-        });
-      }
-    });
-  </script>
 </body>
-
 </html>

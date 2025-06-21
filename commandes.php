@@ -84,7 +84,7 @@ $commandes = $conn->query("SELECT * FROM Commandes ORDER BY CommandeID DESC LIMI
     <input type="number" name="reservation_id" id="reservation_id" placeholder="ID réservation" required min="1">
     <input type="number" name="menu_id" id="menu_id" placeholder="ID menu" required min="1">
     <input type="number" name="quantite" id="quantite" placeholder="Quantité" required min="1">
-    <div id="form-error" class="form-error" style="display:none;"></div>
+    <div id="form-error" class="form-error hidden"></div>
     <button type="submit" name="ajouter">Ajouter</button>
   </form>
   <script>
@@ -151,7 +151,7 @@ $commandes = $conn->query("SELECT * FROM Commandes ORDER BY CommandeID DESC LIMI
         <td><?= htmlspecialchars($c['MenuID']) ?></td>
         <td><?= htmlspecialchars($c['Quantite']) ?></td>
         <td>
-          <form method="post" style="display:inline;">
+          <form method="post" class="inline-form">
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
             <input type="hidden" name="delete_commande" value="<?= $c['CommandeID'] ?>">
             <button type="submit" class="delete-btn" onclick="return confirm('Supprimer cette commande ?')">Supprimer</button>

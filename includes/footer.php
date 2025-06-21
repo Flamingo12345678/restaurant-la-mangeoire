@@ -131,3 +131,6 @@
     }
 }
 </style>
+
+<!-- Script pour supprimer les styles inline -->
+<script src="assets/js/remove-inline-styles.js"></script>
