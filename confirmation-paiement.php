@@ -178,7 +178,7 @@ if ($payment_type === 'order' && !$order) {
                 </ul>
             </nav>
 
-            <a class="btn-getstarted" href="index.php#book-a-table">Réserver une Table</a>
+            <a class="btn-getstarted" href="reserver-table.php">Réserver une Table</a>
         </div>
     </header>
     

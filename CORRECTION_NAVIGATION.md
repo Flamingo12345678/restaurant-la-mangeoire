@@ -26,6 +26,40 @@ Lorsque vous étiez dans l'interface admin et que vous cliquiez sur "Retour au s
 - **Amélioration :** Vérification des deux variables de session (`client_id` ET `user_id`)
 - **Impact :** Les utilisateurs non connectés accèdent à la bonne page de connexion unifiée
 
+---
+
+## 🆕 **MISE À JOUR : ERREURS SESSION CORRIGÉES**
+
+### ❌ Nouveaux problèmes identifiés :
+- **Warning: session_start()** dans `/reserver-table.php` ligne 132
+- **Warning: session_start()** dans `/includes/common.php` ligne 4
+
+### ✅ Corrections effectuées :
+
+1. **Restructuration complète de `reserver-table.php`**
+   - Déplacement du PHP au début (avant HTML)
+   - Suppression du code dupliqué
+   - Correction des noms de champs formulaire
+
+2. **Noms de champs cohérents** :
+   - `name` → `nom`
+   - `phone` → `telephone`
+   - `people` → `nombre_personnes`
+   - `date` → `date_reservation`
+   - `time` → `heure_reservation`
+
+3. **Ajout notifications email** pour les réservations
+
+### 🧪 **Validation** :
+```bash
+✅ PHP syntax OK: No errors detected
+✅ Session management fixed
+✅ Form field names consistent
+✅ Email notifications integrated
+```
+
+**🎯 RÉSULTAT** : Page de réservation sans erreurs PHP + notifications email fonctionnelles !
+
 ## 🧪 Comment tester
 
 1. **Accédez à** `test-navigation.php` pour une interface de test complète

@@ -379,7 +379,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
             </nav>
 
-            <a class="btn-getstarted" href="index.php#book-a-table">Réserver une Table</a>
+            <a class="btn-getstarted" href="reserver-table.php">Réserver une Table</a>
         </div>
     </header>
     

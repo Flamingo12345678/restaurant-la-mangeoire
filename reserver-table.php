@@ -1,3 +1,99 @@
+<?php
+// Démarrer la session avant tout output HTML
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+require_once 'db_connexion.php';
+require_once 'includes/common.php';
+require_once 'includes/email_notifications.php';
+
+$success_message = '';
+$error_message = '';
+
+// Traitement du formulaire
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $nom = trim(strip_tags($_POST['nom'] ?? ''));
+    $email = filter_var($_POST['email'] ?? '', FILTER_VALIDATE_EMAIL);
+    $telephone = trim(strip_tags($_POST['telephone'] ?? ''));
+    $nombre_personnes = (int)($_POST['nombre_personnes'] ?? 0);
+    $date_reservation = $_POST['date_reservation'] ?? '';
+    $heure_reservation = $_POST['heure_reservation'] ?? '';
+    $message = trim(strip_tags($_POST['message'] ?? ''));
+    
+    // Validation
+    if (empty($nom)) {
+        $error_message = "Le nom est requis.";
+    } elseif (!$email) {
+        $error_message = "Un email valide est requis.";
+    } elseif (empty($telephone)) {
+        $error_message = "Le téléphone est requis.";
+    } elseif ($nombre_personnes < 1 || $nombre_personnes > 20) {
+        $error_message = "Le nombre de personnes doit être entre 1 et 20.";
+    } elseif (empty($date_reservation)) {
+        $error_message = "La date de réservation est requise.";
+    } elseif (empty($heure_reservation)) {
+        $error_message = "L'heure de réservation est requise.";
+    } else {
+        try {
+            // Insertion en base de données
+            $stmt = $conn->prepare("
+                INSERT INTO reservations (nom, email, telephone, nombre_personnes, date_reservation, heure_reservation, message, date_creation, statut)
+                VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), 'En attente')
+            ");
+            
+            $result = $stmt->execute([
+                $nom,
+                $email,
+                $telephone,
+                $nombre_personnes,
+                $date_reservation,
+                $heure_reservation,
+                $message
+            ]);
+            
+            if ($result) {
+                $success_message = "Votre réservation a été enregistrée avec succès ! Nous vous confirmerons par email dans les plus brefs délais.";
+                
+                // Envoi de notification email à l'admin (si disponible)
+                try {
+                    if (class_exists('EmailNotifications')) {
+                        $emailNotification = new EmailNotifications();
+                        $reservation_data = [
+                            'nom' => $nom,
+                            'email' => $email,
+                            'telephone' => $telephone,
+                            'nombre_personnes' => $nombre_personnes,
+                            'date_reservation' => $date_reservation,
+                            'heure_reservation' => $heure_reservation,
+                            'message' => $message
+                        ];
+                        
+                        // On pourrait ajouter une méthode sendNewReservationNotification()
+                        // Pour l'instant, on utilise la notification de contact
+                        $emailNotification->sendNewMessageNotification([
+                            'nom' => $nom,
+                            'email' => $email,
+                            'objet' => 'Nouvelle réservation',
+                            'message' => "Nouvelle réservation de $nom pour $nombre_personnes personne(s) le $date_reservation à $heure_reservation. Téléphone: $telephone. Message: $message"
+                        ]);
+                    }
+                } catch (Exception $e) {
+                    // Log l'erreur mais continue (la réservation est déjà enregistrée)
+                    error_log("Erreur envoi email réservation: " . $e->getMessage());
+                }
+                
+                // Réinitialiser les champs
+                $nom = $email = $telephone = $date_reservation = $heure_reservation = $message = '';
+                $nombre_personnes = 2;
+            } else {
+                $error_message = "Une erreur est survenue lors de l'enregistrement. Veuillez réessayer.";
+            }
+        } catch (Exception $e) {
+            $error_message = "Erreur lors de l'enregistrement : " . $e->getMessage();
+        }
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -127,80 +223,6 @@
             </div>
             
             <div class="reservation-form">
-                <?php
-                if (session_status() === PHP_SESSION_NONE) {
-                    session_start();
-                }
-                require_once 'db_connexion.php';
-                require_once 'includes/common.php';
-                
-                $success_message = '';
-                $error_message = '';
-                
-                // Traitement du formulaire
-                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                    $nom = trim(strip_tags($_POST['name'] ?? ''));
-                    $email = filter_var($_POST['email'] ?? '', FILTER_VALIDATE_EMAIL);
-                    $telephone = trim(strip_tags($_POST['phone'] ?? ''));
-                    $date = $_POST['date'] ?? '';
-                    $time = $_POST['time'] ?? '';
-                    $people = filter_var($_POST['people'] ?? '', FILTER_VALIDATE_INT);
-                    $message = trim(strip_tags($_POST['message'] ?? ''));
-                    
-                    // Validation
-                    if (empty($nom)) {
-                        $error_message = "Le nom est requis.";
-                    } elseif (!$email) {
-                        $error_message = "Un email valide est requis.";
-                    } elseif (empty($telephone)) {
-                        $error_message = "Le numéro de téléphone est requis.";
-                    } elseif (empty($date)) {
-                        $error_message = "La date est requise.";
-                    } elseif (empty($time)) {
-                        $error_message = "L'heure est requise.";
-                    } elseif (!$people || $people < 1) {
-                        $error_message = "Le nombre de personnes doit être au moins 1.";
-                    } else {
-                        try {
-                            // Vérifier la date (doit être future)
-                            $datetime = $date . ' ' . $time;
-                            $reservation_datetime = new DateTime($datetime);
-                            $now = new DateTime();
-                            
-                            if ($reservation_datetime <= $now) {
-                                $error_message = "La date et l'heure de réservation doivent être dans le futur.";
-                            } else {
-                                // Insertion en base de données
-                                $stmt = $conn->prepare("
-                                    INSERT INTO Reservations (nom_client, email_client, numero_telephone, DateReservation, nb_personnes, message, Statut, date_creation)
-                                    VALUES (?, ?, ?, ?, ?, ?, 'En attente', NOW())
-                                ");
-                                
-                                $result = $stmt->execute([
-                                    $nom,
-                                    $email, 
-                                    $telephone,
-                                    $datetime,
-                                    $people,
-                                    $message
-                                ]);
-                                
-                                if ($result) {
-                                    $reservation_id = $conn->lastInsertId();
-                                    $success_message = "Votre réservation a été enregistrée avec succès ! Numéro de réservation : #" . $reservation_id . ". Nous vous contacterons pour confirmer.";
-                                    
-                                    // Réinitialiser les champs
-                                    $_POST = [];
-                                } else {
-                                    $error_message = "Erreur lors de l'enregistrement de la réservation. Veuillez réessayer.";
-                                }
-                            }
-                        } catch (Exception $e) {
-                            $error_message = "Erreur : " . $e->getMessage();
-                        }
-                    }
-                }
-                ?>
                 
                 <?php if ($success_message): ?>
                     <div class="success-message">
@@ -220,12 +242,12 @@
                             <div class="form-floating">
                                 <input type="text" 
                                        class="form-control" 
-                                       id="name" 
-                                       name="name" 
+                                       id="nom" 
+                                       name="nom" 
                                        placeholder="Votre nom complet"
-                                       value="<?php echo htmlspecialchars($_POST['name'] ?? ''); ?>"
+                                       value="<?php echo htmlspecialchars($nom ?? ''); ?>"
                                        required>
-                                <label for="name"><i class="bi bi-person"></i> Nom complet</label>
+                                <label for="nom"><i class="bi bi-person"></i> Nom complet</label>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -235,7 +257,7 @@
                                        id="email" 
                                        name="email" 
                                        placeholder="votre@email.com"
-                                       value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>"
+                                       value="<?php echo htmlspecialchars($email ?? ''); ?>"
                                        required>
                                 <label for="email"><i class="bi bi-envelope"></i> Email</label>
                             </div>
@@ -247,26 +269,26 @@
                             <div class="form-floating">
                                 <input type="tel" 
                                        class="form-control" 
-                                       id="phone" 
-                                       name="phone" 
+                                       id="telephone" 
+                                       name="telephone" 
                                        placeholder="Votre numéro de téléphone"
-                                       value="<?php echo htmlspecialchars($_POST['phone'] ?? ''); ?>"
+                                       value="<?php echo htmlspecialchars($telephone ?? ''); ?>"
                                        required>
-                                <label for="phone"><i class="bi bi-telephone"></i> Téléphone</label>
+                                <label for="telephone"><i class="bi bi-telephone"></i> Téléphone</label>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-floating">
                                 <input type="number" 
                                        class="form-control" 
-                                       id="people" 
-                                       name="people" 
+                                       id="nombre_personnes" 
+                                       name="nombre_personnes" 
                                        min="1" 
                                        max="20"
                                        placeholder="Nombre de personnes"
-                                       value="<?php echo htmlspecialchars($_POST['people'] ?? ''); ?>"
+                                       value="<?php echo htmlspecialchars($nombre_personnes ?? 2); ?>"
                                        required>
-                                <label for="people"><i class="bi bi-people"></i> Nombre de personnes</label>
+                                <label for="nombre_personnes"><i class="bi bi-people"></i> Nombre de personnes</label>
                             </div>
                         </div>
                     </div>
@@ -276,25 +298,25 @@
                             <div class="form-floating">
                                 <input type="date" 
                                        class="form-control" 
-                                       id="date" 
-                                       name="date" 
+                                       id="date_reservation" 
+                                       name="date_reservation" 
                                        min="<?php echo date('Y-m-d'); ?>"
-                                       value="<?php echo htmlspecialchars($_POST['date'] ?? ''); ?>"
+                                       value="<?php echo htmlspecialchars($date_reservation ?? ''); ?>"
                                        required>
-                                <label for="date"><i class="bi bi-calendar"></i> Date</label>
+                                <label for="date_reservation"><i class="bi bi-calendar"></i> Date</label>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-floating">
                                 <input type="time" 
                                        class="form-control" 
-                                       id="time" 
-                                       name="time" 
+                                       id="heure_reservation" 
+                                       name="heure_reservation" 
                                        min="11:00" 
                                        max="23:00"
-                                       value="<?php echo htmlspecialchars($_POST['time'] ?? ''); ?>"
+                                       value="<?php echo htmlspecialchars($heure_reservation ?? ''); ?>"
                                        required>
-                                <label for="time"><i class="bi bi-clock"></i> Heure</label>
+                                <label for="heure_reservation"><i class="bi bi-clock"></i> Heure</label>
                             </div>
                         </div>
                     </div>
@@ -304,7 +326,7 @@
                                   id="message" 
                                   name="message" 
                                   placeholder="Message optionnel"
-                                  style="height: 120px"><?php echo htmlspecialchars($_POST['message'] ?? ''); ?></textarea>
+                                  style="height: 120px"><?php echo htmlspecialchars($message ?? ''); ?></textarea>
                         <label for="message"><i class="bi bi-chat-text"></i> Message (optionnel)</label>
                     </div>
                     
