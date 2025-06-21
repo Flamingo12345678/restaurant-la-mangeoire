@@ -104,10 +104,10 @@ function display_cart_message() {
               ?>
             </a></li>
             <li>
-              <?php if (isset($_SESSION['client_id'])): ?>
+              <?php if (isset($_SESSION['client_id']) || isset($_SESSION['user_id'])): ?>
                 <a href="mon-compte.php"><i class="bi bi-person"></i> Mon Compte</a>
               <?php else: ?>
-                <a href="admin/login.php"><i class="bi bi-box-arrow-in-right"></i> Connexion</a>
+                <a href="connexion-unifiee.php"><i class="bi bi-box-arrow-in-right"></i> Connexion</a>
               <?php endif; ?>
             </li>
           </ul>

@@ -352,7 +352,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           countdownDisplay.textContent = seconds;
           if (seconds <= 0) {
             clearInterval(countdown);
-            window.location.href = '../index.html';
+            window.location.href = '../index.php';
           }
         }, 1000);
       </script>

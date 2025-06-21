@@ -54,7 +54,7 @@ $common_scripts = array(
       <?php endif; ?>
       
       <li class="nav-section"><span>Navigation</span></li>
-      <li><a href="../index.html"><i class="bi bi-arrow-left-circle"></i> Retour au site</a></li>
+      <li><a href="../index.php"><i class="bi bi-arrow-left-circle"></i> Retour au site</a></li>
       <li><a href="logout.php"><i class="bi bi-box-arrow-right"></i> Déconnexion</a></li>
     </ul>
   </nav>
