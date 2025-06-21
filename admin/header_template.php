@@ -40,6 +40,7 @@ $common_scripts = array(
       <li><a href="tables.php" <?php echo (basename($_SERVER['SCRIPT_NAME']) == 'tables.php') ? 'class="active"' : ''; ?>><i class="bi bi-table"></i> Tables</a></li>
       <li><a href="employes.php" <?php echo (basename($_SERVER['SCRIPT_NAME']) == 'gestion_employes.php' || basename($_SERVER['SCRIPT_NAME']) == 'employes.php' || basename($_SERVER['SCRIPT_NAME']) == 'acces_employes_direct.php' || basename($_SERVER['SCRIPT_NAME']) == 'modifier_employe.php') ? 'class="active"' : ''; ?>><i class="bi bi-person-badge"></i> Employés</a></li>
       <li><a href="paiements.php" <?php echo (basename($_SERVER['SCRIPT_NAME']) == 'paiements.php') ? 'class="active"' : ''; ?>><i class="bi bi-credit-card"></i> Paiements</a></li>
+      <li><a href="../admin-messages.php" <?php echo (basename($_SERVER['SCRIPT_NAME']) == 'admin-messages.php') ? 'class="active"' : ''; ?>><i class="bi bi-envelope"></i> Messages</a></li>
       
       <!-- Section Administration, visible uniquement pour les superadmins -->
       <?php
