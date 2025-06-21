@@ -94,10 +94,14 @@ try {
 // Récupérer les commandes du client
 // Comme la table Commandes utilise UtilisateurID et non ClientID
 try {
-    $commandes_query = "SELECT c.*, m.NomItem, m.Prix
+    $commandes_query = "SELECT c.CommandeID, c.DateCommande, c.Statut, c.MontantTotal, 
+                       COALESCE(c.MontantTotal, 
+                         (SELECT SUM(COALESCE(dc.Prix, 0) * COALESCE(dc.Quantite, 0)) 
+                          FROM DetailsCommande dc 
+                          WHERE dc.CommandeID = c.CommandeID)) AS TotalCalcule
                        FROM Commandes c 
-                       LEFT JOIN Menus m ON c.MenuID = m.MenuID 
                        WHERE c.UtilisateurID = ? 
+                       GROUP BY c.CommandeID
                        ORDER BY c.DateCommande DESC";
     $commandes_stmt = $conn->prepare($commandes_query);
     $commandes_stmt->bindValue(1, $client_id, PDO::PARAM_INT);
@@ -242,7 +246,7 @@ try {
         // Pour la table Utilisateurs, chercher tous les paiements liés aux commandes de l'utilisateur
         // Simplifié - sans UNION ALL pour éviter les problèmes de compatibilité de colonnes
         $paiements_query = "SELECT p.*, c.CommandeID, NULL as ReservationID, 'Commande' as TypePaiement,
-                            c.DateCommande as DateReference, c.statut, c.MontantTotal, p.DatePaiement
+                            c.DateCommande as DateReference, c.Statut, c.MontantTotal, p.DatePaiement
                             FROM Commandes c
                             JOIN Paiements p ON p.CommandeID = c.CommandeID
                             WHERE c.UtilisateurID = ?
@@ -252,7 +256,7 @@ try {
     } else {
         // Pour la table Clients, chercher tous les paiements liés aux réservations du client
         $paiements_query = "SELECT p.*, NULL as CommandeID, r.ReservationID, 'Réservation' as TypePaiement,
-                            r.DateReservation as DateReference, r.statut, NULL as MontantTotal, p.DatePaiement
+                            r.DateReservation as DateReference, r.Statut, NULL as MontantTotal, p.DatePaiement
                             FROM Reservations r
                             JOIN Paiements p ON p.ReservationID = r.ReservationID
                             WHERE r.ClientID = ? 
@@ -289,7 +293,7 @@ try {
         }
         
         // Requête simplifiée qui devrait fonctionner même si les requêtes complexes échouent
-        $fallback_query = "SELECT PaiementID, Montant, MethodePaiement, DatePaiement 
+        $fallback_query = "SELECT PaiementID, Montant, ModePaiement, DatePaiement 
                           FROM Paiements 
                           WHERE ReservationID IN (SELECT ReservationID FROM Reservations WHERE ClientID = ?)
                           OR CommandeID IN (SELECT CommandeID FROM Commandes WHERE UtilisateurID = ?)
@@ -322,6 +326,7 @@ try {
     <title>Mon Compte - Restaurant La Mangeoire</title>
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/cookie-consent.css">
+    <link rel="stylesheet" href="assets/css/auth-pages.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -620,7 +625,10 @@ try {
                                 <td><?php echo htmlspecialchars($commande['CommandeID']); ?></td>
                                 <td><?php echo isset($commande['DateCommande']) ? htmlspecialchars(date('d/m/Y H:i', strtotime($commande['DateCommande']))) : 'Non disponible'; ?></td>
                                 <td><?php echo isset($commande['Statut']) ? htmlspecialchars($commande['Statut']) : 'En cours'; ?></td>
-                                <td><?php echo htmlspecialchars(number_format($commande['Prix'] * $commande['Quantite'], 2, ',', ' ')); ?> €</td>
+                                <td><?php 
+                                    $montant = !empty($commande['MontantTotal']) ? $commande['MontantTotal'] : $commande['TotalCalcule'];
+                                    echo htmlspecialchars(number_format($montant, 2, ',', ' ')); 
+                                ?> €</td>
                                 <td class="actions">
                                     <a href="detail-commande.php?id=<?php echo htmlspecialchars($commande['CommandeID']); ?>" class="btn">Voir détails</a>
                                 </td>
@@ -731,7 +739,7 @@ try {
                                 <td><?php echo $reference_id !== 'N/A' ? '#'.htmlspecialchars($reference_id) : 'N/A'; ?></td>
                                 <td><?php echo $display_date; ?></td>
                                 <td><?php echo isset($paiement['Montant']) ? number_format($paiement['Montant'], 2, ',', ' ') . ' €' : 'N/A'; ?></td>
-                                <td><?php echo htmlspecialchars($paiement['MethodePaiement'] ?? 'Non spécifié'); ?></td>
+                                <td><?php echo htmlspecialchars($paiement['ModePaiement'] ?? 'Non spécifié'); ?></td>
                                 <td>
                                     <?php if ($has_valid_reference): ?>
                                     <a href="<?php echo $reference_url; ?>" class="btn btn-sm">Voir détails</a>
@@ -901,5 +909,6 @@ try {
     
     <!-- Script pour le système de gestion des cookies -->
     <script src="assets/js/cookie-consent.js"></script>
+    <script src="assets/js/harmonize-auth-styles.js"></script>
 </body>
 </html>

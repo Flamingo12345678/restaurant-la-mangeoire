@@ -41,6 +41,7 @@ function check_csrf_token($token)
 }
 
 // Contrôle d'accès admin (simple)
+if (!function_exists('require_admin')) {
 function require_admin()
 {
   if (!isset($_SESSION['admin_id']) || $_SESSION['user_type'] !== 'admin') {
@@ -48,56 +49,64 @@ function require_admin()
     exit;
   }
 }
-
-// Contrôle d'accès superadmin
-function require_superadmin()
-{
-  if (!isset($_SESSION['admin_role']) || $_SESSION['admin_role'] !== 'superadmin') {
-    header('Location: index.php?error=forbidden');
-    exit;
-  }
 }
 
 // Validation centralisée
-function validate_email($email)
-{
-  return filter_var($email, FILTER_VALIDATE_EMAIL);
+if (!function_exists('validate_email')) {
+    function validate_email($email)
+    {
+        return filter_var($email, FILTER_VALIDATE_EMAIL);
+    }
 }
 
-function validate_nom($nom, $max = 100)
-{
-  return is_string($nom) && mb_strlen($nom) > 1 && mb_strlen($nom) <= $max;
+if (!function_exists('validate_nom')) {
+    function validate_nom($nom, $max = 100)
+    {
+        return is_string($nom) && mb_strlen($nom) > 1 && mb_strlen($nom) <= $max;
+    }
 }
 
-function validate_prenom($prenom, $max = 100)
-{
-  return is_string($prenom) && mb_strlen($prenom) > 1 && mb_strlen($prenom) <= $max;
+if (!function_exists('validate_prenom')) {
+    function validate_prenom($prenom, $max = 100)
+    {
+        return is_string($prenom) && mb_strlen($prenom) > 1 && mb_strlen($prenom) <= $max;
+    }
 }
 
-function validate_telephone($tel)
-{
-  return preg_match('/^[0-9]{10,15}$/', $tel);
+if (!function_exists('validate_telephone')) {
+    function validate_telephone($tel)
+    {
+        return preg_match('/^[0-9]{10,15}$/', $tel);
+    }
 }
 
-function validate_code_postal($code)
-{
-  // Validation de code postal français (5 chiffres)
-  return preg_match('/^[0-9]{5}$/', $code);
+if (!function_exists('validate_code_postal')) {
+    function validate_code_postal($code)
+    {
+        // Validation de code postal français (5 chiffres)
+        return preg_match('/^[0-9]{5}$/', $code);
+    }
 }
 
-function validate_date($date)
-{
-  return (bool)strtotime($date);
+if (!function_exists('validate_date')) {
+    function validate_date($date)
+    {
+        return (bool)strtotime($date);
+    }
 }
 
-function validate_prix($prix)
-{
-  return is_numeric($prix) && $prix >= 0;
+if (!function_exists('validate_prix')) {
+    function validate_prix($prix)
+    {
+        return is_numeric($prix) && $prix >= 0;
+    }
 }
 
-function validate_numero_table($num)
-{
-  return is_numeric($num) && $num > 0;
+if (!function_exists('validate_numero_table')) {
+    function validate_numero_table($num)
+    {
+        return is_numeric($num) && $num > 0;
+    }
 }
 
 function validate_places($places)
@@ -146,6 +155,7 @@ function validate_password_strength($password)
 }
 
 // Journalisation centralisée des actions admin
+if (!function_exists('log_admin_action')) {
 function log_admin_action($action, $details = '')
 {
   $logfile = __DIR__ . '/../admin/admin_actions.log';
@@ -153,5 +163,6 @@ function log_admin_action($action, $details = '')
   $user = $_SESSION['admin_id'] ?? 'inconnu';
   $entry = "[$date] [$user] $action $details\n";
   file_put_contents($logfile, $entry, FILE_APPEND | LOCK_EX);
+}
 }
 ?>

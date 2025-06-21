@@ -29,8 +29,9 @@ define('STRIPE_CURRENCY', 'EUR'); // Euro
 define('STRIPE_LOCALE', 'fr'); // Langue française
 
 // URL de redirection après paiement
-define('STRIPE_SUCCESS_URL', 'http://' . $_SERVER['HTTP_HOST'] . '/confirmation-stripe.php?status=success&session_id={CHECKOUT_SESSION_ID}');
-define('STRIPE_CANCEL_URL', 'http://' . $_SERVER['HTTP_HOST'] . '/confirmation-stripe.php?status=cancel&session_id={CHECKOUT_SESSION_ID}');
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost:8000';
+define('STRIPE_SUCCESS_URL', 'http://' . $host . '/confirmation-stripe.php?status=success&session_id={CHECKOUT_SESSION_ID}');
+define('STRIPE_CANCEL_URL', 'http://' . $host . '/confirmation-stripe.php?status=cancel&session_id={CHECKOUT_SESSION_ID}');
 
 // URL pour les webhooks Stripe (notifications de paiement)
 define('STRIPE_WEBHOOK_SECRET', getenv('STRIPE_WEBHOOK_SECRET') ?: ($_ENV['STRIPE_WEBHOOK_SECRET'] ?? ''));

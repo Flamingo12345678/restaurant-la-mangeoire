@@ -119,7 +119,7 @@ $clients = $conn->query("SELECT * FROM Clients ORDER BY ClientID DESC LIMIT $cli
     <input type="text" name="prenom" id="prenom" placeholder="Prénom" required>
     <input type="email" name="email" id="email" placeholder="Email" required>
     <input type="text" name="telephone" id="telephone" placeholder="Téléphone" required>
-    <div id="form-error" class="form-error" style="display:none;"></div>
+    <div id="form-error" class="form-error hidden"></div>
     <button type="submit" name="ajouter">Ajouter</button>
   </form>
   <script>

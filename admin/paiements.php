@@ -1,4 +1,6 @@
 <?php
+
+require_once 'check_admin_access.php';
 $message = '';
 require_once __DIR__ . '/../includes/common.php';
 require_admin();
@@ -128,28 +130,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_paiement_id'],
   header('Location: paiements.php');
   exit;
 }
-// Pagination
+
+// Gestion des filtres et de la pagination
+require_once 'paiements_filter.php';
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $per_page = 20;
-$offset = ($page - 1) * $per_page;
-$total_sql = "SELECT COUNT(*) FROM Paiements";
-$total_paiements = $conn->query($total_sql)->fetchColumn();
-$total_pages = ceil($total_paiements / $per_page);
 $paiements = [];
+$total_pages = 0;
 
-// Modified query to join with Commandes and Reservations to get more information
-$sql = "SELECT p.*, 
-        c.NomClient, c.PrenomClient, c.CommandeID,
-        r.nom_client, r.email_client, r.telephone, r.ReservationID
-        FROM Paiements p
-        LEFT JOIN Reservations r ON p.ReservationID = r.ReservationID
-        LEFT JOIN Commandes c ON r.ReservationID = c.ReservationID
-        ORDER BY p.DatePaiement DESC LIMIT :limit OFFSET :offset";
-$stmt = $conn->prepare($sql);
-$stmt->bindValue(':limit', $per_page, PDO::PARAM_INT);
-$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-$stmt->execute();
-$paiements = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Appliquer les filtres
+applyPaymentFilters($conn, $page, $per_page, $total_pages, $paiements);
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -205,6 +195,27 @@ $paiements = $stmt->fetchAll(PDO::FETCH_ASSOC);
       }
     }
 
+    /* Styles pour les références de réservation invalides */
+    .invalid-reference {
+      color: #e74c3c;
+      text-decoration: line-through;
+      cursor: help;
+    }
+    
+    .no-reference {
+      color: #7f8c8d;
+      font-style: italic;
+    }
+    
+    .warning-row {
+      background-color: #fff8e1 !important; /* Couleur d'avertissement subtile */
+      border-left: 3px solid #f39c12 !important;
+    }
+    
+    .warning-row:hover {
+      background-color: #ffe8b3 !important;
+    }
+
     @media (max-width: 480px) {
 
       .admin-table th:nth-child(4),
@@ -236,7 +247,7 @@ $paiements = $stmt->fetchAll(PDO::FETCH_ASSOC);
     if (!empty($_SESSION['flash_message'])) {
       $type = $_SESSION['flash_message']['type'] === 'success' ? 'alert-success' : 'alert-error';
       $icon = $_SESSION['flash_message']['type'] === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle';
-      $text = htmlspecialchars($_SESSION['flash_message']['text']);
+      $text = htmlspecialchars($_SESSION['flash_message']['text'] ?? '');
       echo "<div class='alert $type'><i class='bi $icon'></i> $text</div>";
       unset($_SESSION['flash_message']);
     }
@@ -245,7 +256,7 @@ $paiements = $stmt->fetchAll(PDO::FETCH_ASSOC);
     if (!empty($message)) {
       $type = strpos(strtolower($message), 'erreur') !== false ? 'alert-error' : 'alert-success';
       $icon = strpos(strtolower($message), 'erreur') !== false ? 'bi-exclamation-triangle' : 'bi-check-circle';
-      echo "<div class='alert $type'><i class='bi $icon'></i> " . htmlspecialchars($message) . "</div>";
+      echo "<div class='alert $type'><i class='bi $icon'></i> " . htmlspecialchars($message ?? '') . "</div>";
     }
     ?>
 
@@ -314,6 +325,44 @@ $paiements = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <!-- Tableau des paiements -->
     <h3 class="section-title" style="margin-top: 30px;">Liste des paiements</h3>
+    
+    <!-- Filtres pour les paiements -->
+    <div class="filters-container" style="margin-bottom: 15px;">
+      <form method="get" action="" class="filter-form" style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <div class="filter-group">
+          <label for="filter_status">Statut:</label>
+          <select id="filter_status" name="filter_status" onchange="this.form.submit()">
+            <option value="all" <?= (!isset($_GET['filter_status']) || $_GET['filter_status'] === 'all') ? 'selected' : '' ?>>Tous</option>
+            <option value="valid" <?= (isset($_GET['filter_status']) && $_GET['filter_status'] === 'valid') ? 'selected' : '' ?>>Réservations valides</option>
+            <option value="invalid" <?= (isset($_GET['filter_status']) && $_GET['filter_status'] === 'invalid') ? 'selected' : '' ?>>Réservations invalides</option>
+            <option value="no_res" <?= (isset($_GET['filter_status']) && $_GET['filter_status'] === 'no_res') ? 'selected' : '' ?>>Sans réservation</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label for="filter_date">Date:</label>
+          <select id="filter_date" name="filter_date" onchange="this.form.submit()">
+            <option value="all" <?= (!isset($_GET['filter_date']) || $_GET['filter_date'] === 'all') ? 'selected' : '' ?>>Toutes dates</option>
+            <option value="today" <?= (isset($_GET['filter_date']) && $_GET['filter_date'] === 'today') ? 'selected' : '' ?>>Aujourd'hui</option>
+            <option value="week" <?= (isset($_GET['filter_date']) && $_GET['filter_date'] === 'week') ? 'selected' : '' ?>>Cette semaine</option>
+            <option value="month" <?= (isset($_GET['filter_date']) && $_GET['filter_date'] === 'month') ? 'selected' : '' ?>>Ce mois</option>
+          </select>
+        </div>
+        
+        <?php if (isset($_GET['filter_status']) || isset($_GET['filter_date'])): ?>
+          <div class="filter-group">
+            <a href="paiements.php" class="btn btn-secondary btn-sm" style="margin-top: 20px;">Réinitialiser les filtres</a>
+          </div>
+        <?php endif; ?>
+        
+        <div class="filter-group">
+          <a href="fix_paiements.php" class="btn btn-warning btn-sm" style="margin-top: 20px;">
+            <i class="bi bi-tools"></i> Corriger les paiements problématiques
+          </a>
+        </div>
+      </form>
+    </div>
+    
     <div class="table-responsive-wrapper">
       <table class="admin-table">
         <thead>
@@ -342,27 +391,38 @@ $paiements = $stmt->fetchAll(PDO::FETCH_ASSOC);
               
               // Déterminer le nom du client
               if (!empty($p['nom_client'])) {
-                $client = htmlspecialchars($p['nom_client']);
+                // Si nous avons un nom dans la réservation
+                $client = htmlspecialchars($p['nom_client'] ?? '');
+              } elseif (!empty($p['NomClient']) && !empty($p['PrenomClient'])) {
+                // Si nous avons un nom depuis la table Commandes
+                $client = htmlspecialchars($p['PrenomClient'] ?? '') . ' ' . htmlspecialchars($p['NomClient'] ?? '');
               } else {
-                $client = 'Client non spécifié';
+                // Aucune information client disponible
+                $client = 'Client non identifié';
               }
             ?>
             <tr>
-              <td><?= htmlspecialchars($p['PaiementID']) ?></td>
+              <td><?= htmlspecialchars($p['PaiementID'] ?? '') ?></td>
               <td><?= $type ?></td>
               <td>
-                <a href="reservations.php?id=<?= $p['ReservationID'] ?>" title="Voir la réservation">
-                  #<?= htmlspecialchars($p['ReservationID']) ?>
+                <?php if (!empty($p['ReservationID']) && !empty($p['ResID'])): ?>
+                <a href="reservations.php?id=<?= htmlspecialchars($p['ReservationID'] ?? '') ?>" title="Voir la réservation">
+                  #<?= htmlspecialchars($p['ReservationID'] ?? '') ?>
                 </a>
+                <?php elseif (!empty($p['ReservationID'])): ?>
+                <span class="invalid-reference" title="Réservation supprimée">#<?= htmlspecialchars($p['ReservationID'] ?? '') ?></span>
+                <?php else: ?>
+                <span class="no-reference">-</span>
+                <?php endif; ?>
               </td>
               <td><?= $client ?></td>
-              <td><strong><?= number_format(htmlspecialchars($p['Montant']), 2, ',', ' ') ?> €</strong></td>
-              <td><?= date('d/m/Y', strtotime($p['DatePaiement'])) ?></td>
-              <td><?= htmlspecialchars($p['ModePaiement'] ?: 'Non spécifié') ?></td>
-              <td><?= htmlspecialchars($p['TransactionID'] ?: '-') ?></td>
+              <td><strong><?= number_format((float)($p['Montant'] ?? 0), 2, ',', ' ') ?> €</strong></td>
+              <td><?= isset($p['DatePaiement']) ? date('d/m/Y', strtotime($p['DatePaiement'])) : '-' ?></td>
+              <td><?= htmlspecialchars($p['ModePaiement'] ?? 'Non spécifié') ?></td>
+              <td><?= htmlspecialchars($p['TransactionID'] ?? '-') ?></td>
               <td class="action-cell">
                 <form method="post" action="paiements.php" class="delete-form">
-                  <input type="hidden" name="delete_paiement_id" value="<?= htmlspecialchars($p['PaiementID']) ?>">
+                  <input type="hidden" name="delete_paiement_id" value="<?= htmlspecialchars($p['PaiementID'] ?? '') ?>">
                   <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
                   <button type="submit" class="delete-btn" onclick="return confirm('Supprimer ce paiement ?')" title="Supprimer">
                     <i class="bi bi-trash"></i>
@@ -395,6 +455,16 @@ $paiements = $stmt->fetchAll(PDO::FETCH_ASSOC);
   <!-- JavaScript for payment form -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+      // Marquer les lignes avec des paiements problématiques
+      const paymentRows = document.querySelectorAll('.admin-table tbody tr');
+      paymentRows.forEach(row => {
+        // Si la ligne contient une référence invalide ou pas de référence
+        if (row.querySelector('.invalid-reference') || row.querySelector('.no-reference')) {
+          row.classList.add('warning-row');
+          row.setAttribute('title', 'Ce paiement a une référence de réservation manquante ou invalide');
+        }
+      });
+      
       // Payment type toggle
       const typeReservation = document.getElementById('type_reservation');
       const typeCommande = document.getElementById('type_commande');

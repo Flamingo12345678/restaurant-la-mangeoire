@@ -1979,3 +1979,68 @@ section,
   font-weight: bold;
   margin: 10px 0;
 }
+
+/* --- Styles pour remplacer les CSS inline --- */
+/* Pour .form-error avec display:none */
+.form-error.hidden {
+  display: none;
+}
+
+/* Pour les formulaires inline */
+.inline-form {
+  display: inline;
+}
+
+/* Pour les boutons de style lien */
+.btn-link {
+  background: none;
+  border: none;
+  color: #b01e28;
+  cursor: pointer;
+}
+
+/* Pour les boutons de navigation */
+.btn-cancel {
+  display: inline-block;
+  text-decoration: none;
+  margin-left: 10px;
+  background-color: #6c757d;
+}
+
+/* Pour les select dans les formulaires */
+.select-status {
+  padding: 2px 6px;
+}
+
+/* Pour la pagination */
+.pagination {
+  margin: 20px 0;
+}
+.pagination-current {
+  margin: 0 5px;
+  color: #1976d2;
+}
+.pagination-link {
+  margin: 0 5px;
+}
+
+/* Pour les icônes avec marge */
+.icon-with-margin {
+  margin-right: 8px;
+}
+
+/* Pour les groupes de formulaires de taille limitée */
+.input-group-limited {
+  max-width: 100px;
+}
+
+/* Bouton de réservation de table */
+.btn-book-table {
+  margin-top: 10px;
+  background: #b01e28;
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-weight: bold;
+  text-decoration: none;
+}

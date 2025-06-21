@@ -1,7 +1,10 @@
 <?php
 session_start();
+require_once 'vendor/autoload.php'; // Charger l'autoloader en premier
 require_once 'includes/common.php';
 require_once 'db_connexion.php';
+require_once 'includes/stripe-config.php';
+require_once 'includes/paypal-config.php';
 
 // Custom function to display cart messages
 function display_cart_message() {
@@ -40,21 +43,64 @@ if ($order_id > 0) {
     $order = $stmt->fetch(PDO::FETCH_ASSOC);
     
     // Get order items
-    if ($order) {
-        $payment_amount = $order['MontantTotal'];
-        
-        // Check if the order already has a payment
-        $payment_check = $conn->prepare("
-            SELECT * FROM Paiements WHERE CommandeID = ? LIMIT 1
-        ");
-        $payment_check->execute([$order_id]);
-        if ($payment_check->fetch()) {
-            // Order already paid
-            $_SESSION['message'] = "Cette commande a déjà été payée.";
-            $_SESSION['message_type'] = "info";
-            header("Location: detail-commande.php?id=" . $order_id);
-            exit;
+    $order_items = [];
+    if ($order && $order_id > 0) {
+        // Correction de la requête pour utiliser le nom correct de la colonne dans la table Menus
+        try {
+            // D'abord, vérifiez la structure de la table Menus
+            $columns_query = $conn->prepare("SHOW COLUMNS FROM Menus");
+            $columns_query->execute();
+            $columns = $columns_query->fetchAll(PDO::FETCH_COLUMN, 0);
+            
+            // Déterminez la colonne à utiliser pour le nom du menu
+            $name_column = 'Nom'; // Par défaut
+            if (in_array('NomMenu', $columns)) {
+                $name_column = 'NomMenu';
+            } elseif (in_array('Nom', $columns)) {
+                $name_column = 'Nom'; 
+            } elseif (in_array('LibelleMenu', $columns)) {
+                $name_column = 'LibelleMenu';
+            }
+            
+            // Maintenant utilisez la colonne correcte dans votre requête
+            $items_stmt = $conn->prepare("
+                SELECT dc.*, m.$name_column as NomItem 
+                FROM DetailsCommande dc
+                LEFT JOIN Menus m ON dc.MenuID = m.MenuID
+                WHERE dc.CommandeID = ?
+            ");
+            $items_stmt->execute([$order_id]);
+            $order_items = $items_stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            // En cas d'erreur, utilisez une requête simplifiée sans joindre la table Menus
+            $items_stmt = $conn->prepare("
+                SELECT dc.* 
+                FROM DetailsCommande dc
+                WHERE dc.CommandeID = ?
+            ");
+            $items_stmt->execute([$order_id]);
+            $order_items = $items_stmt->fetchAll(PDO::FETCH_ASSOC);
         }
+        
+        // Assurer que NomItem existe pour chaque élément
+        foreach ($order_items as $key => $item) {
+            if (!isset($item['NomItem']) || $item['NomItem'] === null) {
+                $order_items[$key]['NomItem'] = 'Article #' . $item['MenuID'];
+            }
+        }
+    }
+    
+    // Check if the order already has a payment
+    $payment_check = $conn->prepare("
+        SELECT * FROM Paiements WHERE CommandeID = ? LIMIT 1
+    ");
+    $payment_check->execute([$order_id]);
+    if ($payment_check->fetch()) {
+        // Order already paid
+        $_SESSION['message'] = "Cette commande a déjà été payée.";
+        $_SESSION['message_type'] = "info";
+        header("Location: detail-commande.php?id=" . $order_id);
+        exit;
     }
 }
 // Get reservation details if we have a reservation ID
@@ -96,96 +142,270 @@ if (!$order && !$reservation) {
 }
 
 // Process payment form
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Validate payment form
-    $required_fields = ['card_number', 'card_holder', 'expiry_date', 'cvv'];
-    $errors = [];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payment_method'])) {
+    $payment_method = $_POST['payment_method'];
     
-    foreach ($required_fields as $field) {
-        if (empty($_POST[$field])) {
-            $errors[] = "Le champ " . ucfirst(str_replace('_', ' ', $field)) . " est requis";
+    if ($payment_method === 'stripe') {
+        try {
+            // Vérifier que la classe Stripe est disponible
+            if (!class_exists('\Stripe\StripeClient')) {
+                throw new Exception("La bibliothèque Stripe n'est pas correctement chargée.");
+            }
+            
+            // Récupérer les informations nécessaires pour Stripe
+            $stripe = new \Stripe\StripeClient(STRIPE_SECRET_KEY);
+            
+            // Générer un nom descriptif pour le paiement
+            if ($payment_type === 'order') {
+                $payment_description = "Commande #{$order_id} - Restaurant La Mangeoire";
+                $payment_amount = $order['MontantTotal'];
+                $customer_email = $order['EmailClient'];
+                $customer_name = $order['PrenomClient'] . ' ' . $order['NomClient'];
+            } else {
+                $payment_description = "Réservation #{$reservation_id} - Restaurant La Mangeoire";
+                $payment_amount = isset($reservation['MontantDepot']) ? $reservation['MontantDepot'] : 10.00;
+                $customer_email = $reservation['ClientEmail'];
+                $customer_name = $reservation['ClientPrenom'] . ' ' . $reservation['ClientNom'];
+            }
+            
+            // Convertir le montant en centimes (requis par Stripe)
+            $stripe_amount = intval($payment_amount * 100);
+            
+            // Préparer les métadonnées
+            $metadata = [
+                'payment_type' => $payment_type
+            ];
+            
+            if ($payment_type === 'order') {
+                $metadata['order_id'] = $order_id;
+            } else {
+                $metadata['reservation_id'] = $reservation_id;
+            }
+            
+            // Créer la session de paiement
+            $checkout_session = $stripe->checkout->sessions->create([
+                'payment_method_types' => ['card'],
+                'line_items' => [[
+                    'price_data' => [
+                        'currency' => STRIPE_CURRENCY,
+                        'product_data' => [
+                            'name' => $payment_description,
+                        ],
+                        'unit_amount' => $stripe_amount,
+                    ],
+                    'quantity' => 1,
+                ]],
+                'customer_email' => $customer_email,
+                'mode' => 'payment',
+                'success_url' => str_replace('{CHECKOUT_SESSION_ID}', '{CHECKOUT_SESSION_ID}', STRIPE_SUCCESS_URL),
+                'cancel_url' => str_replace('{CHECKOUT_SESSION_ID}', '{CHECKOUT_SESSION_ID}', STRIPE_CANCEL_URL),
+                'metadata' => $metadata,
+                'locale' => STRIPE_LOCALE,
+            ]);
+            
+            // Rediriger vers la page de paiement Stripe
+            header("Location: " . $checkout_session->url);
+            exit;
+            
+        } catch (\Stripe\Exception\ApiErrorException $e) {
+            // Gérer les erreurs Stripe
+            $errors[] = "Erreur lors de la création du paiement Stripe: " . $e->getMessage();
+        } catch (Exception $e) {
+            // Gérer les autres erreurs
+            $errors[] = "Une erreur s'est produite: " . $e->getMessage();
         }
-    }
-    
-    // Simple validation for card number - should be numeric and 16 digits
-    if (!empty($_POST['card_number']) && (!is_numeric(str_replace(' ', '', $_POST['card_number'])) || strlen(str_replace(' ', '', $_POST['card_number'])) !== 16)) {
-        $errors[] = "Le numéro de carte doit comporter 16 chiffres";
-    }
-    
-    // Simple validation for CVV - should be numeric and 3 digits
-    if (!empty($_POST['cvv']) && (!is_numeric($_POST['cvv']) || strlen($_POST['cvv']) !== 3)) {
-        $errors[] = "Le code CVV doit comporter 3 chiffres";
-    }
-    
-    // Simple validation for expiry date format (MM/YY)
-    if (!empty($_POST['expiry_date']) && !preg_match('/^(0[1-9]|1[0-2])\/([0-9]{2})$/', $_POST['expiry_date'])) {
-        $errors[] = "La date d'expiration doit être au format MM/YY";
-    }
-    
-    if (empty($errors)) {
-        // In a real application, you would integrate with a payment gateway here
-        // For now, we'll simulate a successful payment
-        
-        // Generate a mock transaction number
-        $transaction_number = 'TR-' . time() . '-' . ($payment_type === 'order' ? $order_id : $reservation_id);
-        
-        if ($payment_type === 'order') {
-            // Update order status to paid
-            $stmt = $conn->prepare("
-                UPDATE Commandes 
-                SET Statut = 'Payé', DatePaiement = NOW() 
-                WHERE CommandeID = ?
-            ");
-            $stmt->execute([$order_id]);
+    } else if ($payment_method === 'paypal') {
+        try {
+            // Générer les informations pour PayPal
+            if ($payment_type === 'order') {
+                $payment_description = "Commande #{$order_id} - Restaurant La Mangeoire";
+                $payment_amount = $order['MontantTotal'];
+                $customer_email = $order['EmailClient'];
+                $customer_name = $order['PrenomClient'] . ' ' . $order['NomClient'];
+            } else {
+                $payment_description = "Réservation #{$reservation_id} - Restaurant La Mangeoire";
+                $payment_amount = isset($reservation['MontantDepot']) ? $reservation['MontantDepot'] : 10.00;
+                $customer_email = $reservation['ClientEmail'];
+                $customer_name = $reservation['ClientPrenom'] . ' ' . $reservation['ClientNom'];
+            }
             
-            // Store the payment information (in a real app, you would NOT store full card details)
-            $cardLast4 = substr(str_replace(' ', '', $_POST['card_number']), -4);
+            // Stocker les informations de commande ou réservation dans la session pour le retour
+            $_SESSION['paypal_amount'] = $payment_amount;
+            if ($payment_type === 'order') {
+                $_SESSION['paypal_order_id'] = $order_id;
+            } else {
+                $_SESSION['paypal_reservation_id'] = $reservation_id;
+            }
             
-            $stmt = $conn->prepare("
-                INSERT INTO Paiements (CommandeID, Montant, MethodePaiement, NumeroTransaction, DatePaiement)
-                VALUES (?, ?, ?, ?, NOW())
-            ");
-            $stmt->execute([
-                $order_id,
-                $payment_amount,
-                'Carte bancaire',
-                $transaction_number
+            // Obtenir un token d'accès PayPal
+            $access_token = getPayPalAccessToken();
+            
+            if (!$access_token) {
+                throw new Exception("Impossible d'obtenir un token d'accès PayPal.");
+            }
+            
+            // Créer une commande PayPal
+            $apiUrl = getPayPalAPIBase() . '/v2/checkout/orders';
+            
+            $referenceId = $payment_type === 'order' ? "commande-{$order_id}" : "reservation-{$reservation_id}";
+            
+            $payload = [
+                'intent' => 'CAPTURE',
+                'purchase_units' => [[
+                    'reference_id' => $referenceId,
+                    'description' => $payment_description,
+                    'amount' => [
+                        'currency_code' => PAYPAL_CURRENCY,
+                        'value' => number_format($payment_amount, 2, '.', '')
+                    ]
+                ]],
+                'application_context' => [
+                    'brand_name' => 'Restaurant La Mangeoire',
+                    'landing_page' => 'BILLING',
+                    'user_action' => 'PAY_NOW',
+                    'return_url' => PAYPAL_SUCCESS_URL . '&type=' . $payment_type . 
+                                   ($payment_type === 'order' ? '&order_id=' . $order_id : '&reservation_id=' . $reservation_id),
+                    'cancel_url' => PAYPAL_CANCEL_URL
+                ]
+            ];
+            
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $apiUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Content-Type: application/json',
+                'Authorization: Bearer ' . $access_token
             ]);
             
-            // Redirect to confirmation page
-            $_SESSION['message'] = "Votre paiement a été traité avec succès. Merci pour votre commande!";
-            $_SESSION['message_type'] = "success";
-            header("Location: confirmation-paiement.php?id=" . $order_id);
-            exit;
-        } else {
-            // For reservation payment
-            // Update reservation status to confirm payment
-            $stmt = $conn->prepare("
-                UPDATE Reservations 
-                SET Statut = 'Confirmé', DateMiseAJour = NOW() 
-                WHERE ReservationID = ?
-            ");
-            $stmt->execute([$reservation_id]);
+            $response = curl_exec($ch);
+            if (curl_errno($ch)) {
+                throw new Exception('Erreur cURL: ' . curl_error($ch));
+            }
+            curl_close($ch);
             
-            // Store the payment information
-            $cardLast4 = substr(str_replace(' ', '', $_POST['card_number']), -4);
+            $responseData = json_decode($response, true);
             
-            $stmt = $conn->prepare("
-                INSERT INTO Paiements (ReservationID, Montant, MethodePaiement, NumeroTransaction, DatePaiement)
-                VALUES (?, ?, ?, ?, NOW())
-            ");
-            $stmt->execute([
-                $reservation_id,
-                $payment_amount,
-                'Carte bancaire',
-                $transaction_number
-            ]);
+            if (isset($responseData['id']) && isset($responseData['links'])) {
+                $approvalUrl = null;
+                
+                foreach ($responseData['links'] as $link) {
+                    if ($link['rel'] === 'approve') {
+                        $approvalUrl = $link['href'];
+                        break;
+                    }
+                }
+                
+                if ($approvalUrl) {
+                    // Rediriger vers la page de paiement PayPal
+                    header('Location: ' . $approvalUrl);
+                    exit;
+                } else {
+                    throw new Exception('URL d\'approbation PayPal non trouvée.');
+                }
+            } else {
+                if (isset($responseData['error']) && isset($responseData['error_description'])) {
+                    throw new Exception('Erreur PayPal: ' . $responseData['error_description']);
+                } else {
+                    throw new Exception('Erreur lors de la création de la commande PayPal.');
+                }
+            }
+        } catch (Exception $e) {
+            // Gérer les erreurs PayPal
+            $errors[] = "Erreur lors de la création du paiement PayPal: " . $e->getMessage();
+        }
+    } else if ($payment_method === 'manual') {
+        // Validate payment form for manual payment
+        $required_fields = ['card_number', 'card_holder', 'expiry_date', 'cvv'];
+        $errors = [];
+        
+        foreach ($required_fields as $field) {
+            if (empty($_POST[$field])) {
+                $errors[] = "Le champ " . ucfirst(str_replace('_', ' ', $field)) . " est requis";
+            }
+        }
+        
+        // Simple validation for card number - should be numeric and 16 digits
+        if (!empty($_POST['card_number']) && (!is_numeric(str_replace(' ', '', $_POST['card_number'])) || strlen(str_replace(' ', '', $_POST['card_number'])) !== 16)) {
+            $errors[] = "Le numéro de carte doit comporter 16 chiffres";
+        }
+        
+        // Simple validation for CVV - should be numeric and 3 digits
+        if (!empty($_POST['cvv']) && (!is_numeric($_POST['cvv']) || strlen($_POST['cvv']) !== 3)) {
+            $errors[] = "Le code CVV doit comporter 3 chiffres";
+        }
+        
+        // Simple validation for expiry date format (MM/YY)
+        if (!empty($_POST['expiry_date']) && !preg_match('/^(0[1-9]|1[0-2])\/([0-9]{2})$/', $_POST['expiry_date'])) {
+            $errors[] = "La date d'expiration doit être au format MM/YY";
+        }
+        
+        if (empty($errors)) {
+            // In a real application, you would integrate with a payment gateway here
+            // For now, we'll simulate a successful payment
             
-            // Redirect to confirmation page
-            $_SESSION['message'] = "Votre paiement a été traité avec succès. Votre réservation est confirmée!";
-            $_SESSION['message_type'] = "success";
-            header("Location: confirmation-paiement.php?reservation_id=" . $reservation_id);
-            exit;
+            // Generate a mock transaction number
+            $transaction_number = 'TR-' . time() . '-' . ($payment_type === 'order' ? $order_id : $reservation_id);
+            
+            if ($payment_type === 'order') {
+                // Update order status to paid
+                $stmt = $conn->prepare("
+                    UPDATE Commandes 
+                    SET Statut = 'Payé', DatePaiement = NOW() 
+                    WHERE CommandeID = ?
+                ");
+                $stmt->execute([$order_id]);
+                
+                // Store the payment information (in a real app, you would NOT store full card details)
+                $cardLast4 = substr(str_replace(' ', '', $_POST['card_number']), -4);
+                
+                $stmt = $conn->prepare("
+                    INSERT INTO Paiements (CommandeID, Montant, ModePaiement, TransactionID, DatePaiement)
+                    VALUES (?, ?, ?, ?, NOW())
+                ");
+                $stmt->execute([
+                    $order_id,
+                    $payment_amount,
+                    'Carte bancaire',
+                    $transaction_number
+                ]);
+                
+                // Redirect to confirmation page
+                $_SESSION['message'] = "Votre paiement a été traité avec succès. Merci pour votre commande!";
+                $_SESSION['message_type'] = "success";
+                header("Location: confirmation-paiement.php?id=" . $order_id);
+                exit;
+            } else {
+                // For reservation payment
+                // Update reservation status to confirm payment
+                $stmt = $conn->prepare("
+                    UPDATE Reservations 
+                    SET Statut = 'Confirmé', DateMiseAJour = NOW() 
+                    WHERE ReservationID = ?
+                ");
+                $stmt->execute([$reservation_id]);
+                
+                // Store the payment information
+                $cardLast4 = substr(str_replace(' ', '', $_POST['card_number']), -4);
+                
+                $stmt = $conn->prepare("
+                    INSERT INTO Paiements (ReservationID, Montant, ModePaiement, TransactionID, DatePaiement)
+                    VALUES (?, ?, ?, ?, NOW())
+                ");
+                $stmt->execute([
+                    $reservation_id,
+                    $payment_amount,
+                    'Carte bancaire',
+                    $transaction_number
+                ]);
+                
+                // Redirect to confirmation page
+                $_SESSION['message'] = "Votre paiement a été traité avec succès. Votre réservation est confirmée!";
+                $_SESSION['message_type'] = "success";
+                header("Location: confirmation-paiement.php?reservation_id=" . $reservation_id);
+                exit;
+            }
         }
     }
 }
@@ -307,44 +527,112 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="card-wrapper">
                             <div class="d-flex align-items-center mb-4">
                                 <span class="payment-icon me-3"><i class="bi bi-credit-card"></i></span>
-                                <h3 class="mb-0">Informations de paiement</h3>
+                                <h3 class="mb-0">Choisissez votre méthode de paiement</h3>
                             </div>
                             
-                            <form method="POST" action="payer-commande.php?id=<?php echo $order['CommandeID']; ?>">
-                                <div class="row mb-3">
-                                    <div class="col-12">
-                                        <label for="card_number" class="form-label">Numéro de carte <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="card_number" name="card_number" placeholder="1234 5678 9012 3456" maxlength="19" required>
+                            <ul class="nav nav-tabs mb-4" id="paymentTab" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="stripe-tab" data-bs-toggle="tab" data-bs-target="#stripe-panel" type="button" role="tab" aria-controls="stripe-panel" aria-selected="true">
+                                        <i class="bi bi-stripe me-2"></i>Payer avec Stripe
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="paypal-tab" data-bs-toggle="tab" data-bs-target="#paypal-panel" type="button" role="tab" aria-controls="paypal-panel" aria-selected="false">
+                                        <i class="bi bi-paypal me-2"></i>Payer avec PayPal
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="manual-tab" data-bs-toggle="tab" data-bs-target="#manual-panel" type="button" role="tab" aria-controls="manual-panel" aria-selected="false">
+                                        <i class="bi bi-credit-card me-2"></i>Carte bancaire classique
+                                    </button>
+                                </li>
+                            </ul>
+                            
+                            <div class="tab-content" id="paymentTabContent">
+                                <!-- Paiement Stripe -->
+                                <div class="tab-pane fade show active" id="stripe-panel" role="tabpanel" aria-labelledby="stripe-tab">
+                                    <div class="text-center mb-4">
+                                        <img src="https://cdn.freebiesupply.com/logos/large/2x/stripe-2-logo-png-transparent.png" alt="Stripe" class="img-fluid" style="max-height: 60px;">
+                                        <p class="mt-3">Paiement sécurisé via Stripe, leader mondial des paiements en ligne.</p>
                                     </div>
+                                    
+                                    <div class="card-info d-flex mb-3 p-2 bg-light rounded">
+                                        <i class="bi bi-shield-lock me-2 text-success"></i>
+                                        <small>Vos informations de paiement sont sécurisées par Stripe. Le restaurant n'a pas accès à vos données bancaires.</small>
+                                    </div>
+                                    
+                                    <form method="POST" action="payer-commande.php?id=<?php echo $order_id; ?><?php echo $reservation_id ? "&reservation_id=$reservation_id" : ''; ?>">
+                                        <input type="hidden" name="payment_method" value="stripe">
+                                        <div class="d-grid">
+                                            <button type="submit" class="btn btn-primary btn-lg">
+                                                <i class="bi bi-lock-fill me-2"></i>Payer <?php echo number_format($payment_amount, 0, ',', ' '); ?> XAF avec Stripe
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <!-- Paiement PayPal -->
+                                <div class="tab-pane fade" id="paypal-panel" role="tabpanel" aria-labelledby="paypal-tab">
+                                    <div class="text-center mb-4">
+                                        <img src="https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_111x69.jpg" alt="PayPal" class="img-fluid" style="max-height: 60px;">
+                                        <p class="mt-3">Paiement sécurisé via PayPal, service de paiement en ligne mondialement reconnu.</p>
+                                    </div>
+                                    
+                                    <div class="card-info d-flex mb-3 p-2 bg-light rounded">
+                                        <i class="bi bi-shield-lock me-2 text-success"></i>
+                                        <small>Vos informations de paiement sont sécurisées par PayPal. Paiement avec carte bancaire sans compte PayPal également possible.</small>
+                                    </div>
+                                    
+                                    <form method="POST" action="payer-commande.php?id=<?php echo $order_id; ?><?php echo $reservation_id ? "&reservation_id=$reservation_id" : ''; ?>">
+                                        <input type="hidden" name="payment_method" value="paypal">
+                                        <div class="d-grid">
+                                            <button type="submit" class="btn btn-primary btn-lg" style="background-color: #0070ba; border-color: #0070ba;">
+                                                <i class="bi bi-paypal me-2"></i>Payer <?php echo number_format($payment_amount, 0, ',', ' '); ?> XAF avec PayPal
+                                            </button>
+                                        </div>
+                                    </form>
                                 </div>
                                 
-                                <div class="row mb-3">
-                                    <div class="col-12">
-                                        <label for="card_holder" class="form-label">Titulaire de la carte <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="card_holder" name="card_holder" placeholder="JEAN DUPONT" required>
-                                    </div>
+                                <!-- Paiement manuel -->
+                                <div class="tab-pane fade" id="manual-panel" role="tabpanel" aria-labelledby="manual-tab">
+                                    <form method="POST" action="payer-commande.php?id=<?php echo $order_id; ?><?php echo $reservation_id ? "&reservation_id=$reservation_id" : ''; ?>">
+                                        <input type="hidden" name="payment_method" value="manual">
+                                        <div class="row mb-3">
+                                            <div class="col-12">
+                                                <label for="card_number" class="form-label">Numéro de carte <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" id="card_number" name="card_number" placeholder="1234 5678 9012 3456" maxlength="19" required>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row mb-3">
+                                            <div class="col-12">
+                                                <label for="card_holder" class="form-label">Titulaire de la carte <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" id="card_holder" name="card_holder" placeholder="JEAN DUPONT" required>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row mb-4">
+                                            <div class="col-md-6 mb-3 mb-md-0">
+                                                <label for="expiry_date" class="form-label">Date d'expiration <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" id="expiry_date" name="expiry_date" placeholder="MM/YY" maxlength="5" required>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="cvv" class="form-label">CVV <span class="text-danger">*</span></label>
+                                                <input type="password" class="form-control" id="cvv" name="cvv" placeholder="123" maxlength="3" required>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="card-info d-flex mb-3 p-2 bg-light rounded">
+                                            <i class="bi bi-shield-lock me-2 text-success"></i>
+                                            <small>Vos informations de paiement sont sécurisées. Nous n'enregistrons pas vos données de carte.</small>
+                                        </div>
+                                        
+                                        <div class="d-grid">
+                                            <button type="submit" class="btn btn-primary btn-lg">Payer <?php echo number_format($payment_amount, 0, ',', ' '); ?> XAF</button>
+                                        </div>
+                                    </form>
                                 </div>
-                                
-                                <div class="row mb-4">
-                                    <div class="col-md-6 mb-3 mb-md-0">
-                                        <label for="expiry_date" class="form-label">Date d'expiration <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="expiry_date" name="expiry_date" placeholder="MM/YY" maxlength="5" required>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="cvv" class="form-label">CVV <span class="text-danger">*</span></label>
-                                        <input type="password" class="form-control" id="cvv" name="cvv" placeholder="123" maxlength="3" required>
-                                    </div>
-                                </div>
-                                
-                                <div class="card-info d-flex mb-3 p-2 bg-light rounded">
-                                    <i class="bi bi-shield-lock me-2 text-success"></i>
-                                    <small>Vos informations de paiement sont sécurisées. Nous n'enregistrons pas vos données de carte.</small>
-                                </div>
-                                
-                                <div class="d-grid">
-                                    <button type="submit" class="btn btn-primary btn-lg">Payer <?php echo number_format($order['MontantTotal'], 0, ',', ' '); ?> XAF</button>
-                                </div>
-                            </form>
+                            </div>
                         </div>
                     </div>
                     

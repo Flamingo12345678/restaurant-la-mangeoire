@@ -1,5 +1,8 @@
 <?php
+
+require_once 'check_admin_access.php';
 require_once __DIR__ . '/../includes/common.php';
+require_once __DIR__ . '/includes/security_utils.php';
 require_superadmin();
 
 $id = intval($_GET['id'] ?? 0);
@@ -136,16 +139,17 @@ if ($id > 0 && $_SERVER['REQUEST_METHOD'] === 'POST') {
       letter-spacing: 1px;
     }
   </style>
+  <link rel="stylesheet" href="../assets/css/admin-inline-fixes.css">
 </head>
 
-<body style="background:#f7f7f7; min-height:100vh;">
+<body class="admin-body">
   <div class="form-container">
     <h1>Supprimer un employé</h1>
     <?php if ($id > 0): ?>
       <form method="post">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
         <p>Êtes-vous sûr de vouloir supprimer cet employé (ID <?= $id ?>) ?</p>
-        <button type="submit" style="background:#b01e28;color:#fff;">Confirmer la suppression</button>
+        <button type="submit" class="admin-delete-btn">Confirmer la suppression</button>
         <a href="employes.php" class="back-link">Annuler</a>
       </form>
       <?php display_message(); ?>
@@ -154,6 +158,7 @@ if ($id > 0 && $_SERVER['REQUEST_METHOD'] === 'POST') {
       <a href="employes.php" class="back-link">Retour</a>
     <?php endif; ?>
   </div>
+  <script src="../assets/js/admin-remove-inline-styles.js"></script>
 </body>
 
 </html>

@@ -1,4 +1,6 @@
 <?php
+
+require_once 'check_admin_access.php';
 $message = '';
 require_once __DIR__ . '/../includes/common.php';
 require_admin();
@@ -162,9 +164,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       text-decoration: underline;
     }
   </style>
+  <link rel="stylesheet" href="../assets/css/admin-inline-fixes.css">
 </head>
 
-<body style="background:#f7f7f7; min-height:100vh;">
+<body class="admin-body">
   <div class="form-container">
     <a href="paiements.php" class="back-link">&larr; Retour à la liste</a>
     <h1>Ajouter un paiement</h1>
@@ -175,7 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <input type="number" name="montant" id="montant" placeholder="Montant *" step="0.01" min="0" required>
       <input type="date" name="date_paiement" id="date_paiement" placeholder="Date de paiement *" required>
       <input type="text" name="mode" id="mode" placeholder="Mode de paiement" maxlength="50">
-      <div id="form-error" class="alert alert-error" style="display:none;"></div>
+      <div id="form-error" class="alert alert-error admin-form-error"></div>
       <button type="submit">Ajouter</button>
     </form>
     <script>
@@ -234,6 +237,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
       })();
     </script>
+    <script src="../assets/js/admin-remove-inline-styles.js"></script>
   </div>
 </body>
 

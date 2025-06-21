@@ -1,6 +1,7 @@
 session_start();
 <?php
 require_once __DIR__ . '/../includes/common.php';
+require_once __DIR__ . '/includes/security_utils.php';
 require_superadmin();
 
 $id = intval($_GET['id'] ?? 0);

@@ -1,14 +1,17 @@
 <?php
-session_start();
-if (!isset($_SESSION['admin_id']) || $_SESSION['user_type'] !== 'admin') {
-  header('Location: login.php');
-  exit;
-}
+// Définir la constante avant toute inclusion
+define('INCLUDED_IN_PAGE', true);
+
+// Utiliser le système de vérification d'accès centralisé
+require_once 'check_admin_access.php';
+
+// Vérifier que seuls les admins peuvent accéder à cette page
+check_admin_access(true); // true = admin uniquement
+
 require_once '../db_connexion.php';
+
 // Définir le titre de la page
 $page_title = "Tableau de bord";
-// Indiquer que ce fichier est inclus dans une page
-define('INCLUDED_IN_PAGE', true);
 ?>
 <!DOCTYPE html>
 <html lang="fr">

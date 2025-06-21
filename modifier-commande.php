@@ -261,7 +261,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
             
             <button type="submit" name="update_commande" class="btn-submit">Mettre à jour ma commande</button>
-            <a href="mon-compte.php" class="btn-submit" style="display: inline-block; text-decoration: none; margin-left: 10px; background-color: #6c757d;">Annuler</a>
+            <a href="mon-compte.php" class="btn-submit btn-cancel">Annuler</a>
         </form>
     </div>
     

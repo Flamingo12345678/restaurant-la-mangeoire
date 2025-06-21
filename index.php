@@ -189,16 +189,7 @@ function display_cart_message() {
                 <p>+237 6 96 56 85 20</p>
                 <a
                   href="forms/book-a-table.php"
-                  class="btn btn-primary"
-                  style="
-                    margin-top: 10px;
-                    background: #b01e28;
-                    color: #fff;
-                    padding: 10px 24px;
-                    border-radius: 6px;
-                    font-weight: bold;
-                    text-decoration: none;
-                  "
+                  class="btn btn-primary btn-book-table"
                   >Réserver en ligne</a
                 >
               </div>
@@ -417,7 +408,7 @@ function display_cart_message() {
                     Lorem, deren, trataro, filede, nerada
                     <!--ingrediednt-->
                   </p>
-                  <p class="price">10000 XAF</p>
+                  <p class="price">18 €</p>
                   <!--Prix-->
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
                     <input type="hidden" name="menu_id" value="1">
@@ -446,7 +437,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">20000 XAF</p>
+                  <p class="price">19 €</p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
                     <input type="hidden" name="menu_id" value="2">
                     <input type="hidden" name="action" value="add">
@@ -474,7 +465,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">5000 XAF</p>
+                  <p class="price">17 €</p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
                     <input type="hidden" name="menu_id" value="3">
                     <input type="hidden" name="action" value="add">
@@ -502,7 +493,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">12000 XAF</p>
+                  <p class="price">20 €</p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
                     <input type="hidden" name="menu_id" value="4">
                     <input type="hidden" name="action" value="add">
@@ -530,7 +521,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">12000 XAF</p>
+                  <p class="price">17 €</p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
                     <input type="hidden" name="menu_id" value="5">
                     <input type="hidden" name="action" value="add">
@@ -558,7 +549,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">9000 XAF</p>
+                  <p class="price">17 €</p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
                     <input type="hidden" name="menu_id" value="6">
                     <input type="hidden" name="action" value="add">
@@ -585,7 +576,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">20000 XAF</p>
+                  <p class="price">16 €</p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
                     <input type="hidden" name="menu_id" value="7">
                     <input type="hidden" name="action" value="add">
@@ -623,7 +614,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">5000 XAF</p>
+                  <p class="price">5000 €</p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
                     <input type="hidden" name="menu_id" value="8">
                     <input type="hidden" name="action" value="add">
@@ -651,7 +642,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">14000 XAF</p>
+                  <p class="price">14000 €</p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
                     <input type="hidden" name="menu_id" value="9">
                     <input type="hidden" name="action" value="add">
@@ -679,7 +670,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">15000 XAF</p>
+                  <p class="price">15000 €</p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
                     <input type="hidden" name="menu_id" value="10">
                     <input type="hidden" name="action" value="add">
@@ -707,7 +698,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">12000 XAF</p>
+                  <p class="price">12000 €</p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
                     <input type="hidden" name="menu_id" value="11">
                     <input type="hidden" name="action" value="add">
@@ -735,7 +726,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">12000 XAF</p>
+                  <p class="price">12000 €</p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
                     <input type="hidden" name="menu_id" value="12">
                     <input type="hidden" name="action" value="add">
@@ -763,7 +754,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">9000 XAF</p>
+                  <p class="price">9000 €</p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
                     <input type="hidden" name="menu_id" value="13">
                     <input type="hidden" name="action" value="add">
@@ -801,7 +792,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">9000 XAF</p>
+                  <p class="price">9000 €</p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
                     <input type="hidden" name="menu_id" value="14">
                     <input type="hidden" name="action" value="add">
@@ -829,7 +820,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">9000 XAF</p>
+                  <p class="price">9000 €</p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
                     <input type="hidden" name="menu_id" value="15">
                     <input type="hidden" name="action" value="add">
@@ -857,7 +848,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">9000 XAF</p>
+                  <p class="price">9000 €</p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
                     <input type="hidden" name="menu_id" value="16">
                     <input type="hidden" name="action" value="add">
@@ -885,7 +876,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">12000 XAF</p>
+                  <p class="price">12000 €</p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
                     <input type="hidden" name="menu_id" value="11">
                     <input type="hidden" name="action" value="add">
@@ -913,7 +904,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">12000 XAF</p>
+                  <p class="price">12000 €</p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
                     <input type="hidden" name="menu_id" value="12">
                     <input type="hidden" name="action" value="add">
@@ -941,7 +932,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">9000 XAF</p>
+                  <p class="price">9000 €</p>
                   <form action="ajouter-au-panier.php" method="post" class="mt-2">
                     <input type="hidden" name="menu_id" value="13">
                     <input type="hidden" name="action" value="add">
@@ -979,7 +970,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">12000 XAF</p>
+                  <p class="price">12000 €</p>
                 </div>
                 <!-- Menu Item -->
 
@@ -994,7 +985,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">12000 XAF</p>
+                  <p class="price">12000 €</p>
                 </div>
                 <!-- Menu Item -->
 
@@ -1009,7 +1000,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">12000 XAF</p>
+                  <p class="price">12000 €</p>
                 </div>
                 <!-- Menu Item -->
 
@@ -1024,7 +1015,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">12000 XAF</p>
+                  <p class="price">12000 €</p>
                 </div>
                 <!-- Menu Item -->
 
@@ -1039,7 +1030,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">12000 XAF</p>
+                  <p class="price">12000 €</p>
                 </div>
                 <!-- Menu Item -->
 
@@ -1054,7 +1045,7 @@ function display_cart_message() {
                   <p class="ingredients">
                     Lorem, deren, trataro, filede, nerada
                   </p>
-                  <p class="price">12000 XAF</p>
+                  <p class="price">12000 €</p>
                 </div>
                 <!-- Menu Item -->
               </div>
@@ -1288,7 +1279,7 @@ function display_cart_message() {
                 style="background-image: url(assets/img/events-1.jpg)"
               >
                 <h3>Fêtes Personnalisées</h3>
-                <div class="price align-self-start">100000 XAF</div>
+                <div class="price align-self-start">100000 €</div>
                 <p class="description">
                   Quo corporis voluptas ea ad. Consectetur inventore sapiente
                   ipsum voluptas eos omnis facere. Enim facilis veritatis id est
@@ -1302,7 +1293,7 @@ function display_cart_message() {
                 style="background-image: url(assets/img/events-2.jpg)"
               >
                 <h3>Fêtes Privées</h3>
-                <div class="price align-self-start">170000 XAF</div>
+                <div class="price align-self-start">170000 €</div>
                 <p class="description">
                   In delectus sint qui et enim. Et ab repudiandae inventore
                   quaerat doloribus. Facere nemo vero est ut dolores ea
@@ -1316,7 +1307,7 @@ function display_cart_message() {
                 style="background-image: url(assets/img/events-3.jpg)"
               >
                 <h3>Anniversaires</h3>
-                <div class="price align-self-start">299000 XAF</div>
+                <div class="price align-self-start">299000 €</div>
                 <p class="description">
                   Laborum aperiam atque omnis minus omnis est qui assumenda
                   quos. Quis id sit quibusdam. Esse quisquam ducimus officia
@@ -1330,7 +1321,7 @@ function display_cart_message() {
                 style="background-image: url(assets/img/events-4.jpg)"
               >
                 <h3>Fêtes de Mariage</h3>
-                <div class="price align-self-start">500000 XAF</div>
+                <div class="price align-self-start">500000 €</div>
                 <p class="description">
                   Laborum aperiam atque omnis minus omnis est qui assumenda
                   quos. Quis id sit quibusdam. Esse quisquam ducimus officia

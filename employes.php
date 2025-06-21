@@ -69,17 +69,10 @@ $employes = $conn->query("SELECT * FROM Employes ORDER BY EmployeID DESC LIMIT $
 <head>
   <meta charset="UTF-8">
   <title>Employés</title>
-  <style>
-    .admin-table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-    .admin-table th, .admin-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-    .admin-table th { background: #f5f5f5; }
-    .delete-btn { background: none; border: none; color: #b01e28; cursor: pointer; font-size: 1em; }
-    .pagination { margin: 20px 0; }
-    .pagination a, .pagination strong { margin: 0 5px; text-decoration: none; }
-    .pagination strong { color: #1976d2; }
-    .input-error { border: 1px solid red !important; }
-    .form-error { color: #c62828; font-weight: bold; margin: 10px 0; }
-  </style>
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/admin-unified.css">
+  <link rel="stylesheet" href="assets/css/admin-inline-fixes.css">
+  <link rel="stylesheet" href="assets/css/employes-admin.css">
 </head>
 
 <body>
@@ -93,7 +86,7 @@ $employes = $conn->query("SELECT * FROM Employes ORDER BY EmployeID DESC LIMIT $
     <input type="text" name="poste" id="poste" placeholder="Poste" required>
     <input type="number" name="salaire" id="salaire" placeholder="Salaire" step="0.01" min="0" required>
     <input type="date" name="date_embauche" id="date_embauche" required>
-    <div id="form-error" class="form-error" style="display:none;"></div>
+    <div id="form-error" class="form-error hidden"></div>
     <button type="submit" name="ajouter">Ajouter</button>
   </form>
   <script>
@@ -152,6 +145,7 @@ $employes = $conn->query("SELECT * FROM Employes ORDER BY EmployeID DESC LIMIT $
       });
     });
   </script>
+  <script src="assets/js/harmonize-admin-styles.js"></script>
   <table class="admin-table">
     <tr>
       <th>ID</th>

@@ -91,11 +91,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (type === 'error') {
             notification.style.background = 'rgba(239, 68, 68, 0.95)';
             notification.style.color = 'white';
-            notification.innerHTML = `<i class="bi bi-exclamation-circle" style="margin-right: 8px;"></i> ${message}`;
+            notification.innerHTML = `<i class="bi bi-exclamation-circle icon-with-margin"></i> ${message}`;
         } else {
             notification.style.background = 'rgba(59, 183, 126, 0.95)';
             notification.style.color = 'white';
-            notification.innerHTML = `<i class="bi bi-check-circle" style="margin-right: 8px;"></i> ${message}`;
+            notification.innerHTML = `<i class="bi bi-check-circle icon-with-margin"></i> ${message}`;
         }
         
         document.body.appendChild(notification);
