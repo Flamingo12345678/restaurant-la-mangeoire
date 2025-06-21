@@ -160,7 +160,7 @@ $user_country = CurrencyManager::detectCountry();
           <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
         </nav>
 
-        <a class="btn-getstarted" href="#book-a-table"
+        <a class="btn-getstarted" href="reserver-table.php"
           >Réserver une Table</a
         >
       </div>
@@ -188,7 +188,7 @@ $user_country = CurrencyManager::detectCountry();
                 Personne ne nous egalise dans la qualité de nos plats. Venez
               </p>
               <div class="d-flex" data-aos="fade-up" data-aos-delay="200">
-                <a href="#book-a-table" class="btn-get-started"
+                <a href="reserver-table.php" class="btn-get-started"
                   >Réserver une Table</a
                 >
                 <a
@@ -233,11 +233,24 @@ $user_country = CurrencyManager::detectCountry();
               <div class="book-a-table">
                 <h3>Réserver une Table</h3>
                 <p>+237 6 96 56 85 20</p>
+                <!-- 
+                BOUTON "RÉSERVER EN LIGNE" COMMENTÉ
+                Ce bouton était redondant avec les autres options de réservation.
+                Les utilisateurs peuvent utiliser le bouton principal "Réserver une Table"
+                qui les dirige vers le formulaire détaillé unifié.
+                
                 <a
                   href="forms/book-a-table.php"
                   class="btn btn-primary btn-book-table"
                   >Réserver en ligne</a
                 >
+                -->
+                <div class="mt-3 p-3 bg-light rounded">
+                  <small class="text-primary">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    <strong>Réservation :</strong> Utilisez le bouton "Réserver une Table" en haut de page
+                  </small>
+                </div>
               </div>
             </div>
             <div class="col-lg-5" data-aos="fade-up" data-aos-delay="250">
@@ -1497,8 +1510,77 @@ $user_country = CurrencyManager::detectCountry();
       <!-- /Chefs Section -->
 
       <!-- Section Reservation de table -->
+      <!-- Book A Table Section - Redirection vers formulaire détaillé -->
       <section id="book-a-table" class="book-a-table section">
         <!-- Section Title -->
+        <div class="container section-title" data-aos="fade-up">
+          <h2>Réserver une table</h2>
+          <p>
+            <span>Réservez La Vôtre</span>
+            <span class="description-title"
+              >Et Venez Goûter Nos Plats<br
+            /></span>
+          </p>
+        </div>
+        <!-- End Section Title -->
+
+        <div class="container">
+          <div class="row g-0 justify-content-center" data-aos="fade-up" data-aos-delay="100">
+            <div class="col-lg-8 text-center">
+              <div class="reservation-redirect-card p-5" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                <div class="mb-4">
+                  <i class="bi bi-calendar-check" style="font-size: 4rem; color: #d4af37;"></i>
+                </div>
+                
+                <h3 class="mb-3" style="color: #2c3e50;">Réservation de Table</h3>
+                <p class="mb-4 text-muted">
+                  Réservez votre table en quelques clics avec notre formulaire détaillé. 
+                  Nous vous garantissons une expérience culinaire exceptionnelle.
+                </p>
+                
+                <div class="features-list mb-4">
+                  <div class="row text-center">
+                    <div class="col-md-4 mb-3">
+                      <i class="bi bi-clock text-primary"></i>
+                      <p class="small mb-0">Réservation rapide</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                      <i class="bi bi-shield-check text-success"></i>
+                      <p class="small mb-0">Confirmation garantie</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                      <i class="bi bi-envelope text-info"></i>
+                      <p class="small mb-0">Notification par email</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <a href="reserver-table.php" class="btn btn-primary btn-lg px-5 py-3" style="background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%); border: none; border-radius: 50px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+                  <i class="bi bi-calendar-plus me-2"></i>
+                  Réserver Maintenant
+                </a>
+                
+                <div class="mt-3">
+                  <small class="text-muted">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Réservation gratuite • Annulation jusqu'à 2h avant
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- 
+      ========================================================================
+      ANCIENNE SECTION DE RÉSERVATION RAPIDE - COMMENTÉE
+      ========================================================================
+      Cette section contenait un formulaire de réservation rapide intégré.
+      Elle a été remplacée par une redirection vers le formulaire détaillé 
+      pour une meilleure expérience utilisateur et une gestion centralisée.
+      
+      <section id="book-a-table" class="book-a-table section">
         <div class="container section-title" data-aos="fade-up">
           <h2>Reserver une table</h2>
           <p>
@@ -1508,7 +1590,6 @@ $user_country = CurrencyManager::detectCountry();
             /></span>
           </p>
         </div>
-        <!-- End Section Title -->
 
         <div class="container">
           <div class="row g-0" data-aos="fade-up" data-aos-delay="100">
@@ -1628,10 +1709,13 @@ $user_country = CurrencyManager::detectCountry();
                 </div>
               </form>
             </div>
-            <!-- End Reservation Form -->
           </div>
         </div>
       </section>
+      ========================================================================
+      FIN DE L'ANCIENNE SECTION COMMENTÉE
+      ========================================================================
+      -->
       <!-- /Book A Table Section -->
 
       <!-- Gallery Section -->

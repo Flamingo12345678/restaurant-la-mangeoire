@@ -101,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $valid_token) {
         </ul>
       </nav>
 
-      <a class="btn-book-a-table" href="#book-a-table">Réserver une table</a>
+      <a class="btn-book-a-table" href="reserver-table.php">Réserver une table</a>
       <i class="mobile-nav-toggle mobile-nav-show bi bi-list"></i>
       <i class="mobile-nav-toggle mobile-nav-hide d-none bi bi-x"></i>
     </div>
