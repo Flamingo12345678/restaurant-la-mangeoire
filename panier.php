@@ -233,7 +233,17 @@ if (isset($_SESSION['client_id'])) {
                                     <span>Total:</span>
                                     <span><?php echo number_format($total, 0, ',', ' '); ?> XAF</span>
                                 </div>
-                                <a href="passer-commande.php" class="btn btn-primary w-100">Passer la commande</a>
+                                
+                                <?php if (isset($_SESSION['client_id'])): ?>
+                                    <a href="passer-commande.php" class="btn btn-primary w-100">Passer la commande</a>
+                                <?php else: ?>
+                                    <div class="alert alert-info mb-3">
+                                        <i class="bi bi-info-circle"></i> Vous devez être connecté pour passer une commande
+                                    </div>
+                                    <a href="connexion-unifiee.php?redirect=passer-commande.php" class="btn btn-primary w-100">Se connecter pour commander</a>
+                                    <a href="inscription.php?redirect=passer-commande.php" class="btn btn-outline-primary w-100 mt-2">Créer un compte</a>
+                                <?php endif; ?>
+                                
                                 <a href="index.php#menu" class="btn btn-outline-secondary w-100 mt-2">Continuer les achats</a>
                             </div>
                         </div>
