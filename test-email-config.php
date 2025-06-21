@@ -91,7 +91,7 @@ if (isset($_GET['test']) && $_GET['test'] === 'email') {
     echo "🚀 Lancement du test d'envoi...\n";
     
     try {
-        $emailNotification = new EmailNotification();
+        $emailNotification = new EmailNotifications();
         $result = $emailNotification->testEmailConfiguration();
         
         if ($result) {
