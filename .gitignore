@@ -12,7 +12,6 @@ node_modules/
 .env
 .env.*
 *.config.php
-db_connexion.php
 .htaccess
 .htpasswd
 
@@ -101,3 +100,7 @@ admin_restore.php
 
 # Fichiers de diagrammes générés
 *.erd.json
+
+# Scripts de déploiement avec vraies clés
+*-real.sh
+railway-setup-real.sh
