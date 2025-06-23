@@ -11,7 +11,7 @@ require_once 'db_connexion.php';
 echo "1. Vérification de la base de données:\n";
 try {
     $superadmin_query = "SELECT AdminID, Email, Role FROM Administrateurs WHERE Role = 'superadmin'";
-    $superadmins = $conn->query($superadmin_query)->fetchAll(PDO::FETCH_ASSOC);
+    $superadmins = $pdo->query($superadmin_query)->fetchAll(PDO::FETCH_ASSOC);
     
     echo "   ✓ Nombre de superadmins: " . count($superadmins) . "\n";
     foreach ($superadmins as $admin) {

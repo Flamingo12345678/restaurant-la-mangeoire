@@ -24,7 +24,7 @@ require_once 'db_connexion.php';
 // Vérifier l'état de la connexion PDO
 if ($debug_mode) {
     try {
-        $conn->query("SELECT 1");
+        $pdo->query("SELECT 1");
         add_debug("✅ Database connection is active");
     } catch (PDOException $e) {
         add_debug("❌ Database connection error: " . $e->getMessage());
@@ -41,36 +41,22 @@ $client_id = $_SESSION['client_id'];
 $success_message = "";
 $error_message = "";
 
-// Déterminer si l'utilisateur est dans la table Clients ou Utilisateurs
+// Récupérer les informations du client depuis la table Clients
 $user_found = false;
-$using_utilisateurs_table = false;
 
 try {
-    // Essayer d'abord la table Clients
+    // Récupérer les données depuis la table Clients uniquement
     $query = "SELECT * FROM Clients WHERE ClientID = ?";
-    $stmt = $conn->prepare($query);
+    $stmt = $pdo->prepare($query);
     $stmt->execute([$client_id]);
     $client = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$client) {
-        // Essayer la table Utilisateurs
-        $query = "SELECT * FROM Utilisateurs WHERE UtilisateurID = ?";
-        $stmt = $conn->prepare($query);
-        $stmt->execute([$client_id]);
-        $client = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if ($client) {
-            $user_found = true;
-            $using_utilisateurs_table = true;
-        }
-    } else {
+    if ($client) {
         $user_found = true;
-        $using_utilisateurs_table = false;
-    }
-
-    if (!$user_found) {
+        add_debug("✅ Client trouvé dans la table Clients: " . $client['Email']);
+    } else {
         // Journalisation détaillée de l'erreur
-        error_log("User not found for ID: " . $client_id . " in either Clients or Utilisateurs tables");
+        error_log("Client not found for ID: " . $client_id . " in Clients table");
         $_SESSION = array();
         session_destroy();
         header("Location: connexion-unifiee.php?error=profile_not_found");
@@ -92,7 +78,7 @@ try {
 }
 
 // Récupérer les commandes du client
-// Comme la table Commandes utilise UtilisateurID et non ClientID
+// La table Commandes utilise maintenant ClientID
 try {
     $commandes_query = "SELECT c.CommandeID, c.DateCommande, c.Statut, c.MontantTotal, 
                        COALESCE(c.MontantTotal, 
@@ -100,10 +86,10 @@ try {
                           FROM DetailsCommande dc 
                           WHERE dc.CommandeID = c.CommandeID)) AS TotalCalcule
                        FROM Commandes c 
-                       WHERE c.UtilisateurID = ? 
+                       WHERE c.ClientID = ? 
                        GROUP BY c.CommandeID
                        ORDER BY c.DateCommande DESC";
-    $commandes_stmt = $conn->prepare($commandes_query);
+    $commandes_stmt = $pdo->prepare($commandes_query);
     $commandes_stmt->bindValue(1, $client_id, PDO::PARAM_INT);
     $commandes_stmt->execute();
     $commandes = $commandes_stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -132,8 +118,8 @@ try {
             add_debug("⚠️ Tentative de requête simplifiée pour les commandes");
         }
         
-        $fallback_query = "SELECT CommandeID, DateCommande, Statut, MontantTotal FROM Commandes WHERE UtilisateurID = ? LIMIT 100";
-        $fallback_stmt = $conn->prepare($fallback_query);
+        $fallback_query = "SELECT CommandeID, DateCommande, Statut, MontantTotal FROM Commandes WHERE ClientID = ? LIMIT 100";
+        $fallback_stmt = $pdo->prepare($fallback_query);
         $fallback_stmt->bindValue(1, $client_id, PDO::PARAM_INT);
         $fallback_stmt->execute();
         $commandes = $fallback_stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -161,18 +147,10 @@ if (isset($_POST['update_profile'])) {
     $code_postal = isset($_POST['code_postal']) ? $_POST['code_postal'] : '';
     $ville = isset($_POST['ville']) ? $_POST['ville'] : '';
     
-    if ($using_utilisateurs_table) {
-        // Mettre à jour la table Utilisateurs
-        $update_query = "UPDATE Utilisateurs SET Nom = ?, Prenom = ?, Email = ?, Telephone = ?, 
-                        Adresse = ?, CodePostal = ?, Ville = ? WHERE UtilisateurID = ?";
-        $update_stmt = $conn->prepare($update_query);
-        $update_stmt->execute([$nom, $prenom, $email, $telephone, $adresse, $code_postal, $ville, $client_id]);
-    } else {
-        // Mettre à jour la table Clients
-        $update_query = "UPDATE Clients SET Nom = ?, Prenom = ?, Email = ?, Telephone = ? WHERE ClientID = ?";
-        $update_stmt = $conn->prepare($update_query);
-        $update_stmt->execute([$nom, $prenom, $email, $telephone, $client_id]);
-    }
+    // Mettre à jour la table Clients uniquement
+    $update_query = "UPDATE Clients SET Nom = ?, Prenom = ?, Email = ?, Telephone = ? WHERE ClientID = ?";
+    $update_stmt = $pdo->prepare($update_query);
+    $update_stmt->execute([$nom, $prenom, $email, $telephone, $client_id]);
     
     if ($update_stmt->rowCount() > 0) {
         // Mettre à jour les variables de session
@@ -183,15 +161,9 @@ if (isset($_POST['update_profile'])) {
         $success_message = "Votre profil a été mis à jour avec succès";
         
         // Recharger les informations client
-        if ($using_utilisateurs_table) {
-            $query = "SELECT * FROM Utilisateurs WHERE UtilisateurID = ?";
-            $stmt = $conn->prepare($query);
-            $stmt->execute([$client_id]);
-        } else {
-            $query = "SELECT * FROM Clients WHERE ClientID = ?";
-            $stmt = $conn->prepare($query);
-            $stmt->execute([$client_id]);
-        }
+        $query = "SELECT * FROM Clients WHERE ClientID = ?";
+        $stmt = $pdo->prepare($query);
+        $stmt->execute([$client_id]);
         $client = $stmt->fetch(PDO::FETCH_ASSOC);
     } else {
         $error_message = "Erreur lors de la mise à jour du profil";
@@ -210,15 +182,9 @@ if (isset($_POST['change_password'])) {
             if ($new_password === $confirm_password) {
                 $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
                 
-                if ($using_utilisateurs_table) {
-                    $password_query = "UPDATE Utilisateurs SET MotDePasse = ? WHERE UtilisateurID = ?";
-                    $password_stmt = $conn->prepare($password_query);
-                    $password_stmt->execute([$hashed_password, $client_id]);
-                } else {
-                    $password_query = "UPDATE Clients SET MotDePasse = ? WHERE ClientID = ?";
-                    $password_stmt = $conn->prepare($password_query);
-                    $password_stmt->execute([$hashed_password, $client_id]);
-                }
+                $password_query = "UPDATE Clients SET MotDePasse = ? WHERE ClientID = ?";
+                $password_stmt = $pdo->prepare($password_query);
+                $password_stmt->execute([$hashed_password, $client_id]);
                 
                 if ($password_stmt->rowCount() > 0) {
                     $success_message = "Votre mot de passe a été modifié avec succès";
@@ -239,82 +205,70 @@ if (isset($_POST['change_password'])) {
 // Start output buffering to capture any errors
 ob_start();
 
-// Récupérer les paiements du client
-// La table Paiements peut être liée soit aux commandes, soit aux réservations
+// Récupérer les paiements du client de manière simplifiée
+$paiements = [];
 try {
-    if ($using_utilisateurs_table) {
-        // Pour la table Utilisateurs, chercher tous les paiements liés aux commandes de l'utilisateur
-        // Simplifié - sans UNION ALL pour éviter les problèmes de compatibilité de colonnes
-        $paiements_query = "SELECT p.*, c.CommandeID, NULL as ReservationID, 'Commande' as TypePaiement,
-                            c.DateCommande as DateReference, c.Statut, c.MontantTotal, p.DatePaiement
-                            FROM Commandes c
-                            JOIN Paiements p ON p.CommandeID = c.CommandeID
-                            WHERE c.UtilisateurID = ?
-                            ORDER BY p.DatePaiement DESC";
-        $paiements_stmt = $conn->prepare($paiements_query);
-        $paiements_stmt->bindValue(1, $client_id, PDO::PARAM_INT);
-    } else {
-        // Pour la table Clients, chercher tous les paiements liés aux réservations du client
-        $paiements_query = "SELECT p.*, NULL as CommandeID, r.ReservationID, 'Réservation' as TypePaiement,
-                            r.DateReservation as DateReference, r.Statut, NULL as MontantTotal, p.DatePaiement
-                            FROM Reservations r
-                            JOIN Paiements p ON p.ReservationID = r.ReservationID
-                            WHERE r.ClientID = ? 
-                            ORDER BY p.DatePaiement DESC";
-        $paiements_stmt = $conn->prepare($paiements_query);
-        $paiements_stmt->bindValue(1, $client_id, PDO::PARAM_INT);
-    }
-    
+    // Requête simplifiée pour éviter les erreurs de structure
+    $paiements_query = "SELECT * FROM Paiements WHERE ReservationID IS NOT NULL OR CommandeID IS NOT NULL ORDER BY DatePaiement DESC LIMIT 50";
+    $paiements_stmt = $pdo->prepare($paiements_query);
     $paiements_stmt->execute();
-    $paiements = $paiements_stmt->fetchAll(PDO::FETCH_ASSOC);
+    $all_paiements = $paiements_stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Filtrer les paiements pour ce client
+    foreach ($all_paiements as $paiement) {
+        $belongs_to_client = false;
+        
+        // Vérifier si le paiement appartient à ce client via une commande
+        if (!empty($paiement['CommandeID'])) {
+            $check_commande = $pdo->prepare("SELECT ClientID FROM Commandes WHERE CommandeID = ?");
+            $check_commande->execute([$paiement['CommandeID']]);
+            $commande = $check_commande->fetch();
+            if ($commande && $commande['ClientID'] == $client_id) {
+                $paiement['TypePaiement'] = 'Commande';
+                $belongs_to_client = true;
+            }
+        }
+        
+        // Vérifier si le paiement appartient à ce client via une réservation
+        if (!$belongs_to_client && !empty($paiement['ReservationID'])) {
+            $check_reservation = $pdo->prepare("SELECT ClientID FROM Reservations WHERE ReservationID = ?");
+            $check_reservation->execute([$paiement['ReservationID']]);
+            $reservation = $check_reservation->fetch();
+            if ($reservation && $reservation['ClientID'] == $client_id) {
+                $paiement['TypePaiement'] = 'Réservation';
+                $belongs_to_client = true;
+            }
+        }
+        
+        if ($belongs_to_client) {
+            $paiements[] = $paiement;
+        }
+    }
     
     if ($debug_mode) {
         add_debug("✅ Récupération des paiements réussie: " . count($paiements) . " paiements trouvés");
     }
 } catch (PDOException $e) {
     // Journalisation détaillée de l'erreur
-    error_log("Error retrieving payments in mon-compte.php: " . $e->getMessage() . 
-              " [Code: " . $e->getCode() . "] - Query: " . $paiements_query);
+    error_log("Error retrieving payments in mon-compte.php: " . $e->getMessage());
     
     if ($debug_mode) {
         add_debug("❌ Erreur lors de la récupération des paiements: " . $e->getMessage());
     }
     
-    // Message pour l'utilisateur
-    $error_message = "Une erreur est survenue lors de la récupération de vos paiements.";
+    // Message pour l'utilisateur (plus discret)
+    if ($debug_mode) {
+        $error_message = "Une erreur est survenue lors de la récupération de vos paiements.";
+    }
     
     // Initialiser un tableau vide pour éviter les erreurs
     $paiements = [];
-    
-    // Plan B : essayer une requête simplifiée
-    try {
-        if ($debug_mode) {
-            add_debug("⚠️ Tentative de requête simplifiée pour les paiements");
-        }
-        
-        // Requête simplifiée qui devrait fonctionner même si les requêtes complexes échouent
-        $fallback_query = "SELECT PaiementID, Montant, ModePaiement, DatePaiement 
-                          FROM Paiements 
-                          WHERE ReservationID IN (SELECT ReservationID FROM Reservations WHERE ClientID = ?)
-                          OR CommandeID IN (SELECT CommandeID FROM Commandes WHERE UtilisateurID = ?)
-                          ORDER BY DatePaiement DESC
-                          LIMIT 100";
-        
-        $fallback_stmt = $conn->prepare($fallback_query);
-        $fallback_stmt->execute([$client_id, $client_id]);
-        $paiements = $fallback_stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        if ($debug_mode) {
-            add_debug("✅ Requête simplifiée réussie: " . count($paiements) . " paiements trouvés");
-        }
-    } catch (PDOException $e2) {
-        // Log l'erreur de secours
-        error_log("Fallback query error in mon-compte.php: " . $e2->getMessage());
-        
-        if ($debug_mode) {
-            add_debug("❌ Échec de la requête simplifiée: " . $e2->getMessage());
-        }
-    }
+}
+
+// Gérer l'affichage des erreurs uniquement en mode debug
+if (!$debug_mode) {
+    // En production, supprimer le message d'erreur pour les paiements
+    $error_message = str_replace("Une erreur est survenue lors de la récupération de vos paiements.", "", $error_message);
 }
 ?>
 
@@ -573,18 +527,6 @@ try {
                     <label for="adresse">Adresse</label>
                     <textarea id="adresse" name="adresse" rows="3"><?php echo htmlspecialchars($client['Adresse'] ?? ''); ?></textarea>
                 </div>
-                <?php if ($using_utilisateurs_table): ?>
-                <div class="form-row" style="display: flex; gap: 15px;">
-                    <div class="form-group" style="flex: 1;">
-                        <label for="code_postal">Code postal</label>
-                        <input type="text" id="code_postal" name="code_postal" value="<?php echo htmlspecialchars($client['CodePostal'] ?? ''); ?>">
-                    </div>
-                    <div class="form-group" style="flex: 1;">
-                        <label for="ville">Ville</label>
-                        <input type="text" id="ville" name="ville" value="<?php echo htmlspecialchars($client['Ville'] ?? ''); ?>">
-                    </div>
-                </div>
-                <?php endif; ?>
                 <button type="submit" name="update_profile" class="btn">Mettre à jour mon profil</button>
             </form>
             
@@ -752,7 +694,19 @@ try {
                     </tbody>
                 </table>
             <?php else: ?>
-                <p>Vous n'avez pas encore effectué de paiement.</p>
+                <div class="no-payments" style="text-align: center; padding: 40px; background-color: #f9f9f9; border-radius: 8px; margin-top: 20px;">
+                    <i class="bi bi-credit-card" style="font-size: 48px; color: #ce1212; margin-bottom: 15px;"></i>
+                    <h3 style="color: #333; margin-bottom: 10px;">Aucun paiement trouvé</h3>
+                    <p style="color: #666; margin-bottom: 20px;">Vous n'avez pas encore effectué de paiement ou de commande.</p>
+                    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                        <a href="menu.php" class="btn" style="display: inline-block; padding: 10px 20px; text-decoration: none;">
+                            <i class="bi bi-shop"></i> Voir le menu
+                        </a>
+                        <a href="reservation.php" class="btn" style="display: inline-block; padding: 10px 20px; text-decoration: none; background-color: #f8f9fa; color: #ce1212; border: 2px solid #ce1212;">
+                            <i class="bi bi-calendar-check"></i> Faire une réservation
+                        </a>
+                    </div>
+                </div>
             <?php endif; ?>
         </div>
         </div>

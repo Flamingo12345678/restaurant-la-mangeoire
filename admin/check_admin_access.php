@@ -16,7 +16,7 @@ if (!function_exists('has_admin_access')) {
 }
 
 // Inclure la connexion à la base de données si pas déjà fait
-if (!isset($conn)) {
+if (!isset($pdo)) {
     require_once __DIR__ . '/../db_connexion.php';
 }
 

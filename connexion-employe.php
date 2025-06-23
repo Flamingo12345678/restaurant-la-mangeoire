@@ -39,7 +39,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !is_ip_blacklisted()) {
     try {
         // Vérifier dans la table Employes
         $query = "SELECT * FROM Employes WHERE Email = ? AND Status = 'Actif'";
-        $stmt = $conn->prepare($query);
+        $stmt = $pdo->prepare($query);
         $stmt->bindValue(1, $email, PDO::PARAM_STR);
         $stmt->execute();
         $employe = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -51,10 +51,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !is_ip_blacklisted()) {
             // Mettre à jour la date de dernière connexion
             try {
                 // Vérifier d'abord si la colonne existe
-                $check_column = $conn->query("SHOW COLUMNS FROM Employes LIKE 'DerniereConnexion'");
+                $check_column = $pdo->query("SHOW COLUMNS FROM Employes LIKE 'DerniereConnexion'");
                 if ($check_column->rowCount() > 0) {
                     $update_query = "UPDATE Employes SET DerniereConnexion = NOW() WHERE EmployeID = ?";
-                    $update_stmt = $conn->prepare($update_query);
+                    $update_stmt = $pdo->prepare($update_query);
                     $update_stmt->execute([$employe['EmployeID']]);
                 } else {
                     // On ne peut pas rediriger ici car on doit continuer le processus de connexion
@@ -92,7 +92,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !is_ip_blacklisted()) {
             } else {
                 // Vérifier si l'email existe dans la table mais est inactif
                 $query_inactif = "SELECT * FROM Employes WHERE Email = ? AND Status = 'Inactif'";
-                $stmt_inactif = $conn->prepare($query_inactif);
+                $stmt_inactif = $pdo->prepare($query_inactif);
                 $stmt_inactif->bindValue(1, $email, PDO::PARAM_STR);
                 $stmt_inactif->execute();
                 $employe_inactif = $stmt_inactif->fetch(PDO::FETCH_ASSOC);

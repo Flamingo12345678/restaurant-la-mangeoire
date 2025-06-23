@@ -16,7 +16,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'fix_payments' && isset($_PO
     } else {
         try {
             // 1. Marquer les paiements qui n'ont pas de réservation valide
-            $paiements_problematiques = $conn->query(
+            $paiements_problematiques = $pdo->query(
                 "SELECT p.* 
                  FROM Paiements p 
                  LEFT JOIN Reservations r ON p.ReservationID = r.ReservationID 
@@ -32,12 +32,12 @@ if (isset($_POST['action']) && $_POST['action'] === 'fix_payments' && isset($_PO
                     
                     if ($reservation_id > 0) {
                         // Vérifier si la réservation existe
-                        $check_res = $conn->prepare("SELECT ReservationID FROM Reservations WHERE ReservationID = ?");
+                        $check_res = $pdo->prepare("SELECT ReservationID FROM Reservations WHERE ReservationID = ?");
                         $check_res->execute([$reservation_id]);
                         
                         if ($check_res->fetchColumn()) {
                             // Mettre à jour tous les paiements problématiques
-                            $update = $conn->prepare("UPDATE Paiements SET ReservationID = ? WHERE PaiementID = ?");
+                            $update = $pdo->prepare("UPDATE Paiements SET ReservationID = ? WHERE PaiementID = ?");
                             $success_count = 0;
                             
                             foreach ($paiements_problematiques as $paiement) {
@@ -55,7 +55,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'fix_payments' && isset($_PO
                     }
                 } elseif ($_POST['fix_type'] === 'delete') {
                     // Option 2: Supprimer les paiements problématiques
-                    $delete = $conn->prepare("DELETE FROM Paiements WHERE PaiementID = ?");
+                    $delete = $pdo->prepare("DELETE FROM Paiements WHERE PaiementID = ?");
                     $success_count = 0;
                     
                     foreach ($paiements_problematiques as $paiement) {
@@ -78,7 +78,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'fix_payments' && isset($_PO
 // Récupérer la liste des paiements problématiques
 $paiements_problematiques = [];
 try {
-    $query = $conn->query(
+    $query = $pdo->query(
         "SELECT p.*, 
          r.nom_client, r.email_client 
          FROM Paiements p 
@@ -93,7 +93,7 @@ try {
 // Récupérer les réservations récentes pour suggestion
 $reservations_recentes = [];
 try {
-    $query = $conn->query(
+    $query = $pdo->query(
         "SELECT r.ReservationID, r.nom_client, r.DateReservation  
          FROM Reservations r 
          ORDER BY r.DateReservation DESC 

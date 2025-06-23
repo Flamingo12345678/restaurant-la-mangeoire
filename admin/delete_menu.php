@@ -12,7 +12,7 @@ if ($id > 0 && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
   }
   // Vérification d'existence du menu
-  $check = $conn->prepare("SELECT COUNT(*) FROM Menus WHERE MenuID=?");
+  $check = $pdo->prepare("SELECT COUNT(*) FROM Menus WHERE MenuID=?");
   $check->execute([$id]);
   if ($check->fetchColumn() == 0) {
     set_message('Menu inexistant ou déjà supprimé.', 'error');
@@ -21,7 +21,7 @@ if ($id > 0 && $_SERVER['REQUEST_METHOD'] === 'POST') {
   }
   try {
     $sql = "DELETE FROM Menus WHERE MenuID=?";
-    $stmt = $conn->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $result = $stmt->execute([$id]);
     if ($result) {
       set_message('Menu supprimé.');

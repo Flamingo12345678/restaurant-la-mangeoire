@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   // Vérifier si l'email existe
   if (validate_email($email)) {
-    $stmt = $conn->prepare("SELECT UtilisateurID, Email, Nom, Prenom FROM Utilisateurs WHERE Email = ?");
+    $stmt = $pdo->prepare("SELECT ClientID, Email, Nom, Prenom FROM Clients WHERE Email = ?");
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -22,12 +22,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $token = bin2hex(random_bytes(32));
       $expiration = date('Y-m-d H:i:s', strtotime('+1 hour'));
 
-      $stmt = $conn->prepare("
-        INSERT INTO ReinitialisationMotDePasse (UtilisateurID, Token, DateExpiration) 
+      $stmt = $pdo->prepare("
+        INSERT INTO ReinitialisationMotDePasse (ClientID, Token, DateExpiration) 
         VALUES (?, ?, ?)
         ON DUPLICATE KEY UPDATE Token = VALUES(Token), DateExpiration = VALUES(DateExpiration)
       ");
-      $stmt->execute([$user['UtilisateurID'], $token, $expiration]);
+      $stmt->execute([$user['ClientID'], $token, $expiration]);
 
       $reset_link = "https://" . $_SERVER['HTTP_HOST'] . "/reinitialiser-mot-de-passe.php?token=" . $token;
 
@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       // mail($to, $subject, $message_email);
 
       $success = true;
-      error_log("Demande de réinitialisation de mot de passe pour l'utilisateur " . $user['UtilisateurID'] . " (" . $user['Email'] . ")");
+      error_log("Demande de réinitialisation de mot de passe pour le client " . $user['ClientID'] . " (" . $user['Email'] . ")");
     } else {
       $success = true;
     }

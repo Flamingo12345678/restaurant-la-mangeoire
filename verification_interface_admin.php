@@ -93,10 +93,10 @@ try {
     $tablesOK = 0;
     foreach ($tables as $table => $desc) {
         try {
-            $stmt = $conn->query("SHOW TABLES LIKE '$table'");
+            $stmt = $pdo->query("SHOW TABLES LIKE '$table'");
             if ($stmt->rowCount() > 0) {
                 // Compter les enregistrements
-                $count = $conn->query("SELECT COUNT(*) FROM `$table`")->fetchColumn();
+                $count = $pdo->query("SELECT COUNT(*) FROM `$table`")->fetchColumn();
                 echo "✅ {$desc}: OK ({$count} enregistrements)" . PHP_EOL;
                 $tablesOK++;
             } else {

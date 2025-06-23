@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($valid) {
       try {
         $sql = "INSERT INTO Menus (NomItem, Description, Prix) VALUES (?, ?, ?)";
-        $stmt = $conn->prepare($sql);
+        $stmt = $pdo->prepare($sql);
         $result = $stmt->execute([$nom, $description, $prix]);
         if ($result) {
           set_message('Menu ajouté.');

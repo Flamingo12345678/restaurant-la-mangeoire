@@ -12,7 +12,7 @@ if ($id > 0 && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
   }
   // Vérification d'existence du client
-  $check = $conn->prepare("SELECT COUNT(*) FROM Clients WHERE ClientID=?");
+  $check = $pdo->prepare("SELECT COUNT(*) FROM Clients WHERE ClientID=?");
   $check->execute([$id]);
   if ($check->fetchColumn() == 0) {
     set_message('Client inexistant ou déjà supprimé.', 'error');
@@ -21,7 +21,7 @@ if ($id > 0 && $_SERVER['REQUEST_METHOD'] === 'POST') {
   }
   try {
     $sql = "DELETE FROM Clients WHERE ClientID=?";
-    $stmt = $conn->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $result = $stmt->execute([$id]);
     if ($result) {
       set_message('Client supprimé.');

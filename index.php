@@ -33,7 +33,7 @@ function display_cart_message() {
 // Récupérer les prix des menus depuis la base de données
 $menu_prices = [];
 try {
-  $stmt = $conn->prepare("SELECT MenuID, NomItem, Prix FROM Menus");
+  $stmt = $pdo->prepare("SELECT MenuID, NomItem, Prix FROM Menus");
   $stmt->execute();
   $menus = $stmt->fetchAll(PDO::FETCH_ASSOC);
   
@@ -121,7 +121,7 @@ $user_country = CurrencyManager::detectCountry();
               $cart_count = 0;
               if (isset($_SESSION['client_id'])) {
                 // Count from database
-                $stmt = $conn->prepare("SELECT SUM(Quantite) FROM Panier WHERE UtilisateurID = ?");
+                $stmt = $pdo->prepare("SELECT SUM(Quantite) FROM Panier WHERE ClientID = ?");
                 $stmt->execute([$_SESSION['client_id']]);
                 $cart_count = $stmt->fetchColumn() ?: 0;
               } else if (isset($_SESSION['panier']) && count($_SESSION['panier']) > 0) {

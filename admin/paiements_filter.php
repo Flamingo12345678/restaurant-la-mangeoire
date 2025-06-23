@@ -2,7 +2,7 @@
 // Ce fichier est inclus dans paiements.php pour gérer les filtres
 
 // Fonction pour appliquer les filtres aux paiements
-function applyPaymentFilters($conn, &$page, &$per_page, &$total_pages, &$paiements) {
+function applyPaymentFilters($pdo, &$page, &$per_page, &$total_pages, &$paiements) {
     // Pagination
     $per_page = 15;
     $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -60,7 +60,7 @@ function applyPaymentFilters($conn, &$page, &$per_page, &$total_pages, &$paiemen
 
     // Requête pour le total de paiements avec filtres
     $total_sql = "SELECT COUNT(*) FROM Paiements p LEFT JOIN Reservations r ON p.ReservationID = r.ReservationID" . $where_sql;
-    $total_stmt = $conn->prepare($total_sql);
+    $total_stmt = $pdo->prepare($total_sql);
     foreach ($params as $key => $value) {
         $total_stmt->bindValue($key, $value);
     }
@@ -78,7 +78,7 @@ function applyPaymentFilters($conn, &$page, &$per_page, &$total_pages, &$paiemen
             " . $where_sql . "
             ORDER BY p.DatePaiement DESC LIMIT :limit OFFSET :offset";
     
-    $stmt = $conn->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':limit', $per_page, PDO::PARAM_INT);
     $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     

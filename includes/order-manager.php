@@ -7,7 +7,7 @@
  */
 
 class OrderManager {
-    private $conn;
+    private $pdo;
     private $currencyManager;
     
     // Constantes

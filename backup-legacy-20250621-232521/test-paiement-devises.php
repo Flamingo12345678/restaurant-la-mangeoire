@@ -15,7 +15,7 @@ echo "   ✓ Devise détectée: " . $current_currency['code'] . " (" . $current_
 // 2. Récupérer une commande de test depuis la DB
 echo "\n2. Test avec données de commande réelles...\n";
 try {
-    $stmt = $conn->prepare("SELECT CommandeID, MontantTotal FROM Commandes ORDER BY CommandeID DESC LIMIT 1");
+    $stmt = $pdo->prepare("SELECT CommandeID, MontantTotal FROM Commandes ORDER BY CommandeID DESC LIMIT 1");
     $stmt->execute();
     $order = $stmt->fetch(PDO::FETCH_ASSOC);
     

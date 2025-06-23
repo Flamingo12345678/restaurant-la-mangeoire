@@ -75,7 +75,7 @@ $current_currency = CurrencyManager::getCurrentCurrency();
                         $cart_count = 0;
                         if (isset($_SESSION['client_id'])) {
                             // Count from database
-                            $stmt = $conn->prepare("SELECT SUM(Quantite) FROM Panier WHERE UtilisateurID = ?");
+                            $stmt = $pdo->prepare("SELECT SUM(Quantite) FROM Panier WHERE UtilisateurID = ?");
                             $stmt->execute([$_SESSION['client_id']]);
                             $cart_count = $stmt->fetchColumn() ?: 0;
                         } else if (isset($_SESSION['panier']) && count($_SESSION['panier']) > 0) {

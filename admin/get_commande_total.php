@@ -9,14 +9,14 @@ if (isset($_GET['commande_id'])) {
   $commande_id = intval($_GET['commande_id']);
   
   // Vérifier que la commande existe
-  $check_cmd = $conn->prepare("SELECT CommandeID FROM Commandes WHERE CommandeID = ?");
+  $check_cmd = $pdo->prepare("SELECT CommandeID FROM Commandes WHERE CommandeID = ?");
   $check_cmd->execute([$commande_id]);
   
   if ($check_cmd->rowCount() > 0) {
     // Vérifier si les colonnes existent
-    function checkColumnExists($conn, $tableName, $columnName) {
+    function checkColumnExists($pdo, $tableName, $columnName) {
       try {
-          $stmt = $conn->prepare("SELECT $columnName FROM $tableName LIMIT 1");
+          $stmt = $pdo->prepare("SELECT $columnName FROM $tableName LIMIT 1");
           $stmt->execute();
           return true;
       } catch (PDOException $e) {
@@ -27,8 +27,8 @@ if (isset($_GET['commande_id'])) {
       }
     }
     
-    $hasPrixUnitaire = checkColumnExists($conn, 'Commandes', 'PrixUnitaire');
-    $hasMontantTotal = checkColumnExists($conn, 'Commandes', 'MontantTotal');
+    $hasPrixUnitaire = checkColumnExists($pdo, 'Commandes', 'PrixUnitaire');
+    $hasMontantTotal = checkColumnExists($pdo, 'Commandes', 'MontantTotal');
     
     if ($hasPrixUnitaire && $hasMontantTotal) {
       // Si les colonnes existent, utiliser les valeurs stockées
@@ -41,7 +41,7 @@ if (isset($_GET['commande_id'])) {
               FROM Commandes
               WHERE CommandeID = ?";
       
-      $stmt = $conn->prepare($sql);
+      $stmt = $pdo->prepare($sql);
       $stmt->execute([$commande_id]);
       $total = $stmt->fetchColumn() ?: 0;
     } else {
@@ -51,7 +51,7 @@ if (isset($_GET['commande_id'])) {
               JOIN Menus m ON c.MenuID = m.MenuID
               WHERE c.CommandeID = ?";
       
-      $stmt = $conn->prepare($sql);
+      $stmt = $pdo->prepare($sql);
       $stmt->execute([$commande_id]);
       $total = $stmt->fetchColumn() ?: 0;
     }

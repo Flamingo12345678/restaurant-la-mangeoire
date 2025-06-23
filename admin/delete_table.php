@@ -13,7 +13,7 @@ if ($id > 0 && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
   }
   // Vérification d'existence de la table
-  $check = $conn->prepare("SELECT COUNT(*) FROM TablesRestaurant WHERE TableID=?");
+  $check = $pdo->prepare("SELECT COUNT(*) FROM TablesRestaurant WHERE TableID=?");
   $check->execute([$id]);
   if ($check->fetchColumn() == 0) {
     set_message('Table inexistante ou déjà supprimée.', 'error');
@@ -22,7 +22,7 @@ if ($id > 0 && $_SERVER['REQUEST_METHOD'] === 'POST') {
   }
   try {
     $sql = "DELETE FROM TablesRestaurant WHERE TableID=?";
-    $stmt = $conn->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $result = $stmt->execute([$id]);
     if ($result) {
       set_message('Table supprimée.');

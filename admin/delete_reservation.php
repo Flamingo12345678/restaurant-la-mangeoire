@@ -13,7 +13,7 @@ if ($id > 0 && $_SERVER['REQUEST_METHOD'] === 'POST') {
   }
   try {
     $sql = "DELETE FROM Reservations WHERE id=?";
-    $stmt = $conn->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $result = $stmt->execute([$id]);
     if ($result) {
       set_message('Réservation supprimée.');

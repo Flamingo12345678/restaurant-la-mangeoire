@@ -10,11 +10,11 @@ try {
     echo "🔧 Correction de la structure des réservations...\n\n";
 
     // 1. Vérifier si l'ancienne table Reservations existe
-    $check_old = $conn->query("SHOW TABLES LIKE 'Reservations'");
+    $check_old = $pdo->query("SHOW TABLES LIKE 'Reservations'");
     $old_exists = $check_old->rowCount() > 0;
     
     // 2. Vérifier si la nouvelle table reservations existe
-    $check_new = $conn->query("SHOW TABLES LIKE 'reservations'");
+    $check_new = $pdo->query("SHOW TABLES LIKE 'reservations'");
     $new_exists = $check_new->rowCount() > 0;
     
     echo "📊 État actuel :\n";
@@ -38,7 +38,7 @@ try {
         INDEX idx_email (email_client)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
     
-    $conn->exec($sql_create);
+    $pdo->exec($sql_create);
     echo "✅ Table 'reservations' créée/mise à jour avec la bonne structure\n";
     
     // 4. Si l'ancienne table existe, migrer les données
@@ -46,7 +46,7 @@ try {
         echo "📦 Migration des données de l'ancienne table...\n";
         
         // Récupérer les données de l'ancienne table
-        $old_data = $conn->query("SELECT * FROM Reservations")->fetchAll(PDO::FETCH_ASSOC);
+        $old_data = $pdo->query("SELECT * FROM Reservations")->fetchAll(PDO::FETCH_ASSOC);
         
         if (!empty($old_data)) {
             $insert_sql = "INSERT INTO reservations (ReservationID, nom_client, email_client, nb_personnes, DateReservation, statut) 
@@ -58,7 +58,7 @@ try {
                           DateReservation = VALUES(DateReservation),
                           statut = VALUES(statut)";
             
-            $stmt = $conn->prepare($insert_sql);
+            $stmt = $pdo->prepare($insert_sql);
             
             foreach ($old_data as $row) {
                 $stmt->execute([
@@ -75,12 +75,12 @@ try {
         }
         
         // Renommer l'ancienne table en sauvegarde
-        $conn->exec("RENAME TABLE Reservations TO Reservations_backup_" . date('Y_m_d_H_i_s'));
+        $pdo->exec("RENAME TABLE Reservations TO Reservations_backup_" . date('Y_m_d_H_i_s'));
         echo "📋 Ancienne table sauvegardée\n";
     }
     
     // 5. Ajouter quelques réservations de test si la table est vide
-    $count = $conn->query("SELECT COUNT(*) FROM reservations")->fetchColumn();
+    $count = $pdo->query("SELECT COUNT(*) FROM reservations")->fetchColumn();
     
     if ($count == 0) {
         echo "📝 Ajout de données de test...\n";
@@ -92,7 +92,7 @@ try {
             ['Sophie Durand', 'sophie.durand@email.com', 3, '2025-06-28 20:30:00', 'Réservée']
         ];
         
-        $stmt = $conn->prepare("INSERT INTO reservations (nom_client, email_client, nb_personnes, DateReservation, statut) VALUES (?, ?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO reservations (nom_client, email_client, nb_personnes, DateReservation, statut) VALUES (?, ?, ?, ?, ?)");
         
         foreach ($test_data as $data) {
             $stmt->execute($data);
@@ -105,7 +105,7 @@ try {
     echo "\n📋 Structure finale de la table 'reservations' :\n";
     echo str_repeat("=", 80) . "\n";
     
-    $describe = $conn->query("DESCRIBE reservations");
+    $describe = $pdo->query("DESCRIBE reservations");
     $columns = $describe->fetchAll(PDO::FETCH_ASSOC);
     
     printf("%-20s %-25s %-10s %-10s %-15s\n", "Colonne", "Type", "Null", "Clé", "Défaut");
@@ -122,11 +122,11 @@ try {
     }
     
     // 7. Afficher le contenu actuel
-    $current_count = $conn->query("SELECT COUNT(*) FROM reservations")->fetchColumn();
+    $current_count = $pdo->query("SELECT COUNT(*) FROM reservations")->fetchColumn();
     echo "\n📊 Contenu actuel : $current_count réservations\n";
     
     if ($current_count > 0) {
-        $sample = $conn->query("SELECT ReservationID, nom_client, email_client, DateReservation, statut FROM reservations ORDER BY ReservationID DESC LIMIT 5")->fetchAll(PDO::FETCH_ASSOC);
+        $sample = $pdo->query("SELECT ReservationID, nom_client, email_client, DateReservation, statut FROM reservations ORDER BY ReservationID DESC LIMIT 5")->fetchAll(PDO::FETCH_ASSOC);
         
         echo "\n📋 Aperçu des dernières réservations :\n";
         echo str_repeat("-", 100) . "\n";

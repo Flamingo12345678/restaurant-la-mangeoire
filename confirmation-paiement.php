@@ -34,10 +34,10 @@ if ($order_id > 0) {
     $payment_type = 'order';
     
     // Get order details
-    $stmt = $conn->prepare("
-        SELECT c.*, u.Nom, u.Prenom, u.Email, u.Telephone
+    $stmt = $pdo->prepare("
+        SELECT c.*, cl.Nom, cl.Prenom, cl.Email, cl.Telephone
         FROM Commandes c
-        LEFT JOIN Utilisateurs u ON c.UtilisateurID = u.UtilisateurID
+        LEFT JOIN Clients cl ON c.ClientID = cl.ClientID
         WHERE c.CommandeID = ?
     ");
     $stmt->execute([$order_id]);
@@ -45,7 +45,7 @@ if ($order_id > 0) {
     
     // Get payment details
     if ($order) {
-        $stmt = $conn->prepare("
+        $stmt = $pdo->prepare("
             SELECT * FROM Paiements 
             WHERE CommandeID = ? 
             ORDER BY DatePaiement DESC 
@@ -60,7 +60,7 @@ elseif ($reservation_id > 0) {
     $payment_type = 'reservation';
     
     // Get reservation details
-    $stmt = $conn->prepare("
+    $stmt = $pdo->prepare("
         SELECT * FROM Reservations 
         WHERE ReservationID = ?
     ");
@@ -69,7 +69,7 @@ elseif ($reservation_id > 0) {
     
     // Get payment details
     if ($reservation) {
-        $stmt = $conn->prepare("
+        $stmt = $pdo->prepare("
             SELECT * FROM Paiements 
             WHERE ReservationID = ? 
             ORDER BY DatePaiement DESC 

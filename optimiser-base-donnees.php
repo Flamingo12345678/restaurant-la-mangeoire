@@ -9,12 +9,12 @@
 require_once 'db_connexion.php';
 
 class DatabaseOptimizer {
-    private $connexion;
+    private $pdoexion;
     private $results = [];
     
     public function __construct() {
-        global $conn;
-        $this->connexion = $conn;
+        global $pdo;
+        $this->connexion = $pdo;
     }
     
     public function analyzePerformance() {

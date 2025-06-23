@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       // Vérification de la capacité maximale de la salle
       define('CAPACITE_SALLE', 100);
       $sql = "SELECT SUM(Capacite) AS total_places FROM TablesRestaurant";
-      $stmt = $conn->query($sql);
+      $stmt = $pdo->query($sql);
       $total_places = 0;
       if ($stmt) {
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       }
       // Contrôle d'unicité du numéro de table
       $sql = "SELECT COUNT(*) FROM TablesRestaurant WHERE NumeroTable = ?";
-      $stmt = $conn->prepare($sql);
+      $stmt = $pdo->prepare($sql);
       $stmt->execute([$numero]);
       $count = $stmt->fetchColumn();
       if ($count > 0) {
@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $nom_table = 'Table ' . $numero;
       }
       $sql = "INSERT INTO TablesRestaurant (NumeroTable, NomTable, Capacite, Statut) VALUES (?, ?, ?, ?)";
-      $stmt = $conn->prepare($sql);
+      $stmt = $pdo->prepare($sql);
       if ($stmt->execute([$numero, $nom_table, $places, $statut])) {
         set_message('Table ajoutée.');
         // log_admin_action('Ajout table', "Numéro: $numero, Places: $places, Statut: $statut");

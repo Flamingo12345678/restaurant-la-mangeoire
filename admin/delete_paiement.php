@@ -12,7 +12,7 @@ if ($id > 0 && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
   }
   // Vérification d'existence du paiement
-  $check = $conn->prepare("SELECT COUNT(*) FROM Paiements WHERE PaiementID=?");
+  $check = $pdo->prepare("SELECT COUNT(*) FROM Paiements WHERE PaiementID=?");
   $check->execute([$id]);
   if ($check->fetchColumn() == 0) {
     set_message('Paiement inexistant ou déjà supprimé.', 'error');
@@ -21,7 +21,7 @@ if ($id > 0 && $_SERVER['REQUEST_METHOD'] === 'POST') {
   }
   try {
     $sql = "DELETE FROM Paiements WHERE PaiementID=?";
-    $stmt = $conn->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $result = $stmt->execute([$id]);
     if ($result) {
       set_message('Paiement supprimé.');

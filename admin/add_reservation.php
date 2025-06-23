@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   if ($valid) {
     // 1. Vérifier si le client existe déjà
     $sql = "SELECT ClientID FROM Clients WHERE Email = ?";
-    $stmt = $conn->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $stmt->execute([$email]);
     $client = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($client) {
@@ -23,25 +23,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
       // 2. Ajouter le client s'il n'existe pas
       $sql = "INSERT INTO Clients (Nom, Prenom, Email, Telephone) VALUES (?, '', ?, '')";
-      $stmt = $conn->prepare($sql);
+      $stmt = $pdo->prepare($sql);
       $stmt->execute([$nom, $email]);
-      $client_id = $conn->lastInsertId();
+      $client_id = $pdo->lastInsertId();
     }
     // 3. Insérer la réservation avec ClientID
     $sql = "INSERT INTO Reservations (nom_client, email_client, DateReservation, statut, ClientID) VALUES (?, ?, ?, ?, ?)";
-    $stmt = $conn->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $result = $stmt->execute([$nom, $email, $date, $statut, $client_id]);
     if ($result) {
-      $reservation_id = $conn->lastInsertId();
+      $reservation_id = $pdo->lastInsertId();
       // Association automatique des tables à la réservation et mise à jour du statut
       if (!empty($_POST['table_ids']) && is_array($_POST['table_ids'])) {
         foreach ($_POST['table_ids'] as $table_id) {
           $table_id = intval($table_id);
           $sql = "INSERT INTO ReservationTables (ReservationID, TableID, nb_places) VALUES (?, ?, ?)";
-          $stmt_assoc = $conn->prepare($sql);
+          $stmt_assoc = $pdo->prepare($sql);
           $stmt_assoc->execute([$reservation_id, $table_id, 0]); // 0 ou nombre de places attribuées si connu
           $sql = "UPDATE TablesRestaurant SET Statut = 'Réservée' WHERE TableID = ?";
-          $stmt_update = $conn->prepare($sql);
+          $stmt_update = $pdo->prepare($sql);
           $stmt_update->execute([$table_id]);
         }
       }
@@ -173,7 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php
         // Récupération des tables disponibles
         $sql = "SELECT TableID, NomTable, NumeroTable FROM TablesRestaurant WHERE Statut = 'Libre' ORDER BY TableID";
-        $stmt = $conn->prepare($sql);
+        $stmt = $pdo->prepare($sql);
         $stmt->execute();
         $tables = $stmt->fetchAll(PDO::FETCH_ASSOC);
         foreach ($tables as $table) {

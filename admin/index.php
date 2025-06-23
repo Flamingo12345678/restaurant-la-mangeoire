@@ -353,7 +353,7 @@ $page_title = "Tableau de bord";
         <div class="stat-title">Clients inscrits</div>
         <div class="stat-value"><?php
                                 $sql = "SELECT COUNT(*) FROM Clients";
-                                $stmt = $conn->query($sql);
+                                $stmt = $pdo->query($sql);
                                 echo $stmt ? $stmt->fetchColumn() : 0;
                                 ?></div>
         <div style="font-size: 0.9rem; margin-top: 5px;">
@@ -368,7 +368,7 @@ $page_title = "Tableau de bord";
         <div class="stat-value"><?php
                                 $now = date('Y-m-d H:i:s');
                                 $sql = "SELECT COUNT(*) FROM Reservations WHERE Statut = 'Réservée' AND DateReservation >= ?";
-                                $stmt = $conn->prepare($sql);
+                                $stmt = $pdo->prepare($sql);
                                 $stmt->execute([$now]);
                                 echo $stmt ? $stmt->fetchColumn() : 0;
                                 ?></div>
@@ -383,7 +383,7 @@ $page_title = "Tableau de bord";
         <div class="stat-title">Commandes totales</div>
         <div class="stat-value"><?php
                                 $sql = "SELECT COUNT(*) FROM Commandes";
-                                $stmt = $conn->query($sql);
+                                $stmt = $pdo->query($sql);
                                 echo $stmt ? $stmt->fetchColumn() : 0;
                                 ?></div>
         <div style="font-size: 0.9rem; margin-top: 5px;">
@@ -397,7 +397,7 @@ $page_title = "Tableau de bord";
         <div class="stat-title">Revenus totaux</div>
         <div class="stat-value"><?php
                                 $sql = "SELECT COALESCE(SUM(Montant),0) FROM Paiements";
-                                $stmt = $conn->query($sql);
+                                $stmt = $pdo->query($sql);
                                 $revenus = $stmt ? $stmt->fetchColumn() : 0;
                                 echo number_format($revenus, 2, ',', ' ');
                                 ?> €</div>
@@ -427,7 +427,7 @@ $page_title = "Tableau de bord";
                  GROUP BY DATE(DateReservation)
                  ORDER BY jour";
           
-          $stmt = $conn->query($sql);
+          $stmt = $pdo->query($sql);
           $trafficArray = [];
           $labels = [];
           
@@ -530,17 +530,17 @@ $page_title = "Tableau de bord";
             <?php
             // Récupérer le nombre total de ventes (paiements)
             $sql = "SELECT COUNT(*) as total FROM Paiements";
-            $stmt = $conn->query($sql);
+            $stmt = $pdo->query($sql);
             $venteTotal = $stmt ? $stmt->fetchColumn() : 0;
             
             // Récupérer le nombre total de commandes
             $sql = "SELECT COUNT(*) as total FROM Commandes";
-            $stmt = $conn->query($sql);
+            $stmt = $pdo->query($sql);
             $commandesTotal = $stmt ? $stmt->fetchColumn() : 0;
             
             // Récupérer le montant total des revenus
             $sql = "SELECT COALESCE(SUM(Montant), 0) as total FROM Paiements";
-            $stmt = $conn->query($sql);
+            $stmt = $pdo->query($sql);
             $revenusTotal = $stmt ? $stmt->fetchColumn() : 0;
             ?>
             <div style="flex:1;min-width:120px;display:flex;align-items:center;margin-bottom:15px;background:#f9f9f9;padding:15px;border-radius:10px;">
@@ -583,7 +583,7 @@ $page_title = "Tableau de bord";
             $sql = "SELECT r.ReservationID, r.nom_client, r.DateReservation, 'reservation' AS type 
                     FROM Reservations r 
                     ORDER BY r.ReservationID DESC LIMIT 3";
-            $stmt = $conn->query($sql);
+            $stmt = $pdo->query($sql);
             if ($stmt) {
               while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 $activities[] = [
@@ -600,7 +600,7 @@ $page_title = "Tableau de bord";
                     JOIN Menus m ON c.MenuID = m.MenuID 
                     JOIN Reservations r ON c.ReservationID = r.ReservationID
                     ORDER BY c.CommandeID DESC LIMIT 3";
-            $stmt = $conn->query($sql);
+            $stmt = $pdo->query($sql);
             if ($stmt) {
               while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 $activities[] = [

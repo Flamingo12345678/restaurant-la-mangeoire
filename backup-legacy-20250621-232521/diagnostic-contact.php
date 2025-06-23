@@ -13,7 +13,7 @@ try {
     echo "   ✅ Connexion réussie\n";
     
     // Test de la table Messages
-    $stmt = $conn->query("SELECT COUNT(*) FROM Messages");
+    $stmt = $pdo->query("SELECT COUNT(*) FROM Messages");
     $count = $stmt->fetchColumn();
     echo "   ✅ Table Messages accessible ($count messages)\n";
     
@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             // Insertion en base de données
-            $stmt = $conn->prepare("
+            $stmt = $pdo->prepare("
                 INSERT INTO Messages (nom, email, objet, message, date_creation)
                 VALUES (?, ?, ?, ?, NOW())
             ");
@@ -79,11 +79,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
             
             if ($result) {
-                $message_id = $conn->lastInsertId();
+                $message_id = $pdo->lastInsertId();
                 $success_message = "Test réussi ! Message inséré avec ID: $message_id";
                 
                 // Nettoyer le message de test
-                $stmt = $conn->prepare("DELETE FROM Messages WHERE MessageID = ?");
+                $stmt = $pdo->prepare("DELETE FROM Messages WHERE MessageID = ?");
                 $stmt->execute([$message_id]);
                 echo "   ✅ Message de test inséré et supprimé (ID: $message_id)\n";
             } else {
@@ -138,7 +138,7 @@ if (empty($potential_issues)) {
 }
 
 echo "\n4. 📊 RÉSUMÉ DU DIAGNOSTIC :\n";
-echo "   Base de données : " . (isset($conn) ? "✅ OK" : "❌ ERREUR") . "\n";
+echo "   Base de données : " . (isset($pdo) ? "✅ OK" : "❌ ERREUR") . "\n";
 echo "   Table Messages : " . (isset($count) ? "✅ OK" : "❌ ERREUR") . "\n";
 echo "   Traitement formulaire : " . ($success_message ? "✅ OK" : "❌ ERREUR") . "\n";
 echo "   Erreurs potentielles : " . (empty($potential_issues) ? "✅ AUCUNE" : "⚠️ " . count($potential_issues)) . "\n";

@@ -23,13 +23,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $datetime = $date . ' ' . $time;
       $now = date('Y-m-d H:i:s');
       $sql = "SELECT COALESCE(SUM(nb_personnes),0) AS total_reserves FROM Reservations WHERE Statut = 'Réservée' AND DateReservation >= ?";
-      $stmt = $conn->prepare($sql);
+      $stmt = $pdo->prepare($sql);
       $stmt->execute([$now]);
       $row = $stmt->fetch(PDO::FETCH_ASSOC);
       $total_reserves = intval($row['total_reserves']);
       
       $sql = "SELECT SUM(Capacite) AS total_places FROM TablesRestaurant";
-      $stmt = $conn->query($sql);
+      $stmt = $pdo->query($sql);
       $total_places = 0;
       if ($stmt) {
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                  OR (DateReservation >= ? AND DateReservation < ?))
         )
         ORDER BY t.Capacite DESC";
-        $stmt = $conn->prepare($sql);
+        $stmt = $pdo->prepare($sql);
         $stmt->execute([$end, $start, $start, $end]);
         $tables_libres = $stmt->fetchAll(PDO::FETCH_ASSOC);
         // Trier les tables libres par capacité croissante pour privilégier la plus petite table adaptée
@@ -130,32 +130,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($personnes_restantes <= 0) {
           // Recherche ou création du client
           $sql = "SELECT ClientID FROM Clients WHERE Email = ?";
-          $stmt_client = $conn->prepare($sql);
+          $stmt_client = $pdo->prepare($sql);
           $stmt_client->execute([$email]);
           $client = $stmt_client->fetch(PDO::FETCH_ASSOC);
           if ($client) {
             $client_id = $client['ClientID'];
           } else {
             $sql = "INSERT INTO Clients (Nom, Prenom, Email, Telephone) VALUES (?, '', ?, ?)";
-            $stmt_insert = $conn->prepare($sql);
+            $stmt_insert = $pdo->prepare($sql);
             $stmt_insert->execute([$nom, $email, $telephone]);
-            $client_id = $conn->lastInsertId();
+            $client_id = $pdo->lastInsertId();
           }
           // 1 seule réservation pour tout le groupe
           $sql = "INSERT INTO Reservations (DateReservation, Statut, nom_client, email_client, nb_personnes, telephone, ClientID) VALUES (?, 'Réservée', ?, ?, ?, ?, ?)";
-          $stmt = $conn->prepare($sql);
+          $stmt = $pdo->prepare($sql);
           $stmt->execute([$datetime, $nom, $email, $people, $telephone, $client_id]);
-          $reservation_id = $conn->lastInsertId();
+          $reservation_id = $pdo->lastInsertId();
           // Associer toutes les tables à la réservation dans ReservationTables (avec le nombre de places attribuées)
           if (count($tables_attribuees) > 0) {
             foreach ($tables_attribuees as $table) {
               $sql = "INSERT INTO ReservationTables (ReservationID, TableID, nb_places) VALUES (?, ?, ?)";
-              $stmt = $conn->prepare($sql);
+              $stmt = $pdo->prepare($sql);
               $stmt->execute([$reservation_id, $table['TableID'], $table['places']]);
               
               // Mettre à jour le statut de la table
               $sql = "UPDATE TablesRestaurant SET Statut = 'Réservée' WHERE TableID = ?";
-              $stmt_update = $conn->prepare($sql);
+              $stmt_update = $pdo->prepare($sql);
               $stmt_update->execute([$table['TableID']]);
             }
             

@@ -12,7 +12,7 @@ if ($id > 0 && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
   }
   // Vérification d'existence de la commande
-  $check = $conn->prepare("SELECT COUNT(*) FROM Commandes WHERE CommandeID=?");
+  $check = $pdo->prepare("SELECT COUNT(*) FROM Commandes WHERE CommandeID=?");
   $check->execute([$id]);
   if ($check->fetchColumn() == 0) {
     set_message('Commande inexistante ou déjà supprimée.', 'error');
@@ -21,7 +21,7 @@ if ($id > 0 && $_SERVER['REQUEST_METHOD'] === 'POST') {
   }
   try {
     $sql = "DELETE FROM Commandes WHERE CommandeID=?";
-    $stmt = $conn->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $result = $stmt->execute([$id]);
     if ($result) {
       set_message('Commande supprimée.');

@@ -16,7 +16,7 @@ $total_reserves = 0;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajout_tables_types'])) {
   // Vérifier la capacité restante avant ajout
   $sql = "SELECT SUM(Capacite) AS total_places FROM TablesRestaurant";
-  $stmt = $conn->query($sql);
+  $stmt = $pdo->query($sql);
   $total_places = 0;
   if ($stmt) {
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajout_tables_types'])
 
   // Trouver le dernier numéro de table
   $sql = "SELECT MAX(NumeroTable) as max_num FROM TablesRestaurant";
-  $stmt = $conn->query($sql);
+  $stmt = $pdo->query($sql);
   $dernier_numero = 0;
   if ($stmt) {
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajout_tables_types'])
 
   // Préparer la requête d'insertion
   $sql = "INSERT INTO TablesRestaurant (NumeroTable, NomTable, Capacite) VALUES (?, ?, ?)";
-  $stmt = $conn->prepare($sql);
+  $stmt = $pdo->prepare($sql);
 
   // Ajouter les tables
   foreach ($tables_a_creer as $table_type) {
@@ -86,7 +86,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['numero'], $_POST[
   $capacite = intval($_POST['capacite']);
   // Vérifier la capacité restante avant ajout
   $sql = "SELECT SUM(Capacite) AS total_places FROM TablesRestaurant";
-  $stmt = $conn->query($sql);
+  $stmt = $pdo->query($sql);
   $total_places = 0;
   if ($stmt) {
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -102,7 +102,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['numero'], $_POST[
         $nom_table = 'Table ' . $numero;
       }
       $sql = "INSERT INTO TablesRestaurant (NumeroTable, NomTable, Capacite) VALUES (?, ?, ?)";
-      $stmt = $conn->prepare($sql);
+      $stmt = $pdo->prepare($sql);
       $result = $stmt->execute([$numero, $nom_table, $capacite]);
       if ($result) {
         $message = 'Table ajoutée avec succès.';
@@ -117,7 +117,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['numero'], $_POST[
 if (isset($_GET['delete'])) {
   $id = intval($_GET['delete']);
   $sql = "DELETE FROM TablesRestaurant WHERE TableID = ?";
-  $stmt = $conn->prepare($sql);
+  $stmt = $pdo->prepare($sql);
   $result = $stmt->execute([$id]);
   if ($result) {
     $message = 'Table supprimée.';
@@ -127,7 +127,7 @@ if (isset($_GET['delete'])) {
 }
 $tables = [];
 $sql = "SELECT * FROM TablesRestaurant ORDER BY TableID DESC";
-$stmt = $conn->query($sql);
+$stmt = $pdo->query($sql);
 if ($stmt) {
   while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $tables[] = $row;
@@ -136,7 +136,7 @@ if ($stmt) {
 
 // Calcul dynamique des statistiques pour les cards
 $sql = "SELECT SUM(Capacite) AS total_places FROM TablesRestaurant";
-$stmt = $conn->query($sql);
+$stmt = $pdo->query($sql);
 $total_places = 0;
 if ($stmt) {
   $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -145,21 +145,21 @@ if ($stmt) {
 // Correction : places restantes = capacité totale de la salle - personnes réservées à venir
 $now = date('Y-m-d H:i:s');
 $sql = "SELECT SUM(Capacite) AS total_places FROM TablesRestaurant";
-$stmt = $conn->query($sql);
+$stmt = $pdo->query($sql);
 $total_places = 0;
 if ($stmt) {
   $row = $stmt->fetch(PDO::FETCH_ASSOC);
   $total_places = intval($row['total_places']);
 }
 $sql = "SELECT COALESCE(SUM(nb_personnes),0) AS total_reserves FROM Reservations WHERE Statut = 'Réservée' AND DateReservation >= ?";
-$stmt = $conn->prepare($sql);
+$stmt = $pdo->prepare($sql);
 $stmt->execute([$now]);
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
 $total_reserves = intval($row['total_reserves']);
 $places_restantes = $total_places - $total_reserves;
 // Card : nombre de tables disponibles (statut 'Libre')
 $sql = "SELECT COUNT(*) AS nb_libres FROM TablesRestaurant WHERE Statut = 'Libre'";
-$stmt = $conn->query($sql);
+$stmt = $pdo->query($sql);
 $nb_tables_libres = 0;
 if ($stmt) {
   $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -167,7 +167,7 @@ if ($stmt) {
 }
 // Card : nombre de tables disponibles (statut 'Libre') et détail par type
 $sql = "SELECT Capacite, COUNT(*) AS nb FROM TablesRestaurant WHERE Statut = 'Libre' GROUP BY Capacite ORDER BY Capacite ASC";
-$stmt = $conn->query($sql);
+$stmt = $pdo->query($sql);
 $types_tables_libres = [];
 if ($stmt) {
   while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {

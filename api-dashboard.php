@@ -15,12 +15,12 @@ require_once 'db_connexion.php';
 require_once 'includes/audit-logger.php';
 
 class DashboardAPI {
-    private $connexion;
+    private $pdoexion;
     private $auditLogger;
     
     public function __construct() {
-        global $conn, $auditLogger;
-        $this->connexion = $conn;
+        global $pdo, $auditLogger;
+        $this->connexion = $pdo;
         $this->auditLogger = $auditLogger;
     }
     

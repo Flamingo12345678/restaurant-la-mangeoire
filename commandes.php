@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajouter'])) {
     $valid = validate_quantite($quantite) && validate_numero_table($reservation_id) && validate_numero_table($menu_id);
     if ($valid) {
       $sql = "INSERT INTO Commandes (ReservationID, MenuID, Quantite, DateCommande, Statut) VALUES (?, ?, ?, NOW(), 'En attente')";
-      $stmt = $conn->prepare($sql);
+      $stmt = $pdo->prepare($sql);
       $stmt->execute([$reservation_id, $menu_id, $quantite]);
       set_message('✅ Commande ajoutée avec succès.');
       header('Location: ' . $_SERVER['PHP_SELF']);
@@ -34,14 +34,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_commande'])) {
   } else {
     $id = intval($_POST['delete_commande']);
     // Vérification d'existence de la commande
-    $check = $conn->prepare("SELECT COUNT(*) FROM Commandes WHERE CommandeID=?");
+    $check = $pdo->prepare("SELECT COUNT(*) FROM Commandes WHERE CommandeID=?");
     $check->execute([$id]);
     if ($check->fetchColumn() == 0) {
       set_message('❌ Cette commande n’existe pas ou a déjà été supprimée.', 'error');
       header('Location: ' . $_SERVER['PHP_SELF']);
       exit;
     }
-    $stmt = $conn->prepare("DELETE FROM Commandes WHERE CommandeID=?");
+    $stmt = $pdo->prepare("DELETE FROM Commandes WHERE CommandeID=?");
     $stmt->execute([$id]);
     set_message('🗑️ Commande supprimée avec succès.');
     header('Location: ' . $_SERVER['PHP_SELF']);
@@ -52,9 +52,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_commande'])) {
 $commandes_per_page = 10;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $commandes_per_page;
-$total_commandes = $conn->query("SELECT COUNT(*) FROM Commandes")->fetchColumn();
+$total_commandes = $pdo->query("SELECT COUNT(*) FROM Commandes")->fetchColumn();
 $total_pages = ceil($total_commandes / $commandes_per_page);
-$commandes = $conn->query("SELECT * FROM Commandes ORDER BY CommandeID DESC LIMIT $commandes_per_page OFFSET $offset")->fetchAll();
+$commandes = $pdo->query("SELECT * FROM Commandes ORDER BY CommandeID DESC LIMIT $commandes_per_page OFFSET $offset")->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="fr">

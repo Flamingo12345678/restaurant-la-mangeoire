@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $nouveau_statut = $_POST['nouveau_statut'] ?? '';
         
         try {
-            $stmt = $conn->prepare("UPDATE reservations SET statut = ? WHERE id = ?");
+            $stmt = $pdo->prepare("UPDATE reservations SET statut = ? WHERE id = ?");
             $result = $stmt->execute([$nouveau_statut, $reservation_id]);
             
             if ($result) {
@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Optionnel : Envoyer un email de confirmation au client
                 if ($nouveau_statut === 'Confirmée') {
                     // Récupérer les détails de la réservation
-                    $stmt = $conn->prepare("SELECT * FROM reservations WHERE id = ?");
+                    $stmt = $pdo->prepare("SELECT * FROM reservations WHERE id = ?");
                     $stmt->execute([$reservation_id]);
                     $reservation = $stmt->fetch(PDO::FETCH_ASSOC);
                     
@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if ($action === 'delete' && $reservation_id > 0 && $is_admin) {
         try {
-            $stmt = $conn->prepare("DELETE FROM reservations WHERE id = ?");
+            $stmt = $pdo->prepare("DELETE FROM reservations WHERE id = ?");
             $result = $stmt->execute([$reservation_id]);
             
             if ($result) {
@@ -93,7 +93,7 @@ if (!empty($search)) {
 
 $sql .= " ORDER BY date_reservation DESC, heure_reservation DESC";
 
-$stmt = $conn->prepare($sql);
+$stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $reservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -105,7 +105,7 @@ $stats_sql = "SELECT
 FROM reservations 
 GROUP BY statut, DATE(date_reservation)
 ORDER BY date_res DESC";
-$stats_stmt = $conn->query($stats_sql);
+$stats_stmt = $pdo->query($stats_sql);
 $stats = $stats_stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>

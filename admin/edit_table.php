@@ -51,7 +51,7 @@ if ($id > 0) {
       if ($numero > 0 && $places > 0 && !empty($nom_table)) {
         // Contrôle d'unicité du numéro de table (hors table courante)
         $sql = "SELECT COUNT(*) FROM TablesRestaurant WHERE NumeroTable = ? AND TableID != ?";
-        $stmt = $conn->prepare($sql);
+        $stmt = $pdo->prepare($sql);
         $stmt->execute([$numero, $id]);
         $count = $stmt->fetchColumn();
         if ($count > 0) {
@@ -59,7 +59,7 @@ if ($id > 0) {
         } else {
           try {
             $sql = "UPDATE TablesRestaurant SET NumeroTable=?, NomTable=?, Capacite=?, Statut=? WHERE TableID=?";
-            $stmt = $conn->prepare($sql);
+            $stmt = $pdo->prepare($sql);
             $result = $stmt->execute([$numero, $nom_table, $places, $statut, $id]);
             if ($result) {
               set_message('Table modifiée.');
@@ -82,7 +82,7 @@ if ($id > 0) {
   }
   // Récupération des infos de la table (MySQL/PDO)
   $sql = "SELECT * FROM TablesRestaurant WHERE TableID=?";
-  $stmt = $conn->prepare($sql);
+  $stmt = $pdo->prepare($sql);
   if ($stmt->execute([$id])) {
     $table = $stmt->fetch(PDO::FETCH_ASSOC);
   }

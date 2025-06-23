@@ -10,13 +10,13 @@ $sql = "SELECT t.TableID
         WHERE t.Statut = 'Réservée'
         GROUP BY t.TableID
         HAVING COUNT(r.ReservationID) = 0";
-$stmt = $conn->prepare($sql);
+$stmt = $pdo->prepare($sql);
 $stmt->execute([$now]);
 $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
 if ($tables) {
   $in = implode(',', array_fill(0, count($tables), '?'));
   $sql = "UPDATE TablesRestaurant SET Statut = 'Libre' WHERE TableID IN ($in)";
-  $stmt2 = $conn->prepare($sql);
+  $stmt2 = $pdo->prepare($sql);
   $stmt2->execute($tables);
   echo count($tables) . " table(s) libérée(s).\n";
 } else {

@@ -91,14 +91,14 @@ try {
     require_once 'db_connexion.php';
     
     // Vérifier la table Messages
-    $stmt = $conn->query("DESCRIBE Messages");
+    $stmt = $pdo->query("DESCRIBE Messages");
     $columns = $stmt->fetchAll(PDO::FETCH_COLUMN);
     
     echo "✅ Table Messages accessible\n";
     echo "📋 Colonnes : " . implode(', ', $columns) . "\n";
     
     // Compter les messages par statut
-    $stmt = $conn->query("
+    $stmt = $pdo->query("
         SELECT statut, COUNT(*) as count 
         FROM Messages 
         GROUP BY statut

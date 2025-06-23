@@ -7,7 +7,7 @@ require_once 'db_connexion.php';
 // Récupérer les prix des menus depuis la base de données
 $menu_prices = [];
 try {
-  $stmt = $conn->prepare("SELECT MenuID, NomItem, Prix FROM Menus ORDER BY MenuID");
+  $stmt = $pdo->prepare("SELECT MenuID, NomItem, Prix FROM Menus ORDER BY MenuID");
   $stmt->execute();
   $menus = $stmt->fetchAll(PDO::FETCH_ASSOC);
   
@@ -143,7 +143,7 @@ try {
 // Récupérer les prix des menus depuis la base de données
 $menu_prices = [];
 try {
-  $stmt = $conn->prepare("SELECT MenuID, NomItem, Prix FROM Menus");
+  $stmt = $pdo->prepare("SELECT MenuID, NomItem, Prix FROM Menus");
   $stmt->execute();
   $menus = $stmt->fetchAll(PDO::FETCH_ASSOC);
   

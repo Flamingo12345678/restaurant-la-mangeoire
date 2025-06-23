@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($valid) {
       try {
         $sql = "INSERT INTO Employes (Nom, Prenom, Poste, Salaire, DateEmbauche) VALUES (?, ?, ?, ?, ?)";
-        $stmt = $conn->prepare($sql);
+        $stmt = $pdo->prepare($sql);
         $result = $stmt->execute([$nom, $prenom, $poste, $salaire, $date_embauche]);
         if ($result) {
           set_message('Employé ajouté.');

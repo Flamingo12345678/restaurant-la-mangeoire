@@ -14,7 +14,7 @@ $mode = trim($_POST['mode'] ?? '');
 if ($reservation_id > 0 && $montant > 0 && $date) {
 try {
 $sql = "UPDATE Paiements SET ReservationID=?, Montant=?, DatePaiement=?, ModePaiement=? WHERE PaiementID=?";
-$stmt = $conn->prepare($sql);
+$stmt = $pdo->prepare($sql);
 $result = $stmt->execute([$reservation_id, $montant, $date, $mode, $id]);
 if ($result) {
 set_message('Paiement modifié.');
@@ -34,7 +34,7 @@ header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $id);
 exit;
 }
 $sql = "SELECT * FROM Paiements WHERE PaiementID=?";
-$stmt = $conn->prepare($sql);
+$stmt = $pdo->prepare($sql);
 $stmt->execute([$id]);
 $paiement = $stmt->fetch(PDO::FETCH_ASSOC);
 } else {

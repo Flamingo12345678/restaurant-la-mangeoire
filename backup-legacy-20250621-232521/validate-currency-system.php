@@ -47,13 +47,13 @@ try {
 // 4. Test de la base de données
 echo "\n4. Test de la base de données...\n";
 try {
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM Menus WHERE Prix > 0");
+    $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM Menus WHERE Prix > 0");
     $stmt->execute();
     $result = $stmt->fetch();
     echo "   ✓ " . $result['count'] . " menus avec prix dans la base de données\n";
     
     // Vérifier quelques prix
-    $stmt = $conn->prepare("SELECT MenuID, NomItem, Prix FROM Menus LIMIT 3");
+    $stmt = $pdo->prepare("SELECT MenuID, NomItem, Prix FROM Menus LIMIT 3");
     $stmt->execute();
     $menus = $stmt->fetchAll();
     

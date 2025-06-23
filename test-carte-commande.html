@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Passer Commande - La Mangeoire</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row">
+            <!-- Formulaire -->
+            <div class="col-lg-7">
+                <h3>Formulaire de commande</h3>
+                <p>Étapes 1 et 2 du processus de commande</p>
+            </div>
+            
+            <!-- Carte Votre commande -->
+            <div class="col-lg-5">
+                <div class="order-summary card">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0"><i class="bi bi-cart-check"></i> Votre commande</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="order-item d-flex justify-content-between mb-3">
+                            <div class="item-info">
+                                <h6>Pizza Margherita</h6>
+                                <span class="item-quantity text-muted">Quantité: 1</span>
+                            </div>
+                            <div class="item-price fw-bold">
+                                12,90 €
+                            </div>
+                        </div>
+                        
+                        <div class="order-item d-flex justify-content-between mb-3">
+                            <div class="item-info">
+                                <h6>Burger Classique</h6>
+                                <span class="item-quantity text-muted">Quantité: 1</span>
+                            </div>
+                            <div class="item-price fw-bold">
+                                15,50 €
+                            </div>
+                        </div>
+
+                        <hr>
+                        
+                        <div class="total-section">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Sous-total:</span>
+                                <span>28,40 €</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Livraison:</span>
+                                <span class="text-success">Gratuite</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3 border-top pt-2">
+                                <strong>Total:</strong>
+                                <strong class="text-primary fs-5">28,40 €</strong>
+                            </div>
+                        </div>
+                        
+                        <!-- Garanties -->
+                        <div class="text-center">
+                            <small class="text-muted">
+                                <i class="bi bi-shield-check text-success"></i> Paiement sécurisé<br>
+                                <i class="bi bi-truck text-primary"></i> Livraison rapide<br>
+                                <i class="bi bi-heart text-danger"></i> Satisfaction garantie
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

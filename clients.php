@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajouter'])) {
     $valid = validate_nom($nom) && validate_prenom($prenom) && validate_email($email) && validate_telephone($tel);
     if ($valid) {
       $sql = "INSERT INTO Clients (Nom, Prenom, Email, Telephone) VALUES (?, ?, ?, ?)";
-      $stmt = $conn->prepare($sql);
+      $stmt = $pdo->prepare($sql);
       $stmt->execute([$nom, $prenom, $email, $tel]);
       set_message('✅ Client ajouté avec succès.');
       header('Location: ' . $_SERVER['PHP_SELF']);
@@ -37,14 +37,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_client'])) {
   } else {
     $id = intval($_POST['delete_client']);
     // Vérification d'existence du client
-    $check = $conn->prepare("SELECT COUNT(*) FROM Clients WHERE ClientID=?");
+    $check = $pdo->prepare("SELECT COUNT(*) FROM Clients WHERE ClientID=?");
     $check->execute([$id]);
     if ($check->fetchColumn() == 0) {
       set_message('❌ Ce client n’existe pas ou a déjà été supprimé.', 'error');
       header('Location: ' . $_SERVER['PHP_SELF']);
       exit;
     }
-    $stmt = $conn->prepare("DELETE FROM Clients WHERE ClientID=?");
+    $stmt = $pdo->prepare("DELETE FROM Clients WHERE ClientID=?");
     $stmt->execute([$id]);
     set_message('🗑️ Client supprimé avec succès.');
     header('Location: ' . $_SERVER['PHP_SELF']);
@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_client'])) {
   } else {
     $id = intval($_POST['edit_client']);
     // Vérification d'existence du client
-    $check = $conn->prepare("SELECT COUNT(*) FROM Clients WHERE ClientID=?");
+    $check = $pdo->prepare("SELECT COUNT(*) FROM Clients WHERE ClientID=?");
     $check->execute([$id]);
     if ($check->fetchColumn() == 0) {
       set_message('❌ Ce client n’existe pas ou a déjà été supprimé.', 'error');
@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_client'])) {
     $valid = validate_nom($nom) && validate_prenom($prenom) && validate_email($email) && validate_telephone($tel);
     if ($valid) {
       $sql = "UPDATE Clients SET Nom=?, Prenom=?, Email=?, Telephone=? WHERE ClientID=?";
-      $stmt = $conn->prepare($sql);
+      $stmt = $pdo->prepare($sql);
       $stmt->execute([$nom, $prenom, $email, $tel, $id]);
       set_message('✏️ Client modifié avec succès.');
       header('Location: ' . $_SERVER['PHP_SELF']);
@@ -86,9 +86,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_client'])) {
 $clients_per_page = 10;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $clients_per_page;
-$total_clients = $conn->query("SELECT COUNT(*) FROM Clients")->fetchColumn();
+$total_clients = $pdo->query("SELECT COUNT(*) FROM Clients")->fetchColumn();
 $total_pages = ceil($total_clients / $clients_per_page);
-$clients = $conn->query("SELECT * FROM Clients ORDER BY ClientID DESC LIMIT $clients_per_page OFFSET $offset")->fetchAll();
+$clients = $pdo->query("SELECT * FROM Clients ORDER BY ClientID DESC LIMIT $clients_per_page OFFSET $offset")->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="fr">

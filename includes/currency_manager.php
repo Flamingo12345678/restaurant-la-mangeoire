@@ -208,8 +208,13 @@ class CurrencyManager {
     /**
      * Formate un prix avec la devise locale
      */
-    public static function formatPrice($eur_price, $show_original = false) {
-        $currency = self::getCurrentCurrency();
+    public static function formatPrice($eur_price, $currency_code = null, $show_original = false) {
+        if ($currency_code) {
+            $currency = self::getCurrencyByCode($currency_code);
+        } else {
+            $currency = self::getCurrentCurrency();
+        }
+        
         $converted_price = self::convertPrice($eur_price, $currency['code']);
         
         // Formatage selon la devise
@@ -260,6 +265,19 @@ class CurrencyManager {
     }
 
     /**
+     * Obtient la devise par son code (EUR, USD, etc.)
+     */
+    public static function getCurrencyByCode($currency_code) {
+        foreach (self::$currencies as $country => $currency) {
+            if ($currency['code'] === $currency_code) {
+                return $currency;
+            }
+        }
+        // Retourner EUR par défaut si le code n'est pas trouvé
+        return self::$currencies['FR'];
+    }
+
+    /**
      * Obtient la liste des devises disponibles
      */
     public static function getAvailableCurrencies() {
@@ -276,6 +294,13 @@ class CurrencyManager {
             }
         }
         return $currencies;
+    }
+
+    /**
+     * Obtenir la devise par défaut (Euro)
+     */
+    public static function getDefaultCurrency() {
+        return ['code' => 'EUR', 'symbol' => '€', 'name' => 'Euro'];
     }
 }
 ?>

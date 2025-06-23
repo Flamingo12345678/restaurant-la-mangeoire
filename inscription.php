@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   }
 
   // Vérifier si l'email existe déjà
-  $stmt = $conn->prepare("SELECT COUNT(*) FROM Utilisateurs WHERE Email = ?");
+  $stmt = $pdo->prepare("SELECT COUNT(*) FROM Utilisateurs WHERE Email = ?");
   $stmt->execute([$email]);
   if ($stmt->fetchColumn() > 0) {
     $erreurs[] = "Cette adresse email est déjà utilisée. Veuillez utiliser une autre adresse ou vous connecter.";
@@ -75,16 +75,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       // Insertion dans la base de données
       $sql = "INSERT INTO Utilisateurs (Email, MotDePasse, Nom, Prenom, Telephone, Adresse, CodePostal, Ville) 
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-      $stmt = $conn->prepare($sql);
+      $stmt = $pdo->prepare($sql);
       $stmt->execute([$email, $password_hash, $nom, $prenom, $telephone, $adresse, $code_postal, $ville]);
 
       // Récupérer l'ID de l'utilisateur nouvellement créé
-      $user_id = $conn->lastInsertId();
+      $user_id = $pdo->lastInsertId();
 
       // Migration du panier temporaire vers la base de données si l'inscription réussit
       if (isset($_SESSION['panier']) && !empty($_SESSION['panier'])) {
         foreach ($_SESSION['panier'] as $item) {
-          $stmt = $conn->prepare("INSERT INTO Panier (UtilisateurID, MenuID, Quantite) VALUES (?, ?, ?)");
+          $stmt = $pdo->prepare("INSERT INTO Panier (ClientID, MenuID, Quantite) VALUES (?, ?, ?)");
           $stmt->execute([$user_id, $item['MenuID'], $item['Quantite']]);
         }
 

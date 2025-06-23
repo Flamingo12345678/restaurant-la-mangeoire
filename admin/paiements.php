@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['montant'], $_POST['da
     if ($valid && $montant <= 0) {
       // Inclure le fichier commandes.php pour utiliser la fonction get_total_commandes_by_reservation
       require_once 'commandes.php';
-      $montant = get_total_commandes_by_reservation($conn, $reservation_id);
+      $montant = get_total_commandes_by_reservation($pdo, $reservation_id);
       if ($montant <= 0) {
         $message = 'Aucune commande trouvée pour cette réservation ou montant total égal à zéro.';
         $valid = false;
@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['montant'], $_POST['da
     // Si le montant n'est pas spécifié, récupérer le montant de la commande
     if ($valid && $montant <= 0) {
       $commande_sql = "SELECT COALESCE(MontantTotal, PrixUnitaire * Quantite) as Total FROM Commandes WHERE CommandeID = ?";
-      $commande_stmt = $conn->prepare($commande_sql);
+      $commande_stmt = $pdo->prepare($commande_sql);
       $commande_stmt->execute([$commande_id]);
       $montant = $commande_stmt->fetchColumn();
       
@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['montant'], $_POST['da
       if ($payment_type === 'commande' && $commande_id > 0) {
         // Si c'est une commande, on doit d'abord récupérer la réservation associée (si elle existe)
         $res_query = "SELECT ReservationID FROM Commandes WHERE CommandeID = ?";
-        $res_stmt = $conn->prepare($res_query);
+        $res_stmt = $pdo->prepare($res_query);
         $res_stmt->execute([$commande_id]);
         $reservation_from_commande = $res_stmt->fetchColumn();
         
@@ -86,14 +86,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['montant'], $_POST['da
       
       $sql = "INSERT INTO Paiements (ReservationID, Montant, DatePaiement, ModePaiement, TransactionID) 
               VALUES (?, ?, ?, ?, ?)";
-      $stmt = $conn->prepare($sql);
+      $stmt = $pdo->prepare($sql);
       $result = $stmt->execute([$reservation_id, $montant, $date, $mode, $numero_transaction]);
       
       if ($result) {
         // Si c'est un paiement pour une commande, mettre à jour le statut de la commande
         if ($commande_id > 0) {
           $update_sql = "UPDATE Commandes SET Statut = 'Payé', DatePaiement = ? WHERE CommandeID = ?";
-          $update_stmt = $conn->prepare($update_sql);
+          $update_stmt = $pdo->prepare($update_sql);
           $update_stmt->execute([$date, $commande_id]);
         }
         
@@ -117,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_paiement_id'],
   }
   $id = intval($_POST['delete_paiement_id']);
   $sql = "DELETE FROM Paiements WHERE PaiementID = ?";
-  $stmt = $conn->prepare($sql);
+  $stmt = $pdo->prepare($sql);
   if ($stmt) {
     if ($stmt->execute([$id])) {
       set_message('Paiement supprimé.', 'success');
@@ -139,7 +139,7 @@ $paiements = [];
 $total_pages = 0;
 
 // Appliquer les filtres
-applyPaymentFilters($conn, $page, $per_page, $total_pages, $paiements);
+applyPaymentFilters($pdo, $page, $per_page, $total_pages, $paiements);
 ?>
 <!DOCTYPE html>
 <html lang="fr">

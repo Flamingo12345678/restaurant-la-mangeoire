@@ -3,15 +3,15 @@
 require_once __DIR__ . '/../db_connexion.php';
 
 function getStatistiques() {
-    global $conn;
+    global $pdo;
     
     try {
         // Nombre de clients
-        $stmt = $conn->query("SELECT COUNT(*) as total FROM Clients");
+        $stmt = $pdo->query("SELECT COUNT(*) as total FROM Clients");
         $nbClients = $stmt->fetch()['total'];
         
         // Nombre de menus/plats
-        $stmt = $conn->query("SELECT COUNT(*) as total FROM Menus");
+        $stmt = $pdo->query("SELECT COUNT(*) as total FROM Menus");
         $nbMenus = $stmt->fetch()['total'];
         
         // Nombre d'heures d'ouverture par semaine (à ajuster selon vos horaires réels)
@@ -21,7 +21,7 @@ function getStatistiques() {
         $heuresOuverture = $heuresParJour * $joursParSemaine;
         
         // Nombre d'employés
-        $stmt = $conn->query("SELECT COUNT(*) as total FROM Employes");
+        $stmt = $pdo->query("SELECT COUNT(*) as total FROM Employes");
         $nbEmployes = $stmt->fetch()['total'];
         
         return [

@@ -22,9 +22,9 @@ require_once '../includes/system-stats.php';
 try {
     // Récupérer les statistiques
     $stats = getSystemStats();
-    $services = checkSystemServices($conn);
+    $services = checkSystemServices($pdo);
     $uptime = getSystemUptime();
-    $recent_events = getRecentSystemEvents($conn, 5);
+    $recent_events = getRecentSystemEvents($pdo, 5);
     
     // Préparer la réponse
     $response = [

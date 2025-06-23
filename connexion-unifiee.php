@@ -84,7 +84,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !is_ip_blacklisted()) {
     
     // Vérifier d'abord dans la table admin
     $admin_query = "SELECT * FROM Administrateurs WHERE Email = ?";
-    $admin_stmt = $conn->prepare($admin_query);
+    $admin_stmt = $pdo->prepare($admin_query);
     $admin_stmt->bindValue(1, $email, PDO::PARAM_STR);
     $admin_stmt->execute();
     $admin = $admin_stmt->fetch(PDO::FETCH_ASSOC);
@@ -106,10 +106,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !is_ip_blacklisted()) {
             // Mettre à jour la date de dernière connexion
             try {
                 // Vérifier d'abord si la colonne existe
-                $check_column = $conn->query("SHOW COLUMNS FROM Administrateurs LIKE 'DerniereConnexion'");
+                $check_column = $pdo->query("SHOW COLUMNS FROM Administrateurs LIKE 'DerniereConnexion'");
                 if ($check_column->rowCount() > 0) {
                     $update_query = "UPDATE Administrateurs SET DerniereConnexion = NOW() WHERE AdminID = ?";
-                    $update_stmt = $conn->prepare($update_query);
+                    $update_stmt = $pdo->prepare($update_query);
                     $update_stmt->execute([$admin['AdminID']]);
                 } else {
                     // Rediriger vers la page de mise à jour de la structure
@@ -146,7 +146,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !is_ip_blacklisted()) {
     } else {
         // Vérifier dans la table clients
         $client_query = "SELECT * FROM Clients WHERE Email = ?";
-        $client_stmt = $conn->prepare($client_query);
+        $client_stmt = $pdo->prepare($client_query);
         $client_stmt->bindValue(1, $email, PDO::PARAM_STR);
         $client_stmt->execute();
         $client = $client_stmt->fetch(PDO::FETCH_ASSOC);
@@ -170,6 +170,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !is_ip_blacklisted()) {
                 $_SESSION['client_prenom'] = $client['Prenom'];
                 $_SESSION['client_email'] = $client['Email'];
                 
+                // Migrer le panier de session vers la base de données
+                require_once 'includes/CartManager.php';
+                $cartManager = new CartManager($pdo);
+                $cartManager->migrateSessionToDatabase($client['ClientID']);
+                
                 // Gérer la redirection après connexion
                 if (isset($_SESSION['redirect_after_login'])) {
                     $redirect_url = $_SESSION['redirect_after_login'];
@@ -186,57 +191,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !is_ip_blacklisted()) {
                 $error_message = "Mot de passe incorrect";
             }
         } else {
-            // Vérifier dans la table Utilisateurs
-            $user_query = "SELECT * FROM Utilisateurs WHERE Email = ?";
-            $user_stmt = $conn->prepare($user_query);
-            $user_stmt->bindValue(1, $email, PDO::PARAM_STR);
-            $user_stmt->execute();
-            $user = $user_stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if ($user) {
-                // C'est un utilisateur
-                if (password_verify($password, $user['MotDePasse'])) {
-                    // Réinitialiser les tentatives de connexion échouées
-                    reset_failed_login_attempts($email, null, 'client');
-                    
-                    // Connexion réussie pour utilisateur
-                    $_SESSION['user_id'] = $user['UtilisateurID'];
-                    $_SESSION['user_nom'] = $user['Nom'];
-                    $_SESSION['user_prenom'] = $user['Prenom'];
-                    $_SESSION['user_email'] = $user['Email'];
-                    $_SESSION['user_type'] = 'client';
-                    
-                    // Compatibilité avec l'ancien système (à supprimer plus tard)
-                    $_SESSION['client_id'] = $user['UtilisateurID'];
-                    $_SESSION['client_nom'] = $user['Nom'];
-                    $_SESSION['client_prenom'] = $user['Prenom'];
-                    $_SESSION['client_email'] = $user['Email'];
-                    
-                    // Gérer la redirection après connexion
-                    if (isset($_SESSION['redirect_after_login'])) {
-                        $redirect_url = $_SESSION['redirect_after_login'];
-                        unset($_SESSION['redirect_after_login']);
-                        header("Location: " . $redirect_url);
-                    } else {
-                        header("Location: mon-compte.php");
-                    }
-                    exit;
-                } else {
-                    // Enregistrer la tentative de connexion échouée
-                    check_failed_login_attempts($email, 'client');
-                    
-                    $error_message = "Mot de passe incorrect";
-                }
+            // Client non trouvé
+            if ($is_admin_login) {
+                // Tentative d'accès à un compte administrateur inexistant
+                check_failed_login_attempts($email, 'admin');
             } else {
-                if ($is_admin_login) {
-                    // Tentative d'accès à un compte administrateur inexistant
-                    check_failed_login_attempts($email, 'admin');
-                } else {
-                    // Tentative d'accès à un compte client inexistant
-                    check_failed_login_attempts($email, 'client');
-                }
-                $error_message = "Utilisateur non trouvé";
+                // Tentative d'accès à un compte client inexistant
+                check_failed_login_attempts($email, 'client');
             }
+            $error_message = "Utilisateur non trouvé";
         }
     }
 }

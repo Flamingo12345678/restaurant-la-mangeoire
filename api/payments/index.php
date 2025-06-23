@@ -23,8 +23,8 @@ require_once __DIR__ . '/../../includes/payment-manager.php';
 // Configuration et initialisation
 try {
     // Connexion à la base de données
-    $conn = $GLOBALS['conn'] ?? null;
-    if (!$conn) {
+    $pdo = $GLOBALS['conn'] ?? null;
+    if (!$pdo) {
         throw new Exception('Connexion base de données non disponible');
     }
     
@@ -43,7 +43,7 @@ try {
     ];
     
     // Payment Manager
-    $paymentManager = new PaymentManager($conn, $stripeConfig, $paypalConfig);
+    $paymentManager = new PaymentManager($pdo, $stripeConfig, $paypalConfig);
     
 } catch (Exception $e) {
     http_response_code(500);

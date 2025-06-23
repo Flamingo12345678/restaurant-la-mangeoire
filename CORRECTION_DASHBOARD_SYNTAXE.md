@@ -10,7 +10,7 @@ Une balise `<style>` était placée directement dans le code PHP sans contexte H
 
 ```php
 require_once 'db_connexion.php';
-$pdo = $conn;
+$pdo = $pdo;
 <style>  // ← ERREUR : balise HTML dans du code PHP
 ```
 
@@ -25,7 +25,7 @@ $pdo = $conn;
 ```php
 <?php
 // Code PHP de traitement...
-$pdo = $conn;
+$pdo = $pdo;
 
 // Récupération des statistiques...
 ?>

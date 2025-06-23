@@ -11,7 +11,7 @@ echo "=== VÉRIFICATION FINALE DU SYSTÈME DE RÉSERVATIONS ===" . PHP_EOL . PHP
 // 1. Vérification de la structure de la table
 echo "1️⃣ Vérification de la structure de la table 'Reservations':" . PHP_EOL;
 try {
-    $columns = $conn->query("DESCRIBE Reservations")->fetchAll(PDO::FETCH_ASSOC);
+    $columns = $pdo->query("DESCRIBE Reservations")->fetchAll(PDO::FETCH_ASSOC);
     foreach ($columns as $col) {
         $key = $col['Key'] ? " [{$col['Key']}]" : "";
         $null = $col['Null'] === 'NO' ? ' NOT NULL' : '';
@@ -27,11 +27,11 @@ try {
 echo "2️⃣ Vérification des données existantes:" . PHP_EOL;
 try {
     $stats = [
-        'total' => $conn->query("SELECT COUNT(*) FROM Reservations")->fetchColumn(),
-        'avec_telephone' => $conn->query("SELECT COUNT(*) FROM Reservations WHERE telephone IS NOT NULL AND telephone != ''")->fetchColumn(),
-        'avec_client_id' => $conn->query("SELECT COUNT(*) FROM Reservations WHERE ClientID IS NOT NULL")->fetchColumn(),
-        'reservees' => $conn->query("SELECT COUNT(*) FROM Reservations WHERE Statut = 'Réservée'")->fetchColumn(),
-        'annulees' => $conn->query("SELECT COUNT(*) FROM Reservations WHERE Statut = 'Annulée'")->fetchColumn(),
+        'total' => $pdo->query("SELECT COUNT(*) FROM Reservations")->fetchColumn(),
+        'avec_telephone' => $pdo->query("SELECT COUNT(*) FROM Reservations WHERE telephone IS NOT NULL AND telephone != ''")->fetchColumn(),
+        'avec_client_id' => $pdo->query("SELECT COUNT(*) FROM Reservations WHERE ClientID IS NOT NULL")->fetchColumn(),
+        'reservees' => $pdo->query("SELECT COUNT(*) FROM Reservations WHERE Statut = 'Réservée'")->fetchColumn(),
+        'annulees' => $pdo->query("SELECT COUNT(*) FROM Reservations WHERE Statut = 'Annulée'")->fetchColumn(),
     ];
     
     echo "  • Total des réservations: {$stats['total']}" . PHP_EOL;
@@ -58,7 +58,7 @@ try {
     ];
     
     $sql = "INSERT INTO Reservations (ClientID, nom_client, email_client, telephone, DateReservation, Statut, nb_personnes) VALUES (?, ?, ?, ?, ?, ?, ?)";
-    $stmt = $conn->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $result = $stmt->execute([
         $test_data['client_id'],
         $test_data['nom'],
@@ -70,11 +70,11 @@ try {
     ]);
     
     if ($result) {
-        $test_id = $conn->lastInsertId();
+        $test_id = $pdo->lastInsertId();
         echo "  ✅ Insertion réussie (ID: {$test_id})" . PHP_EOL;
         
         // Supprimer la réservation de test
-        $conn->prepare("DELETE FROM Reservations WHERE ReservationID = ?")->execute([$test_id]);
+        $pdo->prepare("DELETE FROM Reservations WHERE ReservationID = ?")->execute([$test_id]);
         echo "  🗑️ Réservation de test supprimée" . PHP_EOL . PHP_EOL;
     } else {
         echo "  ❌ Échec de l'insertion" . PHP_EOL . PHP_EOL;

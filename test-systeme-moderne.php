@@ -13,8 +13,8 @@ echo "<h1>Test du Système de Commandes Moderne</h1>\n";
 // Test 1: Connexion à la base de données
 echo "<h2>1. Test de connexion à la base de données</h2>\n";
 try {
-    $conn = $GLOBALS['conn'];
-    if ($conn) {
+    $pdo = $GLOBALS['conn'];
+    if ($pdo) {
         echo "✅ Connexion à la base réussie<br>\n";
     } else {
         echo "❌ Erreur de connexion à la base<br>\n";
@@ -38,7 +38,7 @@ $requiredTables = [
 
 foreach ($requiredTables as $table) {
     try {
-        $stmt = $conn->query("SHOW TABLES LIKE '$table'");
+        $stmt = $pdo->query("SHOW TABLES LIKE '$table'");
         if ($stmt->rowCount() > 0) {
             echo "✅ Table $table existe<br>\n";
         } else {
@@ -52,14 +52,14 @@ foreach ($requiredTables as $table) {
 // Test 3: Vérification des classes
 echo "<h2>3. Vérification des classes</h2>\n";
 try {
-    $orderManager = new OrderManager($conn);
+    $orderManager = new OrderManager($pdo);
     echo "✅ OrderManager instancié<br>\n";
 } catch (Exception $e) {
     echo "❌ Erreur OrderManager: " . $e->getMessage() . "<br>\n";
 }
 
 try {
-    $paymentManager = new PaymentManager($conn);
+    $paymentManager = new PaymentManager($pdo);
     echo "✅ PaymentManager instancié<br>\n";
 } catch (Exception $e) {
     echo "❌ Erreur PaymentManager: " . $e->getMessage() . "<br>\n";
@@ -68,7 +68,7 @@ try {
 // Test 4: Données de test du menu
 echo "<h2>4. Vérification des données du menu</h2>\n";
 try {
-    $stmt = $conn->query("SELECT COUNT(*) as count FROM Menus WHERE Disponible = 1");
+    $stmt = $pdo->query("SELECT COUNT(*) as count FROM Menus WHERE Disponible = 1");
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
     $menuCount = $result['count'];
     
@@ -76,7 +76,7 @@ try {
         echo "✅ $menuCount articles disponibles dans le menu<br>\n";
         
         // Afficher quelques exemples
-        $stmt = $conn->query("SELECT MenuID, NomItem, Prix FROM Menus WHERE Disponible = 1 LIMIT 3");
+        $stmt = $pdo->query("SELECT MenuID, NomItem, Prix FROM Menus WHERE Disponible = 1 LIMIT 3");
         $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         echo "<ul>\n";
@@ -116,7 +116,7 @@ try {
     ];
     
     // Vérifier si l'article test existe
-    $stmt = $conn->prepare("SELECT MenuID FROM Menus WHERE MenuID = 1");
+    $stmt = $pdo->prepare("SELECT MenuID FROM Menus WHERE MenuID = 1");
     $stmt->execute();
     
     if ($stmt->rowCount() > 0) {

@@ -17,7 +17,7 @@ $current_currency = CurrencyManager::getCurrentCurrency();
 // Récupérer les menus depuis la base de données
 $menus_data = [];
 try {
-  $stmt = $conn->prepare("SELECT MenuID, NomItem, Description, Prix FROM Menus ORDER BY MenuID");
+  $stmt = $pdo->prepare("SELECT MenuID, NomItem, Description, Prix FROM Menus ORDER BY MenuID");
   $stmt->execute();
   $menus = $stmt->fetchAll(PDO::FETCH_ASSOC);
   
@@ -347,7 +347,6 @@ try {
                     <li><a class="dropdown-item" href="?currency=FR">🇫🇷 Euro (€)</a></li>
                     <li><a class="dropdown-item" href="?currency=US">🇺🇸 Dollar US ($)</a></li>
                     <li><a class="dropdown-item" href="?currency=GB">🇬🇧 Livre Sterling (£)</a></li>
-                    <li><a class="dropdown-item" href="?currency=CM">🇨🇲 Franc CFA (FCFA)</a></li>
                     <li><a class="dropdown-item" href="?currency=CA">🇨🇦 Dollar Canadien (C$)</a></li>
                     <li><a class="dropdown-item" href="?currency=CH">🇨🇭 Franc Suisse (CHF)</a></li>
                     <li><a class="dropdown-item" href="?currency=AU">🇦🇺 Dollar Australien (A$)</a></li>

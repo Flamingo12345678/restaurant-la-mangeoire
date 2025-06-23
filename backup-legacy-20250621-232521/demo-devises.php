@@ -26,7 +26,7 @@ $test_prices = [
 // Quelques prix d'exemple depuis la base de données
 $menu_prices = [];
 try {
-    $stmt = $conn->prepare("SELECT MenuID, NomItem, Prix FROM Menus LIMIT 10");
+    $stmt = $pdo->prepare("SELECT MenuID, NomItem, Prix FROM Menus LIMIT 10");
     $stmt->execute();
     $menus = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
