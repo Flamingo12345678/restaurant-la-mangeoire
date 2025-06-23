@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnostic JavaScript - La Mangeoire</title>
+</head>
+<body>
+    <h1>🔍 Diagnostic des fichiers JavaScript</h1>
+    
+    <div id="results">
+        <h2>Résultats des tests :</h2>
+        <div id="test-results"></div>
+    </div>
+
+    <script>
+        // Test des fichiers JavaScript
+        const jsFiles = [
+            'assets/js/main.js',
+            'assets/js/admin-sidebar.js', 
+            'assets/js/admin-animations.js',
+            'assets/js/admin-modals.js',
+            'assets/js/harmonize-admin-styles.js'
+        ];
+
+        const resultsDiv = document.getElementById('test-results');
+
+        jsFiles.forEach(file => {
+            fetch(file)
+                .then(response => {
+                    const status = response.status;
+                    const contentType = response.headers.get('content-type');
+                    
+                    resultsDiv.innerHTML += `
+                        <div style="margin: 10px 0; padding: 10px; border: 1px solid #ccc;">
+                            <strong>${file}</strong><br>
+                            Status: ${status}<br>
+                            Content-Type: ${contentType}<br>
+                    `;
+                    
+                    return response.text();
+                })
+                .then(content => {
+                    const isHTML = content.trim().startsWith('<');
+                    const firstLine = content.split('\n')[0].substring(0, 100);
+                    
+                    resultsDiv.innerHTML += `
+                            Type détecté: ${isHTML ? '⚠️ HTML (ERREUR)' : '✅ JavaScript'}<br>
+                            Premier caractère: "${content.charAt(0)}"<br>
+                            Début du contenu: ${firstLine}<br>
+                        </div>
+                    `;
+                })
+                .catch(error => {
+                    resultsDiv.innerHTML += `
+                        <div style="margin: 10px 0; padding: 10px; border: 1px solid #f00; background: #ffe6e6;">
+                            <strong>${file}</strong><br>
+                            ❌ ERREUR: ${error.message}
+                        </div>
+                    `;
+                });
+        });
+    </script>
+</body>
+</html>

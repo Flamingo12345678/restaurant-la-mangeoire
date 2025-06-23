@@ -22,10 +22,37 @@ $page_title = "Tableau de bord";
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="../assets/css/main.css">
   <link rel="stylesheet" href="../assets/css/admin.css">
+  <link rel="stylesheet" href="../assets/css/admin-sidebar.css">
   <link rel="stylesheet" href="../assets/css/admin-animations.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    /* Styles pour gérer la sidebar et éviter le débordement */
+    body {
+      margin: 0;
+      padding: 0;
+    }
+    
+    /* Assurer que le contenu principal ne déborde pas sous la sidebar */
+    .admin-main-content {
+      margin-left: 0;
+      padding: 20px;
+      transition: margin-left 0.3s ease;
+    }
+    
+    @media (min-width: 992px) {
+      .admin-main-content {
+        margin-left: 250px; /* Espace pour la sidebar */
+      }
+    }
+    
+    @media (max-width: 991px) {
+      .admin-main-content {
+        margin-left: 0;
+        padding: 15px;
+      }
+    }
+    
     /* Styles spécifiques au tableau de bord uniquement */
     .stats {
       display: grid;
@@ -265,8 +292,7 @@ $page_title = "Tableau de bord";
 <body>
   <?php include 'header_template.php'; ?>
 
-  <!-- Contenu spécifique de la page -->
-  <div class="content-wrapper">
+  <!-- Contenu du tableau de bord - utilise la structure admin-main-content du header -->
     <div style="background: linear-gradient(135deg, #ce1212, #951010); border-radius: 10px; padding: 25px; margin-bottom: 30px; color: white; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
       <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;">
         <div>
@@ -284,6 +310,40 @@ $page_title = "Tableau de bord";
         </div>
       </div>
     </div>
+
+    <!-- ⚡ Actions Rapides -->
+    <!-- <div style="margin-bottom: 30px;">
+      <h3 style="display: flex; align-items: center; margin-bottom: 20px; color: #333;">
+        <i class="bi bi-lightning-charge-fill" style="margin-right: 10px; color: #ffc107;"></i>
+        ⚡ Actions Rapides
+      </h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+        <a href="../reservations.php" style="background: #dc2626; color: white; padding: 20px; border-radius: 10px; text-decoration: none; display: flex; align-items: center; justify-content: center; transition: all 0.3s; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);">
+          <i class="bi bi-calendar-check" style="margin-right: 10px; font-size: 1.2rem;"></i>
+          📅 Réservations
+        </a>
+        <a href="commandes.php" style="background: #059669; color: white; padding: 20px; border-radius: 10px; text-decoration: none; display: flex; align-items: center; justify-content: center; transition: all 0.3s; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);">
+          <i class="bi bi-basket" style="margin-right: 10px; font-size: 1.2rem;"></i>
+          🛒 Commandes
+        </a>
+        <a href="clients.php" style="background: #0284c7; color: white; padding: 20px; border-radius: 10px; text-decoration: none; display: flex; align-items: center; justify-content: center; transition: all 0.3s; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15);">
+          <i class="bi bi-people" style="margin-right: 10px; font-size: 1.2rem;"></i>
+          👥 Clients
+        </a>
+        <a href="menus.php" style="background: #ca8a04; color: white; padding: 20px; border-radius: 10px; text-decoration: none; display: flex; align-items: center; justify-content: center; transition: all 0.3s; box-shadow: 0 4px 12px rgba(202, 138, 4, 0.15);">
+          <i class="bi bi-book" style="margin-right: 10px; font-size: 1.2rem;"></i>
+          📋 Menus
+        </a>
+        <a href="paiements.php" style="background: #7c3aed; color: white; padding: 20px; border-radius: 10px; text-decoration: none; display: flex; align-items: center; justify-content: center; transition: all 0.3s; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);">
+          <i class="bi bi-credit-card" style="margin-right: 10px; font-size: 1.2rem;"></i>
+          💳 Paiements
+        </a>
+        <a href="optimisations.php" style="background: #dc2626; color: white; padding: 20px; border-radius: 10px; text-decoration: none; display: flex; align-items: center; justify-content: center; transition: all 0.3s; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);">
+          <i class="bi bi-gear" style="margin-right: 10px; font-size: 1.2rem;"></i>
+          🔧 Optimiser
+        </a>
+      </div>
+    </div> -->
 
     <div class="stats">
       <div class="stat-card" style="background: linear-gradient(135deg, #2E93fA, #1E6DD8); position: relative; overflow: hidden;">
@@ -587,9 +647,9 @@ $page_title = "Tableau de bord";
         </div>
       </div>
     </div>
-  </div> <!-- Fermeture du content-wrapper -->
 
   <?php include 'footer_template.php'; ?>
+    <script src="../assets/js/admin-sidebar.js"></script>
 </body>
 
 </html>

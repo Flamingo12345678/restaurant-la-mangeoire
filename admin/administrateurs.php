@@ -231,325 +231,235 @@ try {
   set_message("Erreur lors de la récupération des administrateurs : " . $e->getMessage(), "error");
   log_admin_action("Erreur récupération administrateurs", $e->getMessage());
 }
+
+// Définir le titre de la page
+$page_title = "Gestion des Administrateurs";
+
+// CSS supplémentaires spécifiques à cette page
+$additional_css = [
+    'css/admin-messages.css'
+];
+
+require_once 'header_template.php';
 ?>
-<!DOCTYPE html>
-<html lang="fr">
-
-<head>
-  <meta charset="UTF-8">
-  <title><?php echo htmlspecialchars($page_title); ?> - Administration</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="../assets/css/main.css">
-  <link rel="stylesheet" href="../assets/css/admin.css">
-  <link rel="stylesheet" href="../assets/css/admin-animations.css">
-  <link rel="stylesheet" href="../assets/css/admin-inline-fixes.css">
-  <link rel="stylesheet" href="../assets/css/employes-admin.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    /* Styles directs pour les boutons d'action avec priorité maximale */
-    .actions-column {
-      text-align: center;
-      white-space: nowrap;
-    }
-    
-    .action-button {
-      margin-right: 5px;
-      width: 32px;
-      height: 32px;
-      border-radius: 4px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border: none;
-      transition: all 0.2s ease;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      padding: 0;
-    }
-    
-    .action-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-    }
-    
-    .edit-action {
-      background-color: #3498db !important;
-      color: white !important;
-    }
-    
-    .edit-action:hover {
-      background-color: #2980b9 !important;
-    }
-    
-    .reset-action {
-      background-color: #f39c12 !important;
-      color: white !important;
-    }
-    
-    .reset-action:hover {
-      background-color: #d68910 !important;
-    }
-    
-    .delete-action {
-      background-color: #e74c3c !important;
-      color: white !important;
-    }
-    
-    .delete-action:hover {
-      background-color: #c0392b !important;
-    }
-  </style>
-</head>
-
-<body>
-  <?php include 'header_template.php'; ?>
-
-  <section class="admin-section">
-    <div class="admin-container">
-      <div class="admin-card">
-        <div class="admin-card-header">
-          <h2><i class="bi bi-people-fill"></i> Gestion des administrateurs</h2>
-          <p>Gérez les utilisateurs ayant accès au panneau d'administration</p>
-        </div>
-
-        <div class="admin-card-body">
-          <?php display_message(); ?>
-
-          <div class="action-button-container">
-            <button type="button" class="btn btn-primary" onclick="openModal('addAdminModal')">
-              <i class="bi bi-person-plus"></i> Ajouter un administrateur
+<section class="admin-section">
+<div class="admin-container">
+<div class="admin-card">
+<div class="admin-card-header">
+<h2><i class="bi bi-people-fill"></i> Gestion des administrateurs</h2>
+<p>Gérez les utilisateurs ayant accès au panneau d'administration</p>
+</div>
+<div class="admin-card-body">
+<?php display_message(); ?>
+<div class="action-button-container">
+<button type="button" class="btn btn-primary" onclick="openModal('addAdminModal')">
+<i class="bi bi-person-plus"></i> Ajouter un administrateur
             </button>
-          </div>
-
-          <div class="table-responsive">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Nom</th>
-                  <th>Prénom</th>
-                  <th>Email</th>
-                  <th>Rôle</th>
-                  <th>Date de création</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php foreach ($administrateurs as $admin): ?>
-                  <tr class="<?php echo (isset($_SESSION['admin_id']) && $_SESSION['admin_id'] == $admin['AdminID']) ? 'current-user' : ''; ?>">
-                    <td><?php echo $admin['AdminID']; ?></td>
-                    <td><?php echo htmlspecialchars($admin['Nom']); ?></td>
-                    <td><?php echo htmlspecialchars($admin['Prenom']); ?></td>
-                    <td><?php echo htmlspecialchars($admin['Email']); ?></td>
-                    <td>
-                      <span class="admin-role <?php echo $admin['Role']; ?>">
-                        <?php echo $admin['Role'] === 'superadmin' ? 'Super Admin' : 'Admin'; ?>
-                      </span>
-                    </td>
-                    <td><?php echo date('d/m/Y H:i', strtotime($admin['DateCreation'])); ?></td>
-                    <td class="actions-column">
-                      <button type="button" class="admin-action-btn edit-action" data-color="blue" title="Modifier" 
+</div>
+<div class="table-responsive">
+<table class="admin-table">
+<thead>
+<tr>
+<th>#</th>
+<th>Nom</th>
+<th>Prénom</th>
+<th>Email</th>
+<th>Rôle</th>
+<th>Date de création</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody>
+<?php foreach ($administrateurs as $admin): ?>
+<tr class="<?php echo (isset($_SESSION['admin_id']) && $_SESSION['admin_id'] == $admin['AdminID']) ? 'current-user' : ''; ?>">
+<td><?php echo $admin['AdminID']; ?></td>
+<td><?php echo htmlspecialchars($admin['Nom']); ?></td>
+<td><?php echo htmlspecialchars($admin['Prenom']); ?></td>
+<td><?php echo htmlspecialchars($admin['Email']); ?></td>
+<td>
+<span class="admin-role <?php echo $admin['Role']; ?>">
+<?php echo $admin['Role'] === 'superadmin' ? 'Super Admin' : 'Admin'; ?>
+</span>
+</td>
+<td><?php echo date('d/m/Y H:i', strtotime($admin['DateCreation'])); ?></td>
+<td class="actions-column">
+<button type="button" class="admin-action-btn edit-action" data-color="blue" title="Modifier" 
                         onclick="openEditModal(<?php echo $admin['AdminID']; ?>, '<?php echo htmlspecialchars(addslashes($admin['Email'])); ?>', '<?php echo htmlspecialchars(addslashes($admin['Nom'])); ?>', '<?php echo htmlspecialchars(addslashes($admin['Prenom'])); ?>', '<?php echo $admin['Role']; ?>')">
-                        <i class="bi bi-pencil"></i>
-                      </button>
-                      <button type="button" class="admin-action-btn reset-action" data-color="orange" title="Réinitialiser le mot de passe"
+<i class="bi bi-pencil"></i>
+</button>
+<button type="button" class="admin-action-btn reset-action" data-color="orange" title="Réinitialiser le mot de passe"
                         onclick="openResetPasswordModal(<?php echo $admin['AdminID']; ?>, '<?php echo htmlspecialchars(addslashes($admin['Email'])); ?>')">
-                        <i class="bi bi-key"></i>
-                      </button>
-                      <?php if ($admin['AdminID'] != ($_SESSION['admin_id'] ?? 0)): ?>
-                        <button type="button" class="admin-action-btn delete-action" data-color="red" title="Supprimer"
+<i class="bi bi-key"></i>
+</button>
+<?php if ($admin['AdminID'] != ($_SESSION['admin_id'] ?? 0)): ?>
+<button type="button" class="admin-action-btn delete-action" data-color="red" title="Supprimer"
                           onclick="openDeleteModal(<?php echo $admin['AdminID']; ?>, '<?php echo htmlspecialchars(addslashes($admin['Email'])); ?>')">
-                          <i class="bi bi-trash"></i>
-                        </button>
-                      <?php endif; ?>
-                    </td>
-                  </tr>
-                <?php endforeach; ?>
-                <?php if (empty($administrateurs)): ?>
-                  <tr>
-                    <td colspan="7" class="text-center">Aucun administrateur trouvé.</td>
-                  </tr>
-                <?php endif; ?>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Modal Ajout Administrateur -->
-  <div id="addAdminModal" class="modal">
-    <div class="modal-content">
-      <span class="close-modal" onclick="closeModal('addAdminModal')">&times;</span>
-      <div class="modal-header">
-        <h3 class="modal-title"><i class="bi bi-person-plus"></i> Ajouter un administrateur</h3>
-      </div>
-      <div class="modal-body">
-        <form method="POST" action="administrateurs.php" id="addAdminForm">
-          <input type="hidden" name="action" value="ajouter">
-          <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
-
-          <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" class="form-control" id="email" name="email" required>
-          </div>
-
-          <div class="form-group">
-            <label for="nom">Nom</label>
-            <input type="text" class="form-control" id="nom" name="nom" required>
-          </div>
-
-          <div class="form-group">
-            <label for="prenom">Prénom</label>
-            <input type="text" class="form-control" id="prenom" name="prenom" required>
-          </div>
-
-          <div class="form-group">
-            <label for="role">Rôle</label>
-            <select class="form-control" id="role" name="role" required>
-              <option value="admin">Administrateur</option>
-              <option value="superadmin">Super Administrateur</option>
-            </select>
-            <small class="form-text">
+<i class="bi bi-trash"></i>
+</button>
+<?php endif; ?>
+</td>
+</tr>
+<?php endforeach; ?>
+<?php if (empty($administrateurs)): ?>
+<tr>
+<td colspan="7" class="text-center">Aucun administrateur trouvé.</td>
+</tr>
+<?php endif; ?>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Modal Ajout Administrateur -->
+<div id="addAdminModal" class="modal">
+<div class="modal-content">
+<span class="close-modal" onclick="closeModal('addAdminModal')">&times;</span>
+<div class="modal-header">
+<h3 class="modal-title"><i class="bi bi-person-plus"></i> Ajouter un administrateur</h3>
+</div>
+<div class="modal-body">
+<form method="POST" action="administrateurs.php" id="addAdminForm">
+<input type="hidden" name="action" value="ajouter">
+<input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+<div class="form-group">
+<label for="email">Email</label>
+<input type="email" class="form-control" id="email" name="email" required>
+</div>
+<div class="form-group">
+<label for="nom">Nom</label>
+<input type="text" class="form-control" id="nom" name="nom" required>
+</div>
+<div class="form-group">
+<label for="prenom">Prénom</label>
+<input type="text" class="form-control" id="prenom" name="prenom" required>
+</div>
+<div class="form-group">
+<label for="role">Rôle</label>
+<select class="form-control" id="role" name="role" required>
+<option value="admin">Administrateur</option>
+<option value="superadmin">Super Administrateur</option>
+</select>
+<small class="form-text">
               Les super administrateurs ont un accès complet à toutes les fonctionnalités.
             </small>
-          </div>
-
-          <div class="form-group">
-            <label for="password">Mot de passe</label>
-            <input type="password" class="form-control" id="password" name="password" required>
-            <small class="form-text">
+</div>
+<div class="form-group">
+<label for="password">Mot de passe</label>
+<input type="password" class="form-control" id="password" name="password" required>
+<small class="form-text">
               Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre.
             </small>
-          </div>
-
-          <div class="form-group">
-            <label for="confirm_password">Confirmer le mot de passe</label>
-            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
-          </div>
-
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeModal('addAdminModal')">Annuler</button>
-            <button type="submit" class="btn btn-primary">Ajouter</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Modification Administrateur -->
-  <div id="editAdminModal" class="modal">
-    <div class="modal-content">
-      <span class="close-modal" onclick="closeModal('editAdminModal')">&times;</span>
-      <div class="modal-header">
-        <h3 class="modal-title"><i class="bi bi-pencil"></i> Modifier un administrateur</h3>
-      </div>
-      <div class="modal-body">
-        <form method="POST" action="administrateurs.php" id="editAdminForm">
-          <input type="hidden" name="action" value="modifier">
-          <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
-          <input type="hidden" name="admin_id" id="edit_admin_id">
-
-          <div class="form-group">
-            <label for="edit_email">Email</label>
-            <input type="email" class="form-control" id="edit_email" name="email" required>
-          </div>
-
-          <div class="form-group">
-            <label for="edit_nom">Nom</label>
-            <input type="text" class="form-control" id="edit_nom" name="nom" required>
-          </div>
-
-          <div class="form-group">
-            <label for="edit_prenom">Prénom</label>
-            <input type="text" class="form-control" id="edit_prenom" name="prenom" required>
-          </div>
-
-          <div class="form-group">
-            <label for="edit_role">Rôle</label>
-            <select class="form-control" id="edit_role" name="role" required>
-              <option value="admin">Administrateur</option>
-              <option value="superadmin">Super Administrateur</option>
-            </select>
-            <small class="form-text">
+</div>
+<div class="form-group">
+<label for="confirm_password">Confirmer le mot de passe</label>
+<input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+</div>
+<div class="modal-footer">
+<button type="button" class="btn btn-secondary" onclick="closeModal('addAdminModal')">Annuler</button>
+<button type="submit" class="btn btn-primary">Ajouter</button>
+</div>
+</form>
+</div>
+</div>
+</div>
+<!-- Modal Modification Administrateur -->
+<div id="editAdminModal" class="modal">
+<div class="modal-content">
+<span class="close-modal" onclick="closeModal('editAdminModal')">&times;</span>
+<div class="modal-header">
+<h3 class="modal-title"><i class="bi bi-pencil"></i> Modifier un administrateur</h3>
+</div>
+<div class="modal-body">
+<form method="POST" action="administrateurs.php" id="editAdminForm">
+<input type="hidden" name="action" value="modifier">
+<input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+<input type="hidden" name="admin_id" id="edit_admin_id">
+<div class="form-group">
+<label for="edit_email">Email</label>
+<input type="email" class="form-control" id="edit_email" name="email" required>
+</div>
+<div class="form-group">
+<label for="edit_nom">Nom</label>
+<input type="text" class="form-control" id="edit_nom" name="nom" required>
+</div>
+<div class="form-group">
+<label for="edit_prenom">Prénom</label>
+<input type="text" class="form-control" id="edit_prenom" name="prenom" required>
+</div>
+<div class="form-group">
+<label for="edit_role">Rôle</label>
+<select class="form-control" id="edit_role" name="role" required>
+<option value="admin">Administrateur</option>
+<option value="superadmin">Super Administrateur</option>
+</select>
+<small class="form-text">
               Les super administrateurs ont un accès complet à toutes les fonctionnalités.
             </small>
-          </div>
-
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeModal('editAdminModal')">Annuler</button>
-            <button type="submit" class="btn btn-primary">Modifier</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Réinitialisation Mot de passe -->
-  <div id="resetPasswordModal" class="modal">
-    <div class="modal-content">
-      <span class="close-modal" onclick="closeModal('resetPasswordModal')">&times;</span>
-      <div class="modal-header">
-        <h3 class="modal-title"><i class="bi bi-key"></i> Réinitialiser le mot de passe</h3>
-      </div>
-      <div class="modal-body">
-        <p id="reset_password_email" class="mb-3"></p>
-        <form method="POST" action="administrateurs.php" id="resetPasswordForm">
-          <input type="hidden" name="action" value="reset_password">
-          <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
-          <input type="hidden" name="admin_id" id="reset_admin_id">
-
-          <div class="form-group">
-            <label for="reset_password">Nouveau mot de passe</label>
-            <input type="password" class="form-control" id="reset_password" name="password" required>
-            <small class="form-text">
+</div>
+<div class="modal-footer">
+<button type="button" class="btn btn-secondary" onclick="closeModal('editAdminModal')">Annuler</button>
+<button type="submit" class="btn btn-primary">Modifier</button>
+</div>
+</form>
+</div>
+</div>
+</div>
+<!-- Modal Réinitialisation Mot de passe -->
+<div id="resetPasswordModal" class="modal">
+<div class="modal-content">
+<span class="close-modal" onclick="closeModal('resetPasswordModal')">&times;</span>
+<div class="modal-header">
+<h3 class="modal-title"><i class="bi bi-key"></i> Réinitialiser le mot de passe</h3>
+</div>
+<div class="modal-body">
+<p id="reset_password_email" class="mb-3"></p>
+<form method="POST" action="administrateurs.php" id="resetPasswordForm">
+<input type="hidden" name="action" value="reset_password">
+<input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+<input type="hidden" name="admin_id" id="reset_admin_id">
+<div class="form-group">
+<label for="reset_password">Nouveau mot de passe</label>
+<input type="password" class="form-control" id="reset_password" name="password" required>
+<small class="form-text">
               Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre.
             </small>
-          </div>
-
-          <div class="form-group">
-            <label for="reset_confirm_password">Confirmer le mot de passe</label>
-            <input type="password" class="form-control" id="reset_confirm_password" name="confirm_password" required>
-          </div>
-
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeModal('resetPasswordModal')">Annuler</button>
-            <button type="submit" class="btn btn-primary">Réinitialiser</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Suppression Administrateur -->
-  <div id="deleteAdminModal" class="modal">
-    <div class="modal-content">
-      <span class="close-modal" onclick="closeModal('deleteAdminModal')">&times;</span>
-      <div class="modal-header">
-        <h3 class="modal-title"><i class="bi bi-trash"></i> Supprimer un administrateur</h3>
-      </div>
-      <div class="modal-body">
-        <p>Êtes-vous sûr de vouloir supprimer l'administrateur <strong id="delete_admin_email"></strong> ?</p>
-        <p class="text-danger">Cette action est irréversible.</p>
-
-        <form method="POST" action="administrateurs.php" id="deleteAdminForm">
-          <input type="hidden" name="action" value="supprimer">
-          <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
-          <input type="hidden" name="admin_id" id="delete_admin_id">
-
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeModal('deleteAdminModal')">Annuler</button>
-            <button type="submit" class="btn btn-danger">Supprimer</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Champ caché pour stocker l'ID de l'admin actuel -->
-  <input type="hidden" id="current_admin_id" value="<?php echo isset($_SESSION['admin_id']) ? $_SESSION['admin_id'] : 0; ?>">
-
-  <?php include 'footer_template.php'; ?>
-</body>
-</html>
+</div>
+<div class="form-group">
+<label for="reset_confirm_password">Confirmer le mot de passe</label>
+<input type="password" class="form-control" id="reset_confirm_password" name="confirm_password" required>
+</div>
+<div class="modal-footer">
+<button type="button" class="btn btn-secondary" onclick="closeModal('resetPasswordModal')">Annuler</button>
+<button type="submit" class="btn btn-primary">Réinitialiser</button>
+</div>
+</form>
+</div>
+</div>
+</div>
+<!-- Modal Suppression Administrateur -->
+<div id="deleteAdminModal" class="modal">
+<div class="modal-content">
+<span class="close-modal" onclick="closeModal('deleteAdminModal')">&times;</span>
+<div class="modal-header">
+<h3 class="modal-title"><i class="bi bi-trash"></i> Supprimer un administrateur</h3>
+</div>
+<div class="modal-body">
+<p>Êtes-vous sûr de vouloir supprimer l'administrateur <strong id="delete_admin_email"></strong> ?</p>
+<p class="text-danger">Cette action est irréversible.</p>
+<form method="POST" action="administrateurs.php" id="deleteAdminForm">
+<input type="hidden" name="action" value="supprimer">
+<input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+<input type="hidden" name="admin_id" id="delete_admin_id">
+<div class="modal-footer">
+<button type="button" class="btn btn-secondary" onclick="closeModal('deleteAdminModal')">Annuler</button>
+<button type="submit" class="btn btn-danger">Supprimer</button>
+</div>
+</form>
+</div>
+</div>
+</div>
+<!-- Champ caché pour stocker l'ID de l'admin actuel -->
+<input type="hidden" id="current_admin_id" value="<?php echo isset($_SESSION['admin_id']) ? $_SESSION['admin_id'] : 0; ?>">
+<?php require_once 'footer_template.php'; ?>

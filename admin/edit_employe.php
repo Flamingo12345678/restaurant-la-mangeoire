@@ -131,7 +131,7 @@ if ($nom && $prenom && $poste && $salaire > 0 && $date_embauche && mb_strlen($no
         border: 1px solid #b6e2c7;
       }
 
-      .alert-error {
+      .alert-danger {
         background: #fdeaea;
         color: #b01e28;
         border: 1px solid #f5c2c7;
@@ -178,11 +178,11 @@ if ($nom && $prenom && $poste && $salaire > 0 && $date_embauche && mb_strlen($no
           <input type="text" name="poste" value="<?= htmlspecialchars($employe['Poste'] ?? '') ?>" placeholder="Poste" required maxlength="50">
           <input type="number" name="salaire" value="<?= htmlspecialchars($employe['Salaire'] ?? '') ?>" placeholder="Salaire" required min="0" step="0.01">
           <input type="date" name="date_embauche" value="<?= htmlspecialchars($employe['DateEmbauche'] ?? '') ?>" placeholder="Date d'embauche" required>
-          <div id="form-error" class="alert alert-error" style="display:none;"></div>
+          <div id="form-error" class="alert alert-danger" style="display:none;"></div>
           <button type="submit">Enregistrer</button>
         </form>
       <?php else: ?>
-        <div class="alert alert-error">Employé introuvable.</div>
+        <div class="alert alert-danger">Employé introuvable.</div>
       <?php endif; ?>
     </div>
   </body>

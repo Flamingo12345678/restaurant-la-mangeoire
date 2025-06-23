@@ -1,9 +1,18 @@
 <?php
+// Définir la constante pour l'inclusion du header
+define('INCLUDED_IN_PAGE', true);
 
 require_once __DIR__ . '/includes/common.php';
 require_admin();
 generate_csrf_token();
 require_once 'db_connexion.php';
+
+// Définir le titre de la page et les styles spécifiques
+$page_title = "Gestion des Employés";
+$additional_css = [
+    'assets/css/admin-sidebar.css',
+    'assets/css/employes-admin.css'
+];
 
 // Ajout d'un employé
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajouter'])) {
@@ -62,34 +71,29 @@ $offset = ($page - 1) * $employes_per_page;
 $total_employes = $conn->query("SELECT COUNT(*) FROM Employes")->fetchColumn();
 $total_pages = ceil($total_employes / $employes_per_page);
 $employes = $conn->query("SELECT * FROM Employes ORDER BY EmployeID DESC LIMIT $employes_per_page OFFSET $offset")->fetchAll();
+
+// CSS supplémentaires spécifiques à cette page
+$additional_css = [
+    'css/admin-messages.css'
+];
+
+define('INCLUDED_IN_PAGE', true);
+require_once 'admin/header_template.php';
 ?>
-<!DOCTYPE html>
-<html lang="fr">
-
-<head>
-  <meta charset="UTF-8">
-  <title>Employés</title>
-  <link rel="stylesheet" href="assets/css/main.css">
-  <link rel="stylesheet" href="assets/css/admin-unified.css">
-  <link rel="stylesheet" href="assets/css/admin-inline-fixes.css">
-  <link rel="stylesheet" href="assets/css/employes-admin.css">
-</head>
-
-<body>
-  <?php display_message(); ?>
-  <h1>Employés</h1>
-  <a href="admin/index.php">Retour admin</a>
-  <form method="post" id="employeForm" autocomplete="off" novalidate>
-    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
-    <input type="text" name="nom" id="nom" placeholder="Nom" required>
-    <input type="text" name="prenom" id="prenom" placeholder="Prénom" required>
-    <input type="text" name="poste" id="poste" placeholder="Poste" required>
-    <input type="number" name="salaire" id="salaire" placeholder="Salaire" step="0.01" min="0" required>
-    <input type="date" name="date_embauche" id="date_embauche" required>
-    <div id="form-error" class="form-error hidden"></div>
-    <button type="submit" name="ajouter">Ajouter</button>
-  </form>
-  <script>
+<?php display_message(); ?>
+<h1>Employés</h1>
+<a href="admin/index.php">Retour admin</a>
+<form method="post" id="employeForm" autocomplete="off" novalidate>
+<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+<input type="text" name="nom" id="nom" placeholder="Nom" required>
+<input type="text" name="prenom" id="prenom" placeholder="Prénom" required>
+<input type="text" name="poste" id="poste" placeholder="Poste" required>
+<input type="number" name="salaire" id="salaire" placeholder="Salaire" step="0.01" min="0" required>
+<input type="date" name="date_embauche" id="date_embauche" required>
+<div id="form-error" class="form-error hidden"></div>
+<button type="submit" name="ajouter">Ajouter</button>
+</form>
+<script>
     document.addEventListener('DOMContentLoaded', function() {
       const form = document.getElementById('employeForm');
       if (!form) return;
@@ -145,45 +149,47 @@ $employes = $conn->query("SELECT * FROM Employes ORDER BY EmployeID DESC LIMIT $
       });
     });
   </script>
-  <script src="assets/js/harmonize-admin-styles.js"></script>
-  <table class="admin-table">
-    <tr>
-      <th>ID</th>
-      <th>Nom</th>
-      <th>Prénom</th>
-      <th>Poste</th>
-      <th>Salaire</th>
-      <th>Date embauche</th>
-      <th>Action</th>
-    </tr>
-    <?php foreach ($employes as $e): ?>
-      <tr>
-        <td><?= htmlspecialchars($e['EmployeID']) ?></td>
-        <td><?= htmlspecialchars($e['Nom']) ?></td>
-        <td><?= htmlspecialchars($e['Prenom']) ?></td>
-        <td><?= htmlspecialchars($e['Poste']) ?></td>
-        <td><?= htmlspecialchars($e['Salaire']) ?></td>
-        <td><?= htmlspecialchars($e['DateEmbauche']) ?></td>
-        <td>
-          <form method="post" onsubmit="return confirm('Supprimer cet employé ?')">
-            <input type="hidden" name="delete_employe" value="<?= $e['EmployeID'] ?>">
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
-            <button type="submit" class="delete-btn">Supprimer</button>
-          </form>
-        </td>
-      </tr>
-    <?php endforeach; ?>
-  </table>
-  <?php if ($total_pages > 1): ?>
-    <div class="pagination">
-      <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-        <?php if ($i == $page): ?>
-          <strong>[<?= $i ?>]</strong>
-        <?php else: ?>
-          <a href="?page=<?= $i ?>">[<?= $i ?>]</a>
-        <?php endif; ?>
-      <?php endfor; ?>
-    </div>
-  <?php endif; ?>
-</body>
-</html>
+<table class="admin-table">
+<tr>
+<th>ID</th>
+<th>Nom</th>
+<th>Prénom</th>
+<th>Poste</th>
+<th>Salaire</th>
+<th>Date embauche</th>
+<th>Action</th>
+</tr>
+<?php foreach ($employes as $e): ?>
+<tr>
+<td><?= htmlspecialchars($e['EmployeID']) ?></td>
+<td><?= htmlspecialchars($e['Nom']) ?></td>
+<td><?= htmlspecialchars($e['Prenom']) ?></td>
+<td><?= htmlspecialchars($e['Poste']) ?></td>
+<td><?= htmlspecialchars($e['Salaire']) ?></td>
+<td><?= htmlspecialchars($e['DateEmbauche']) ?></td>
+<td>
+<form method="post" onsubmit="return confirm('Supprimer cet employé ?')">
+<input type="hidden" name="delete_employe" value="<?= $e['EmployeID'] ?>">
+<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+<button type="submit" class="delete-btn">Supprimer</button>
+</form>
+</td>
+</tr>
+<?php endforeach; ?>
+</table>
+<?php if ($total_pages > 1): ?>
+<div class="pagination">
+<?php for ($i = 1; $i <= $total_pages; $i++): ?>
+<?php if ($i == $page): ?>
+<strong>[<?= $i ?>]</strong>
+<?php else: ?>
+<a href="?page=<?= $i ?>">[<?= $i ?>]</a>
+<?php endif; ?>
+<?php endfor; ?>
+</div>
+<?php endif; ?>
+
+<?php
+// Inclure le footer admin harmonisé
+require_once 'admin/footer_template.php';
+?>

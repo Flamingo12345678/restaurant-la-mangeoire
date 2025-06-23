@@ -138,7 +138,7 @@ if ($nom && $prix > 0 && mb_strlen($nom) <= 100 && mb_strlen($description) <=255
         border: 1px solid #b6e2c7;
       }
 
-      .alert-error {
+      .alert-danger {
         background: #fdeaea;
         color: #b01e28;
         border: 1px solid #f5c2c7;
@@ -183,11 +183,11 @@ if ($nom && $prix > 0 && mb_strlen($nom) <= 100 && mb_strlen($description) <=255
           <input type="text" name="nom" value="<?= htmlspecialchars($menu['NomItem'] ?? '') ?>" placeholder="Nom du menu" required maxlength="100">
           <input type="text" name="description" value="<?= htmlspecialchars($menu['Description'] ?? '') ?>" placeholder="Description" maxlength="255">
           <input type="number" name="prix" value="<?= htmlspecialchars($menu['Prix'] ?? '') ?>" placeholder="Prix" required min="0" step="0.01">
-          <div id="form-error" class="alert alert-error" style="display:none;"></div>
+          <div id="form-error" class="alert alert-danger" style="display:none;"></div>
           <button type="submit">Enregistrer</button>
         </form>
       <?php else: ?>
-        <div class="alert alert-error">Menu introuvable.</div>
+        <div class="alert alert-danger">Menu introuvable.</div>
       <?php endif; ?>
     </div>
   </body>

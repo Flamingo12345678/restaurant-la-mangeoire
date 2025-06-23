@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Correction JavaScript - Admin Messages</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Test de Correction des Scripts JavaScript</h1>
+    
+    <div id="test-results">
+        <div class="test-result info">
+            <strong>🔄 Test en cours...</strong>
+        </div>
+    </div>
+
+    <h2>📊 Console JavaScript</h2>
+    <div id="console-output" style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace;">
+        <div id="console-messages"></div>
+    </div>
+
+    <script>
+        // Intercepter les erreurs de console
+        const consoleMessages = document.getElementById('console-messages');
+        const originalError = console.error;
+        const originalLog = console.log;
+        let errorCount = 0;
+
+        console.error = function(...args) {
+            errorCount++;
+            const errorDiv = document.createElement('div');
+            errorDiv.style.color = 'red';
+            errorDiv.innerHTML = `❌ ERREUR: ${args.join(' ')}`;
+            consoleMessages.appendChild(errorDiv);
+            originalError.apply(console, args);
+        };
+
+        console.log = function(...args) {
+            const logDiv = document.createElement('div');
+            logDiv.style.color = 'green';
+            logDiv.innerHTML = `✅ LOG: ${args.join(' ')}`;
+            consoleMessages.appendChild(logDiv);
+            originalLog.apply(console, args);
+        };
+
+        // Test des fonctions JavaScript communes
+        function testJavaScriptFunctions() {
+            const resultsDiv = document.getElementById('test-results');
+            let testsResults = [];
+
+            // Test 1: Vérifier si les scripts se chargent sans erreur de syntaxe
+            setTimeout(() => {
+                if (errorCount === 0) {
+                    testsResults.push({
+                        name: 'Scripts sans erreur de syntaxe',
+                        status: 'success',
+                        message: 'Aucune erreur de syntaxe détectée'
+                    });
+                } else {
+                    testsResults.push({
+                        name: 'Scripts sans erreur de syntaxe', 
+                        status: 'error',
+                        message: `${errorCount} erreur(s) JavaScript détectée(s)`
+                    });
+                }
+
+                // Test 2: Vérifier l'existence du DOM
+                testsResults.push({
+                    name: 'DOM disponible',
+                    status: document.readyState === 'complete' ? 'success' : 'error',
+                    message: `État DOM: ${document.readyState}`
+                });
+
+                // Test 3: Vérifier Bootstrap
+                testsResults.push({
+                    name: 'Bootstrap chargé',
+                    status: typeof bootstrap !== 'undefined' ? 'success' : 'error',
+                    message: typeof bootstrap !== 'undefined' ? 'Bootstrap disponible' : 'Bootstrap non trouvé'
+                });
+
+                // Afficher les résultats
+                displayResults(testsResults);
+            }, 2000);
+        }
+
+        function displayResults(results) {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '';
+
+            results.forEach(result => {
+                const div = document.createElement('div');
+                div.className = `test-result ${result.status}`;
+                div.innerHTML = `
+                    <strong>${result.status === 'success' ? '✅' : '❌'} ${result.name}</strong><br>
+                    ${result.message}
+                `;
+                resultsDiv.appendChild(div);
+            });
+
+            // Résumé
+            const successCount = results.filter(r => r.status === 'success').length;
+            const totalCount = results.length;
+            
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = `test-result ${successCount === totalCount ? 'success' : 'error'}`;
+            summaryDiv.innerHTML = `
+                <strong>📊 Résumé des tests</strong><br>
+                ${successCount}/${totalCount} tests réussis
+                ${successCount === totalCount ? ' - 🎉 Tous les tests passent!' : ' - ⚠️ Certains tests échouent'}
+            `;
+            resultsDiv.appendChild(summaryDiv);
+        }
+
+        // Démarrer les tests quand le DOM est prêt
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', testJavaScriptFunctions);
+        } else {
+            testJavaScriptFunctions();
+        }
+
+        console.log('Test de correction JavaScript démarré');
+    </script>
+
+    <!-- Simulation des scripts admin (pour test) -->
+    <script>
+        // Test si les chemins vers les assets sont corrects
+        fetch('assets/js/main.js')
+            .then(response => {
+                if(response.ok) {
+                    console.log('✅ assets/js/main.js accessible');
+                } else {
+                    console.error('❌ assets/js/main.js inaccessible:', response.status);
+                }
+            })
+            .catch(error => console.error('❌ Erreur accès main.js:', error));
+
+        fetch('assets/js/admin-sidebar.js')
+            .then(response => {
+                if(response.ok) {
+                    console.log('✅ assets/js/admin-sidebar.js accessible');
+                } else {
+                    console.error('❌ assets/js/admin-sidebar.js inaccessible:', response.status);
+                }
+            })
+            .catch(error => console.error('❌ Erreur accès admin-sidebar.js:', error));
+    </script>
+</body>
+</html>

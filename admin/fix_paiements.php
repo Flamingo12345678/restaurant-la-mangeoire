@@ -185,7 +185,7 @@ try {
         </div>
         
         <?php if (!empty($message)): ?>
-            <div class="alert <?php echo strpos(strtolower($message), 'erreur') !== false ? 'alert-error' : 'alert-success'; ?>">
+            <div class="alert <?php echo strpos(strtolower($message), 'erreur') !== false ? 'alert-danger' : 'alert-success'; ?>">
                 <i class="bi <?php echo strpos(strtolower($message), 'erreur') !== false ? 'bi-exclamation-triangle' : 'bi-check-circle'; ?>"></i>
                 <?php echo htmlspecialchars($message); ?>
             </div>

@@ -137,7 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       border: 1px solid #b6e2c7;
     }
 
-    .alert-error {
+    .alert-danger {
       background: #fdeaea;
       color: #b01e28;
       border: 1px solid #f5c2c7;
@@ -165,7 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <a href="clients.php" class="back-link">&larr; Retour à la liste</a>
     <h1>Ajouter un client</h1>
     <?php if ($message): ?>
-      <div class="alert <?= strpos($message, 'succès') !== false ? 'alert-success' : 'alert-error' ?>">
+      <div class="alert <?= strpos($message, 'succès') !== false ? 'alert-success' : 'alert-danger' ?>">
         <?= htmlspecialchars($message) ?>
       </div>
     <?php endif; ?>
@@ -175,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <input type="text" name="prenom" id="prenom" placeholder="Prénom" required maxlength="100">
       <input type="email" name="email" id="email" placeholder="Email" required maxlength="100">
       <input type="text" name="telephone" id="telephone" placeholder="Téléphone" maxlength="20">
-      <div id="form-error" class="alert alert-error" style="display:none;"></div>
+      <div id="form-error" class="alert alert-danger" style="display:none;"></div>
       <button type="submit">Ajouter</button>
     </form>
     <script>

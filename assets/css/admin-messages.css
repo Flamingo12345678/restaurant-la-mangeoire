@@ -1,0 +1,574 @@
+/* =================================================================
+   ADMIN MESSAGES CSS - VERSION CLEAN
+   Interface pour la gestion des messages de contact
+   Créé le 23 juin 2025 - Version optimisée sans erreurs
+   ================================================================= */
+
+/* =================================================================
+   VARIABLES CSS ET BASE
+   ================================================================= */
+:root {
+    --primary-color: #2c3e50;
+    --primary-light: #34495e;
+    --success-color: #27ae60;
+    --warning-color: #f39c12;
+    --danger-color: #e74c3c;
+    --info-color: #3498db;
+    --card-radius: 15px;
+    --shadow-light: 0 4px 15px rgba(0,0,0,0.08);
+    --shadow-hover: 0 15px 35px rgba(0,0,0,0.15);
+    --transition: all 0.3s ease;
+}
+
+/* =================================================================
+   CONTAINER PRINCIPAL
+   ================================================================= */
+.admin-messages {
+    background: #f8f9fa;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+/* =================================================================
+   HEADER DE LA PAGE
+   ================================================================= */
+.admin-messages .card.bg-primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%) !important;
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(44, 62, 80, 0.3);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.admin-messages .card.bg-primary .card-body {
+    position: relative;
+    z-index: 2;
+    padding: 3rem 2rem;
+    text-align: center;
+}
+
+.admin-messages .card.bg-primary .card-body::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+    transform: rotate(-45deg);
+    pointer-events: none;
+    z-index: -1;
+}
+
+.admin-messages .display-6 {
+    font-weight: 300;
+    font-size: 2.75rem;
+    margin-bottom: 1rem;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    letter-spacing: -0.02em;
+    color: white;
+}
+
+.admin-messages .lead {
+    font-size: 1.2rem;
+    font-weight: 300;
+    opacity: 0.95;
+    color: rgba(255,255,255,0.9);
+    margin-bottom: 0;
+}
+
+.admin-messages .display-6 .bi {
+    margin-right: 1rem;
+    font-size: 2.5rem;
+    vertical-align: middle;
+}
+
+/* =================================================================
+   CARTES STATISTIQUES - SOLUTION DÉFINITIVE
+   ================================================================= */
+
+/* Container principal des statistiques */
+.admin-messages .stats-container {
+    margin-bottom: 2rem;
+    width: 100%;
+}
+
+/* Assurer que le container des statistiques occupe tout l'espace */
+.admin-messages .container,
+.admin-messages .container-fluid {
+    width: 100% !important;
+    max-width: none !important;
+    padding-left: 15px !important;
+    padding-right: 15px !important;
+}
+
+/* Row principal - Flexbox forcé pour occuper tout l'espace */
+.admin-messages .row.g-4 {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    margin: 0 !important;
+    gap: 1.5rem !important;
+    align-items: stretch !important;
+    width: 100% !important;
+}
+
+/* Colonnes individuelles - Forcer l'occupation de l'espace */
+.admin-messages .row.g-4 > .col-md-3 {
+    flex: 1 1 25% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    padding: 0 !important;
+    width: 25% !important;
+}
+
+/* Cartes statistiques - Forcer l'occupation de tout l'espace */
+.admin-messages .stats-card {
+    background: white !important;
+    border: none !important;
+    border-radius: var(--card-radius) !important;
+    padding: 2rem 1rem !important;
+    box-shadow: var(--shadow-light) !important;
+    transition: var(--transition) !important;
+    position: relative !important;
+    overflow: hidden !important;
+    height: 200px !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    text-align: center !important;
+}
+
+/* Suppression complète du padding Bootstrap et forcer l'occupation d'espace */
+.admin-messages .stats-card .card-body {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    flex-grow: 1 !important;
+}
+
+/* Icônes des statistiques */
+.admin-messages .stats-card .display-4 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    line-height: 1;
+}
+
+/* Chiffres des statistiques */
+.admin-messages .stats-card h3 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    line-height: 1;
+}
+
+/* Labels des statistiques */
+.admin-messages .stats-card p {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 0;
+    line-height: 1.2;
+    color: #6c757d;
+}
+
+/* Barres colorées en haut */
+.admin-messages .stats-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    z-index: 1;
+}
+
+/* Couleurs spécifiques par position */
+.admin-messages .row.g-4 > .col-md-3:nth-child(1) .stats-card::before {
+    background: linear-gradient(90deg, var(--info-color), #2980b9);
+}
+
+.admin-messages .row.g-4 > .col-md-3:nth-child(2) .stats-card::before {
+    background: linear-gradient(90deg, var(--danger-color), #c0392b);
+}
+
+.admin-messages .row.g-4 > .col-md-3:nth-child(3) .stats-card::before {
+    background: linear-gradient(90deg, var(--warning-color), #d68910);
+}
+
+.admin-messages .row.g-4 > .col-md-3:nth-child(4) .stats-card::before {
+    background: linear-gradient(90deg, var(--success-color), #229954);
+}
+
+/* Effets de survol */
+.admin-messages .stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-hover);
+}
+
+.admin-messages .stats-card:hover h3 {
+    transform: scale(1.05);
+}
+
+.admin-messages .stats-card:hover .display-4 {
+    transform: scale(1.08);
+}
+
+/* =================================================================
+   RESPONSIVE DESIGN - MAINTENIR L'AFFICHAGE HORIZONTAL
+   ================================================================= */
+
+/* Écrans larges - Cartes plus grandes */
+@media (min-width: 1200px) {
+    .admin-messages .row.g-4 {
+        gap: 2rem !important;
+    }
+    
+    .admin-messages .stats-card {
+        padding: 2.5rem 1.5rem !important;
+        height: 220px !important;
+    }
+    
+    .admin-messages .stats-card .display-4 {
+        font-size: 3.5rem !important;
+    }
+    
+    .admin-messages .stats-card h3 {
+        font-size: 3rem !important;
+    }
+    
+    .admin-messages .stats-card p {
+        font-size: 1.1rem !important;
+    }
+}
+
+/* Tablettes et petits desktops */
+@media (max-width: 1024px) {
+    .admin-messages .row.g-4 {
+        gap: 1rem;
+    }
+    
+    .admin-messages .stats-card {
+        padding: 1.5rem 0.75rem;
+        height: 180px;
+    }
+    
+    .admin-messages .stats-card .display-4 {
+        font-size: 2.5rem;
+    }
+    
+    .admin-messages .stats-card h3 {
+        font-size: 2rem;
+    }
+}
+
+/* Tablettes */
+@media (max-width: 768px) {
+    .admin-messages .row.g-4 {
+        gap: 0.75rem;
+    }
+    
+    .admin-messages .stats-card {
+        padding: 1.25rem 0.5rem;
+        height: 160px;
+    }
+    
+    .admin-messages .stats-card .display-4 {
+        font-size: 2rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .admin-messages .stats-card h3 {
+        font-size: 1.75rem;
+    }
+    
+    .admin-messages .stats-card p {
+        font-size: 0.9rem;
+    }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+    .admin-messages .row.g-4 {
+        gap: 0.5rem;
+    }
+    
+    .admin-messages .stats-card {
+        padding: 1rem 0.25rem;
+        height: 140px;
+        border-radius: 12px;
+    }
+    
+    .admin-messages .stats-card .display-4 {
+        font-size: 1.75rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .admin-messages .stats-card h3 {
+        font-size: 1.5rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .admin-messages .stats-card p {
+        font-size: 0.8rem;
+    }
+}
+
+/* Très petits écrans */
+@media (max-width: 320px) {
+    .admin-messages .row.g-4 {
+        gap: 0.25rem;
+    }
+    
+    .admin-messages .stats-card {
+        padding: 0.75rem 0.125rem;
+        height: 120px;
+        border-radius: 10px;
+    }
+    
+    .admin-messages .stats-card .display-4 {
+        font-size: 1.5rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .admin-messages .stats-card h3 {
+        font-size: 1.25rem;
+        margin-bottom: 0.125rem;
+    }
+    
+    .admin-messages .stats-card p {
+        font-size: 0.7rem;
+    }
+}
+
+/* =================================================================
+   CARTES DE MESSAGES
+   ================================================================= */
+
+.admin-messages .message-card {
+    background: white;
+    border: none;
+    border-radius: var(--card-radius);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow-light);
+}
+
+.admin-messages .message-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 5px;
+    background: #dee2e6;
+    transition: var(--transition);
+}
+
+.admin-messages .message-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+}
+
+/* Statuts des messages */
+.admin-messages .status-Nouveau::before { 
+    background: linear-gradient(180deg, var(--danger-color), #c0392b);
+}
+
+.admin-messages .status-Lu::before { 
+    background: linear-gradient(180deg, var(--warning-color), #d68910);
+}
+
+.admin-messages .status-Traité::before { 
+    background: linear-gradient(180deg, var(--success-color), #229954);
+}
+
+/* Badges modernisés */
+.admin-messages .badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.4em 0.8em;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Boutons d'action */
+.admin-messages .btn-group-vertical .btn {
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    transition: var(--transition);
+    border: 2px solid transparent;
+}
+
+.admin-messages .btn-outline-warning:hover {
+    background: var(--warning-color);
+    border-color: var(--warning-color);
+    transform: translateX(2px);
+}
+
+.admin-messages .btn-outline-success:hover {
+    background: var(--success-color);
+    border-color: var(--success-color);
+    transform: translateX(2px);
+}
+
+.admin-messages .btn-outline-primary:hover {
+    background: var(--info-color);
+    border-color: var(--info-color);
+    transform: translateX(2px);
+}
+
+.admin-messages .btn-outline-danger:hover {
+    background: var(--danger-color);
+    border-color: var(--danger-color);
+    transform: translateX(2px);
+}
+
+/* Contenu des messages */
+.admin-messages .card-title {
+    color: var(--primary-color);
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.admin-messages .text-primary {
+    color: var(--info-color) !important;
+    font-weight: 500;
+}
+
+.admin-messages .message-card .card-body {
+    padding: 1.5rem;
+}
+
+/* Section vide */
+.admin-messages .text-center.py-5 .display-1 {
+    color: #bdc3c7;
+    font-size: 4rem;
+}
+
+/* =================================================================
+   RESPONSIVE POUR LES MESSAGES
+   ================================================================= */
+
+@media (max-width: 992px) {
+    .admin-messages .message-card .row {
+        flex-direction: column;
+    }
+    
+    .admin-messages .btn-group-vertical {
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+    
+    .admin-messages .btn-group-vertical .btn {
+        margin-bottom: 0;
+        flex: 1;
+    }
+}
+
+@media (max-width: 576px) {
+    .admin-messages {
+        padding: 10px;
+    }
+    
+    .admin-messages .card.bg-primary .card-body {
+        padding: 2rem 1rem;
+    }
+    
+    .admin-messages .display-6 {
+        font-size: 2rem;
+    }
+    
+    .admin-messages .message-card .card-body {
+        padding: 1rem;
+    }
+}
+
+/* =================================================================
+   ANIMATIONS ET TRANSITIONS
+   ================================================================= */
+
+.admin-messages .stats-card * {
+    transition: all 0.2s ease;
+}
+
+.admin-messages .message-card * {
+    transition: all 0.2s ease;
+}
+
+/* Focus states pour l'accessibilité */
+.admin-messages .btn:focus {
+    box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+}
+
+/* =================================================================
+   PRINT STYLES
+   ================================================================= */
+
+@media print {
+    .admin-messages .stats-card {
+        box-shadow: none;
+        border: 1px solid #dee2e6;
+    }
+    
+    .admin-messages .btn-group-vertical {
+        display: none;
+    }
+}
+
+/* =================================================================
+   CORRECTION FINALE - SPÉCIFICITÉ MAXIMALE POUR FORCER L'OCCUPATION D'ESPACE
+   ================================================================= */
+
+/* Règle de correction ultime avec spécificité maximale */
+.admin-messages .admin-messages .row.g-4.mb-4 {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    margin: 0 !important;
+    gap: 1.5rem !important;
+    align-items: stretch !important;
+}
+
+.admin-messages .admin-messages .row.g-4.mb-4 > .col-md-3 {
+    flex: 1 1 25% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    width: 25% !important;
+    padding: 0 !important;
+}
+
+.admin-messages .admin-messages .stats-card.card.text-center.border-0.shadow-sm {
+    width: 100% !important;
+    height: 200px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+/* Force l'occupation d'espace même avec des classes Bootstrap conflictuelles */
+.admin-messages div[class*="col-md-3"] {
+    flex: 1 1 25% !important;
+    max-width: none !important;
+}
+
+.admin-messages div[class*="stats-card"] {
+    width: 100% !important;
+}
+
+/* Assurer que le parent container utilise toute la largeur */
+.admin-messages > * {
+    width: 100% !important;
+}

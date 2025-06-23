@@ -245,7 +245,7 @@ applyPaymentFilters($conn, $page, $per_page, $total_pages, $paiements);
     <?php
     // Affichage des messages avec icônes
     if (!empty($_SESSION['flash_message'])) {
-      $type = $_SESSION['flash_message']['type'] === 'success' ? 'alert-success' : 'alert-error';
+      $type = $_SESSION['flash_message']['type'] === 'success' ? 'alert-success' : 'alert-danger';
       $icon = $_SESSION['flash_message']['type'] === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle';
       $text = htmlspecialchars($_SESSION['flash_message']['text'] ?? '');
       echo "<div class='alert $type'><i class='bi $icon'></i> $text</div>";
@@ -254,7 +254,7 @@ applyPaymentFilters($conn, $page, $per_page, $total_pages, $paiements);
 
     // Affichage des messages simples
     if (!empty($message)) {
-      $type = strpos(strtolower($message), 'erreur') !== false ? 'alert-error' : 'alert-success';
+      $type = strpos(strtolower($message), 'erreur') !== false ? 'alert-danger' : 'alert-success';
       $icon = strpos(strtolower($message), 'erreur') !== false ? 'bi-exclamation-triangle' : 'bi-check-circle';
       echo "<div class='alert $type'><i class='bi $icon'></i> " . htmlspecialchars($message ?? '') . "</div>";
     }
@@ -609,6 +609,7 @@ applyPaymentFilters($conn, $page, $per_page, $total_pages, $paiements);
       }
     });
   </script>
+    <script src="../assets/js/admin-sidebar.js"></script>
 </body>
 
 </html>

@@ -174,166 +174,103 @@ if ($stmt) {
     $types_tables_libres[] = $row;
   }
 }
+
+// Définir le titre de la page
+$page_title = "Gestion des Tables";
+
+// CSS supplémentaires spécifiques à cette page
+$additional_css = [
+    'css/admin-messages.css'
+];
+
+// Indiquer que ce fichier est inclus dans une page
+define('INCLUDED_IN_PAGE', true);
+require_once 'header_template.php';
 ?>
-<!DOCTYPE html>
-<html lang="fr">
-
-<head>
-  <meta charset="UTF-8">
-  <title>Tables - Administration</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="../assets/css/main.css">
-  <link rel="stylesheet" href="../assets/css/admin.css">
-  <link rel="stylesheet" href="../assets/css/admin-animations.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    /* Styles spécifiques pour la page tables sur mobile */
-    @media (max-width: 768px) {
-      .dashboard-cards {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
-      }
-
-      .form-grid {
-        grid-template-columns: 1fr;
-        gap: 15px;
-      }
-
-      .form-group[style*="display: flex"] {
-        flex-direction: column;
-        gap: 10px;
-      }
-
-      .table-responsive-wrapper {
-        margin: 0 -15px;
-        width: calc(100% + 30px);
-        border-radius: 0;
-      }
-
-      .admin-table th:nth-child(1),
-      .admin-table td:nth-child(1) {
-        display: none;
-      }
-
-      .admin-table th,
-      .admin-table td {
-        padding: 10px 8px;
-        font-size: 0.9rem;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .dashboard-cards {
-        grid-template-columns: 1fr;
-      }
-
-      .admin-table th:nth-child(2),
-      .admin-table td:nth-child(2) {
-        display: none;
-      }
-    }
-  </style>
-</head>
-
-<body>
-  <?php
-  // Définir le titre de la page
-  $page_title = "Tables";
-
-  // Indiquer que ce fichier est inclus dans une page
-  define('INCLUDED_IN_PAGE', true);
-  include 'header_template.php';
+<!-- Contenu spécifique de la page -->
+<div class="content-wrapper">
+<div style="background-color: #f9f9f9; border-radius: 5px;">
+<h2 style="color: #222; font-size: 23px; margin-bottom: 30px; position: relative;">Gestion des tables</h2>
+</div>
+<?php if ($alerte) echo '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> ' . $alerte . '</div>'; ?>
+<?php if ($message) echo '<div class="alert alert-success"><i class="bi bi-check-circle"></i> ' . $message . '</div>'; ?>
+<div class="dashboard-cards">
+<div class="dashboard-card">
+<div class="card-title">Places totales</div>
+<div class="card-value"><?php echo $total_places; ?></div>
+</div>
+<div class="dashboard-card">
+<div class="card-title">Places restantes</div>
+<div class="card-value"><?php echo $places_restantes; ?></div>
+</div>
+<div class="dashboard-card">
+<div class="card-title">Personnes réservées à venir</div>
+<div class="card-value"><?php echo $total_reserves; ?></div>
+</div>
+<div class="dashboard-card">
+<div class="card-title">Tables disponibles</div>
+<div class="card-value"><?php echo $nb_tables_libres; ?></div>
+<?php if (!empty($types_tables_libres)): ?>
+<div style="font-size:1em;color:#444;margin-top:8px;">
+<?php foreach ($types_tables_libres as $t): ?>
+<div><?= $t['nb'] ?> table<?= $t['nb'] > 1 ? 's' : '' ?> de <?= $t['Capacite'] ?> place<?= $t['Capacite'] > 1 ? 's' : '' ?></div>
+<?php endforeach; ?>
+</div>
+<?php endif; ?>
+</div>
+</div>
+<div class="form-section">
+<h3 class="section-title">Ajouter une table</h3>
+<form method="post" class="form-grid">
+<div class="form-group">
+<input type="number" name="numero" placeholder="Numéro de table" required>
+</div>
+<div class="form-group">
+<input type="number" name="capacite" placeholder="Capacité" required>
+</div>
+<div class="form-group">
+<input type="text" name="nom_table" placeholder="Nom de la table" required>
+</div>
+<div class="form-group" style="grid-column: 1 / -1; display: flex; gap: 15px;">
+<button type="submit" class="submit-btn">Ajouter</button>
+<button type="submit" name="ajout_tables_types" class="submit-btn" style="background-color: var(--primary-dark);">Ajout auto (2,4,6,8 places)</button>
+</div>
+</form>
+</div>
+<h3 class="section-title" style="margin-top: 30px;">Liste des tables</h3>
+<div class="table-responsive-wrapper">
+<table class="admin-table">
+<thead>
+<tr>
+<th>ID</th>
+<th>Numéro</th>
+<th>Capacité</th>
+<th>Statut</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody>
+<?php if (isset($tables)) foreach ($tables as $t): ?>
+<tr>
+<td><?= htmlspecialchars($t['TableID']) ?></td>
+<td><?= htmlspecialchars($t['NumeroTable']) ?></td>
+<td><?= htmlspecialchars($t['Capacite']) ?></td>
+<td>
+<?php if (isset($t['Statut'])): ?>
+<span style="font-weight:bold;color:<?= $t['Statut'] === 'Réservée' ? '#b01e28' : '#217a3c' ?>;">
+<?= htmlspecialchars($t['Statut']) ?>
+</span>
+<?php else: ?>
+<span style="color:#757575;">-</span>
+<?php endif; ?>
+</td>
+<td><a href="?delete=<?= $t['TableID'] ?>" onclick="return confirm('Supprimer cette table ?')"><i class="bi bi-trash"></i></a></td>
+</tr>
+<?php endforeach; ?>
+</tbody>
+</table>
+</div>
+</div> <!-- Fermeture du content-wrapper -->
+<?php
+  require_once 'footer_template.php';
   ?>
-
-  <!-- Contenu spécifique de la page -->
-  <div class="content-wrapper">
-    <div style="background-color: #f9f9f9; border-radius: 5px;">
-      <h2 style="color: #222; font-size: 23px; margin-bottom: 30px; position: relative;">Gestion des tables</h2>
-    </div>
-    <?php if ($alerte) echo '<div class="alert alert-error"><i class="bi bi-exclamation-triangle"></i> ' . $alerte . '</div>'; ?>
-    <?php if ($message) echo '<div class="alert alert-success"><i class="bi bi-check-circle"></i> ' . $message . '</div>'; ?>
-    <div class="dashboard-cards">
-      <div class="dashboard-card">
-        <div class="card-title">Places totales</div>
-        <div class="card-value"><?php echo $total_places; ?></div>
-      </div>
-      <div class="dashboard-card">
-        <div class="card-title">Places restantes</div>
-        <div class="card-value"><?php echo $places_restantes; ?></div>
-      </div>
-      <div class="dashboard-card">
-        <div class="card-title">Personnes réservées à venir</div>
-        <div class="card-value"><?php echo $total_reserves; ?></div>
-      </div>
-      <div class="dashboard-card">
-        <div class="card-title">Tables disponibles</div>
-        <div class="card-value"><?php echo $nb_tables_libres; ?></div>
-        <?php if (!empty($types_tables_libres)): ?>
-          <div style="font-size:1em;color:#444;margin-top:8px;">
-            <?php foreach ($types_tables_libres as $t): ?>
-              <div><?= $t['nb'] ?> table<?= $t['nb'] > 1 ? 's' : '' ?> de <?= $t['Capacite'] ?> place<?= $t['Capacite'] > 1 ? 's' : '' ?></div>
-            <?php endforeach; ?>
-          </div>
-        <?php endif; ?>
-      </div>
-    </div>
-    <div class="form-section">
-      <h3 class="section-title">Ajouter une table</h3>
-      <form method="post" class="form-grid">
-        <div class="form-group">
-          <input type="number" name="numero" placeholder="Numéro de table" required>
-        </div>
-        <div class="form-group">
-          <input type="number" name="capacite" placeholder="Capacité" required>
-        </div>
-        <div class="form-group">
-          <input type="text" name="nom_table" placeholder="Nom de la table" required>
-        </div>
-        <div class="form-group" style="grid-column: 1 / -1; display: flex; gap: 15px;">
-          <button type="submit" class="submit-btn">Ajouter</button>
-          <button type="submit" name="ajout_tables_types" class="submit-btn" style="background-color: var(--primary-dark);">Ajout auto (2,4,6,8 places)</button>
-        </div>
-      </form>
-    </div>
-    <h3 class="section-title" style="margin-top: 30px;">Liste des tables</h3>
-    <div class="table-responsive-wrapper">
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Numéro</th>
-            <th>Capacité</th>
-            <th>Statut</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php if (isset($tables)) foreach ($tables as $t): ?>
-            <tr>
-              <td><?= htmlspecialchars($t['TableID']) ?></td>
-              <td><?= htmlspecialchars($t['NumeroTable']) ?></td>
-              <td><?= htmlspecialchars($t['Capacite']) ?></td>
-              <td>
-                <?php if (isset($t['Statut'])): ?>
-                  <span style="font-weight:bold;color:<?= $t['Statut'] === 'Réservée' ? '#b01e28' : '#217a3c' ?>;">
-                    <?= htmlspecialchars($t['Statut']) ?>
-                  </span>
-                <?php else: ?>
-                  <span style="color:#757575;">-</span>
-                <?php endif; ?>
-              </td>
-              <td><a href="?delete=<?= $t['TableID'] ?>" onclick="return confirm('Supprimer cette table ?')"><i class="bi bi-trash"></i></a></td>
-            </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
-    </div>
-  </div> <!-- Fermeture du content-wrapper -->
-
-  <?php
-  include 'footer_template.php';
-  ?>
-</body>
-
-</html>

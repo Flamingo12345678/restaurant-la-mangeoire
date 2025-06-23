@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔗 Test Navigation Sidebar Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .test-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .test-panel {
+            background: white;
+            border: 2px solid #007bff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .link-test {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        
+        .success { background: #d4edda; border-color: #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+        .warning { background: #fff3cd; border-color: #ffeaa7; color: #856404; }
+        .info { background: #d1ecf1; border-color: #bee5eb; color: #0c5460; }
+        
+        .test-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        
+        .test-btn:hover {
+            background: #0056b3;
+        }
+        
+        .url-display {
+            font-family: monospace;
+            background: #f8f9fa;
+            padding: 5px 10px;
+            border-radius: 3px;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-panel">
+            <h2>🔗 Test de Navigation Sidebar Admin</h2>
+            <p><strong>Objectif :</strong> Vérifier que tous les liens de la sidebar fonctionnent correctement depuis différentes pages.</p>
+            <div class="alert alert-info">
+                <strong>📋 Pages à tester :</strong>
+                <ul>
+                    <li><strong>admin-messages.php</strong> (à la racine)</li>
+                    <li><strong>admin/index.php</strong> (dans le dossier admin)</li>
+                    <li><strong>dashboard-admin.php</strong> (à la racine)</li>
+                    <li><strong>employes.php</strong> (à la racine)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-panel">
+            <h3>🧪 Test des Liens par Contexte</h3>
+            <div id="test-results"></div>
+            <button class="test-btn" onclick="testAllLinks()">🔄 Tester Tous les Liens</button>
+            <button class="test-btn" onclick="clearResults()">🗑️ Effacer</button>
+        </div>
+
+        <div class="test-panel">
+            <h3>📊 Mapping des Liens</h3>
+            <div id="link-mapping"></div>
+        </div>
+
+        <div class="test-panel">
+            <h3>🔍 Simulation de Contexte</h3>
+            <label>
+                <strong>Contexte de page :</strong>
+                <select id="context-selector" onchange="updateContext()">
+                    <option value="root">Racine (admin-messages.php)</option>
+                    <option value="admin">Admin (admin/index.php)</option>
+                </select>
+            </label>
+            <div id="context-preview" class="mt-3"></div>
+        </div>
+    </div>
+
+    <script>
+        const testResults = document.getElementById('test-results');
+        const linkMapping = document.getElementById('link-mapping');
+        const contextPreview = document.getElementById('context-preview');
+
+        // Configuration des liens selon le contexte
+        const linkConfig = {
+            root: { // Depuis admin-messages.php (racine)
+                'Tableau de bord': 'admin/index.php',
+                'Clients': 'admin/clients.php',
+                'Commandes': 'admin/commandes.php',
+                'Menus': 'admin/menus.php',
+                'Réservations': 'admin/reservations.php',
+                'Tables': 'admin/tables.php',
+                'Employés': 'employes.php',
+                'Paiements': 'admin/paiements.php',
+                'Messages': 'admin-messages.php',
+                'Dashboard Système': 'dashboard-admin.php',
+                'Retour au site': 'index.php',
+                'Déconnexion': 'admin/logout.php'
+            },
+            admin: { // Depuis admin/index.php (dossier admin)
+                'Tableau de bord': 'index.php',
+                'Clients': 'clients.php',
+                'Commandes': 'commandes.php',
+                'Menus': 'menus.php',
+                'Réservations': 'reservations.php',
+                'Tables': 'tables.php',
+                'Employés': '../employes.php',
+                'Paiements': 'paiements.php',
+                'Messages': '../admin-messages.php',
+                'Dashboard Système': '../dashboard-admin.php',
+                'Retour au site': '../index.php',
+                'Déconnexion': 'logout.php'
+            }
+        };
+
+        function addResult(title, status, message, url = null) {
+            const div = document.createElement('div');
+            div.className = `link-test ${status}`;
+            div.innerHTML = `
+                <strong>${getStatusIcon(status)} ${title}</strong><br>
+                ${message}
+                ${url ? `<div class="url-display">${url}</div>` : ''}
+            `;
+            testResults.appendChild(div);
+        }
+
+        function getStatusIcon(status) {
+            switch(status) {
+                case 'success': return '✅';
+                case 'error': return '❌';
+                case 'warning': return '⚠️';
+                case 'info': return 'ℹ️';
+                default: return '•';
+            }
+        }
+
+        function clearResults() {
+            testResults.innerHTML = '';
+        }
+
+        async function testLink(url, title) {
+            try {
+                const response = await fetch(url, { method: 'HEAD' });
+                if (response.ok) {
+                    addResult(title, 'success', `Lien accessible (${response.status})`, url);
+                    return true;
+                } else if (response.status === 302 || response.status === 301) {
+                    addResult(title, 'warning', `Redirection détectée (${response.status})`, url);
+                    return true;
+                } else {
+                    addResult(title, 'error', `Erreur HTTP ${response.status}`, url);
+                    return false;
+                }
+            } catch (error) {
+                addResult(title, 'error', `Erreur réseau: ${error.message}`, url);
+                return false;
+            }
+        }
+
+        async function testAllLinks() {
+            clearResults();
+            addResult('Début des tests', 'info', 'Test de tous les liens de navigation...');
+
+            let totalTests = 0;
+            let passedTests = 0;
+
+            // Tester depuis chaque contexte
+            for (const [context, links] of Object.entries(linkConfig)) {
+                addResult(`Contexte: ${context}`, 'info', `Test des liens depuis ${context === 'root' ? 'la racine' : 'le dossier admin'}`);
+
+                for (const [title, url] of Object.entries(links)) {
+                    totalTests++;
+                    const baseUrl = context === 'root' ? 'http://localhost:8000/' : 'http://localhost:8000/admin/';
+                    const fullUrl = url.startsWith('http') ? url : baseUrl + url.replace('../', '');
+                    
+                    const result = await testLink(fullUrl, `${context}: ${title}`);
+                    if (result) passedTests++;
+                }
+            }
+
+            // Résumé
+            const successRate = Math.round((passedTests / totalTests) * 100);
+            addResult(
+                'Résumé des tests', 
+                successRate >= 80 ? 'success' : 'warning', 
+                `${passedTests}/${totalTests} liens fonctionnels (${successRate}%)`
+            );
+        }
+
+        function updateContext() {
+            const context = document.getElementById('context-selector').value;
+            const links = linkConfig[context];
+            
+            let html = `<h5>📍 Contexte: ${context === 'root' ? 'Racine' : 'Dossier Admin'}</h5>`;
+            html += '<div class="row">';
+            
+            for (const [title, url] of Object.entries(links)) {
+                html += `
+                    <div class="col-md-6 mb-2">
+                        <strong>${title}:</strong><br>
+                        <code>${url}</code>
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            contextPreview.innerHTML = html;
+        }
+
+        function generateLinkMapping() {
+            let html = '<h5>🗺️ Mapping Complet des Liens</h5>';
+            html += '<div class="table-responsive">';
+            html += '<table class="table table-sm table-bordered">';
+            html += '<thead><tr><th>Page</th><th>Depuis Racine</th><th>Depuis Admin</th></tr></thead><tbody>';
+            
+            const pages = Object.keys(linkConfig.root);
+            for (const page of pages) {
+                html += `<tr>
+                    <td><strong>${page}</strong></td>
+                    <td><code>${linkConfig.root[page]}</code></td>
+                    <td><code>${linkConfig.admin[page]}</code></td>
+                </tr>`;
+            }
+            
+            html += '</tbody></table></div>';
+            linkMapping.innerHTML = html;
+        }
+
+        // Initialisation
+        updateContext();
+        generateLinkMapping();
+
+        console.log('🔗 Test de navigation sidebar initialisé');
+        console.log('📊 Configurations de liens:', linkConfig);
+    </script>
+</body>
+</html>

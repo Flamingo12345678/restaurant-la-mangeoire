@@ -116,7 +116,7 @@ $message = 'Champs invalides.';
       border: 1px solid #b6e2c7;
     }
 
-    .alert-error {
+    .alert-danger {
       background: #fdeaea;
       color: #b01e28;
       border: 1px solid #f5c2c7;
@@ -143,7 +143,7 @@ $message = 'Champs invalides.';
     <a href="commandes.php" class="back-link">&larr; Retour à la liste</a>
     <h1>Ajouter une commande</h1>
     <?php if ($message): ?>
-      <div class="alert <?= strpos($message, 'ajoutée') !== false ? 'alert-success' : 'alert-error' ?>">
+      <div class="alert <?= strpos($message, 'ajoutée') !== false ? 'alert-success' : 'alert-danger' ?>">
         <?= htmlspecialchars($message) ?>
       </div>
     <?php endif; ?>
@@ -152,7 +152,7 @@ $message = 'Champs invalides.';
       <input type="number" name="reservation_id" id="reservation_id" placeholder="ID réservation" required min="1">
       <input type="number" name="menu_id" id="menu_id" placeholder="ID menu" required min="1">
       <input type="number" name="quantite" id="quantite" placeholder="Quantité" required min="1">
-      <div id="form-error" class="alert alert-error" style="display:none;"></div>
+      <div id="form-error" class="alert alert-danger" style="display:none;"></div>
       <button type="submit">Ajouter</button>
     </form>
     <script>

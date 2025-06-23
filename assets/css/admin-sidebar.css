@@ -1,0 +1,239 @@
+/* Styles pour la sidebar d'administration */
+
+/* Bouton burger */
+.admin-burger-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1001;
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+    display: none; /* Caché par défaut sur desktop */
+}
+
+.admin-burger-btn:hover {
+    background: #c82333;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+}
+
+.admin-burger-btn:active {
+    transform: translateY(0);
+}
+
+/* Afficher le bouton burger sur mobile */
+@media (max-width: 991.98px) {
+    .admin-burger-btn {
+        display: block;
+    }
+}
+
+/* Sidebar principale */
+.admin-sidebar {
+    position: fixed;
+    top: 0;
+    left: -250px;
+    width: 250px;
+    height: 100vh;
+    background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+    z-index: 1000;
+    transition: left 0.3s ease;
+    overflow-y: auto;
+    box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
+}
+
+.admin-sidebar.open {
+    left: 0;
+}
+
+/* Sur desktop, afficher la sidebar par défaut */
+@media (min-width: 992px) {
+    .admin-sidebar {
+        left: 0;
+    }
+    
+    .admin-burger-btn {
+        display: none;
+    }
+}
+
+/* Sur mobile, la sidebar est cachée par défaut */
+@media (max-width: 991.98px) {
+    .admin-sidebar {
+        left: -250px;
+        box-shadow: 2px 0 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    .admin-sidebar.open {
+        left: 0;
+    }
+}
+
+/* Logo dans la sidebar */
+.admin-sidebar .logo {
+    background: #dc3545;
+    color: white;
+    padding: 20px;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Navigation */
+.admin-sidebar nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.admin-sidebar nav li {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-sidebar nav a {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    color: #ecf0f1;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+}
+
+.admin-sidebar nav a:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    padding-left: 25px;
+}
+
+.admin-sidebar nav a.active {
+    background: #dc3545;
+    color: white;
+    border-left: 4px solid #fff;
+}
+
+.admin-sidebar nav a i {
+    margin-right: 12px;
+    width: 20px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+/* Sections de navigation */
+.nav-section {
+    padding: 20px 20px 10px;
+    color: #bdc3c7;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 10px;
+}
+
+.nav-section:first-child {
+    border-top: none;
+    margin-top: 0;
+}
+
+/* Overlay pour mobile */
+.admin-sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.admin-sidebar-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Contenu principal */
+.admin-main-content {
+    margin-left: 0;
+    min-height: 100vh;
+    background: #f8f9fa;
+    transition: margin-left 0.3s ease;
+}
+
+@media (min-width: 992px) {
+    .admin-main-content {
+        margin-left: 250px;
+    }
+}
+
+/* Header d'administration */
+.admin-header {
+    background: white;
+    padding: 20px 30px;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.admin-header-center h1 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+.admin-logo {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #dc3545;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .admin-header {
+        padding: 15px 20px;
+        margin-left: 0;
+    }
+    
+    .admin-header-center h1 {
+        font-size: 1.4rem;
+    }
+    
+    .admin-logo {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+/* Scrollbar personnalisée pour la sidebar */
+.admin-sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.admin-sidebar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.admin-sidebar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.admin-sidebar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}

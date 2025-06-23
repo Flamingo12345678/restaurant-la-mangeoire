@@ -180,196 +180,132 @@ function get_total_commandes_by_reservation($conn, $reservation_id) {
   $stmt->execute([$reservation_id]);
   return $stmt->fetchColumn();
 }
+
+// Définir le titre de la page
+$page_title = "Gestion des Commandes";
+
+// CSS supplémentaires spécifiques à cette page
+$additional_css = [
+    'css/admin-messages.css'
+];
+
+// Indiquer que ce fichier est inclus dans une page
+define('INCLUDED_IN_PAGE', true);
+require_once 'header_template.php';
 ?>
-<!DOCTYPE html>
-<html lang="fr">
-
-<head>
-  <meta charset="UTF-8">
-  <title>Commandes - Administration</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="../assets/css/main.css">
-  <link rel="stylesheet" href="../assets/css/admin.css">
-  <link rel="stylesheet" href="../assets/css/admin-animations.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    /* Styles spécifiques pour la page commandes sur mobile */
-    @media (max-width: 768px) {
-      .form-grid {
-        grid-template-columns: 1fr;
-        gap: 15px;
-      }
-
-      .table-responsive-wrapper {
-        margin: 0 -15px;
-        width: calc(100% + 30px);
-        border-radius: 0;
-      }
-
-      .admin-table th:nth-child(1),
-      .admin-table td:nth-child(1) {
-        display: none;
-      }
-
-      .admin-table th,
-      .admin-table td {
-        padding: 10px 8px;
-        font-size: 0.9rem;
-      }
-
-      .admin-table th:nth-child(2),
-      .admin-table td:nth-child(2) {
-        max-width: 80px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .admin-table th:nth-child(6),
-      .admin-table td:nth-child(6) {
-        display: none;
-      }
-    }
-  </style>
-</head>
-
-<body>
-  <?php
-  // Définir le titre de la page
-  $page_title = "Commandes";
-
-  // Indiquer que ce fichier est inclus dans une page
-  define('INCLUDED_IN_PAGE', true);
-  include 'header_template.php';
-  ?>
-
-  <!-- Contenu spécifique de la page -->
-  <div class="content-wrapper">
-    <div style="background-color: #f9f9f9; border-radius: 5px;">
-      <h2 style="color: #222; font-size: 23px; margin-bottom: 30px; position: relative;">Gestion des commandes</h2>
-    </div>
-
-    <?php display_message(); ?>
-
-    <!-- Formulaire d'ajout -->
-    <div class="form-section">
-      <h1 style="color: #333; text-align: center; margin-bottom: 40px; font-size: 28px; font-weight: 600;">Ajouter une commande</h1>
-      <form method="post" style="max-width: 1200px; margin: 0 auto;">
-        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
-        
-        <div class="form-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
-          <div>
-            <select name="reservation_id" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; box-sizing: border-box;">
-              <option value="">-- Sélectionner une réservation --</option>
-              <?php foreach ($reservations as $reservation): ?>
-                <option value="<?= htmlspecialchars($reservation['ReservationID']) ?>">
+<!-- Contenu spécifique de la page -->
+<div class="content-wrapper">
+<div style="background-color: #f9f9f9; border-radius: 5px;">
+<h2 style="color: #222; font-size: 23px; margin-bottom: 30px; position: relative;">Gestion des commandes</h2>
+</div>
+<?php display_message(); ?>
+<!-- Formulaire d'ajout -->
+<div class="form-section">
+<h1 style="color: #333; text-align: center; margin-bottom: 40px; font-size: 28px; font-weight: 600;">Ajouter une commande</h1>
+<form method="post" style="max-width: 1200px; margin: 0 auto;">
+<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+<div class="form-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+<div>
+<select name="reservation_id" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; box-sizing: border-box;">
+<option value="">-- Sélectionner une réservation --</option>
+<?php foreach ($reservations as $reservation): ?>
+<option value="<?= htmlspecialchars($reservation['ReservationID']) ?>">
                   ID: <?= htmlspecialchars($reservation['ReservationID']) ?> - 
                   <?= htmlspecialchars($reservation['nom_client']) ?> - 
                   <?= date('d/m/Y H:i', strtotime($reservation['DateReservation'])) ?> - 
                   <?= htmlspecialchars($reservation['nb_personnes']) ?> pers.
                 </option>
-              <?php endforeach; ?>
-              <?php if (empty($reservations)): ?>
-                <option disabled>Aucune réservation active disponible</option>
-              <?php endif; ?>
-            </select>
-          </div>
-          
-          <div>
-            <select name="menu_id" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; box-sizing: border-box;">
-              <option value="">-- Sélectionner un menu --</option>
-              <?php foreach ($menus as $menu): ?>
-                <option value="<?= htmlspecialchars($menu['MenuID']) ?>">
-                  <?= htmlspecialchars($menu['NomItem']) ?> - 
+<?php endforeach; ?>
+<?php if (empty($reservations)): ?>
+<option disabled>Aucune réservation active disponible</option>
+<?php endif; ?>
+</select>
+</div>
+<div>
+<select name="menu_id" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; box-sizing: border-box;">
+<option value="">-- Sélectionner un menu --</option>
+<?php foreach ($menus as $menu): ?>
+<option value="<?= htmlspecialchars($menu['MenuID']) ?>">
+<?= htmlspecialchars($menu['NomItem']) ?> - 
                   <?= number_format($menu['Prix'], 0, ',', ' ') ?> XAF
                 </option>
-              <?php endforeach; ?>
-              <?php if (empty($menus)): ?>
-                <option disabled>Aucun menu disponible</option>
-              <?php endif; ?>
-            </select>
-          </div>
-          
-          <div>
-            <input type="number" name="quantite" placeholder="Quantité" required min="1" value="1" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; box-sizing: border-box;">
-          </div>
-        </div>
-        
-        <div id="total-price-display" class="total-price-info" style="text-align: center; margin: 20px 0; font-size: 1.1rem; font-weight: bold;"></div>
-        
-        <div style="margin-top: 30px;">
-          <button type="submit" style="background-color: #ae2012; color: white; padding: 15px 30px; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; transition: background-color 0.3s;">Ajouter la commande</button>
-        </div>
-      </form>
-    </div>
-
-    <!-- Tableau des commandes -->
-    <h3 class="section-title" style="margin-top: 40px;">Liste des commandes</h3>
-    <div class="table-responsive-wrapper">
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Date</th>
-            <th>Client</th>
-            <th>Menu</th>
-            <th>Quantité</th>
-            <th>Prix unitaire</th>
-            <th>Montant total</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($commandes as $c): ?>
-            <tr>
-              <td><?= htmlspecialchars($c['CommandeID']) ?></td>
-              <td><?= isset($c['DateReservation']) ? date('d/m/Y H:i', strtotime($c['DateReservation'])) : 'N/A' ?></td>
-              <td><?= htmlspecialchars($c['nom_client'] ?: 'N/A') ?></td>
-              <td><?= htmlspecialchars($c['NomMenu'] ?: 'N/A') ?></td>
-              <td><?= htmlspecialchars($c['Quantite']) ?></td>
-              <td><?= number_format($c['PrixUnitaire'] ?? $c['PrixMenu'] ?? 0, 0, ',', ' ') ?> XAF</td>
-              <td><?= number_format($c['MontantTotal'] ?? ($c['Quantite'] * ($c['PrixUnitaire'] ?? $c['PrixMenu'] ?? 0)), 0, ',', ' ') ?> XAF</td>
-              <td class="action-cell">
-                <form method="post" action="" style="display: inline;">
-                  <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
-                  <input type="hidden" name="delete_commande_id" value="<?= htmlspecialchars($c['CommandeID']) ?>">
-                  <button type="submit" class="action-icon" onclick="return confirm('Supprimer cette commande ?')" title="Supprimer">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </form>
-              </td>
-            </tr>
-          <?php endforeach; ?>
-          <?php if (empty($commandes)): ?>
-            <tr>
-              <td colspan="8" class="text-center">Aucune commande trouvée</td>
-            </tr>
-          <?php endif; ?>
-        </tbody>
-      </table>
-    </div>
-
-    <?php if ($total_pages > 1): ?>
-      <div class="pagination">
-        <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-          <?php if ($i == $page): ?>
-            <span class="page-item active"><?= $i ?></span>
-          <?php else: ?>
-            <a href="?page=<?= $i ?>" class="page-item"><?= $i ?></a>
-          <?php endif; ?>
-        <?php endfor; ?>
-      </div>
-    <?php endif; ?>
-  </div>
-
-  <?php
+<?php endforeach; ?>
+<?php if (empty($menus)): ?>
+<option disabled>Aucun menu disponible</option>
+<?php endif; ?>
+</select>
+</div>
+<div>
+<input type="number" name="quantite" placeholder="Quantité" required min="1" value="1" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; box-sizing: border-box;">
+</div>
+</div>
+<div id="total-price-display" class="total-price-info" style="text-align: center; margin: 20px 0; font-size: 1.1rem; font-weight: bold;"></div>
+<div style="margin-top: 30px;">
+<button type="submit" style="background-color: #ae2012; color: white; padding: 15px 30px; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; transition: background-color 0.3s;">Ajouter la commande</button>
+</div>
+</form>
+</div>
+<!-- Tableau des commandes -->
+<h3 class="section-title" style="margin-top: 40px;">Liste des commandes</h3>
+<div class="table-responsive-wrapper">
+<table class="admin-table">
+<thead>
+<tr>
+<th>ID</th>
+<th>Date</th>
+<th>Client</th>
+<th>Menu</th>
+<th>Quantité</th>
+<th>Prix unitaire</th>
+<th>Montant total</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody>
+<?php foreach ($commandes as $c): ?>
+<tr>
+<td><?= htmlspecialchars($c['CommandeID']) ?></td>
+<td><?= isset($c['DateReservation']) ? date('d/m/Y H:i', strtotime($c['DateReservation'])) : 'N/A' ?></td>
+<td><?= htmlspecialchars($c['nom_client'] ?: 'N/A') ?></td>
+<td><?= htmlspecialchars($c['NomMenu'] ?: 'N/A') ?></td>
+<td><?= htmlspecialchars($c['Quantite']) ?></td>
+<td><?= number_format($c['PrixUnitaire'] ?? $c['PrixMenu'] ?? 0, 0, ',', ' ') ?> XAF</td>
+<td><?= number_format($c['MontantTotal'] ?? ($c['Quantite'] * ($c['PrixUnitaire'] ?? $c['PrixMenu'] ?? 0)), 0, ',', ' ') ?> XAF</td>
+<td class="action-cell">
+<form method="post" action="" style="display: inline;">
+<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+<input type="hidden" name="delete_commande_id" value="<?= htmlspecialchars($c['CommandeID']) ?>">
+<button type="submit" class="action-icon" onclick="return confirm('Supprimer cette commande ?')" title="Supprimer">
+<i class="bi bi-trash"></i>
+</button>
+</form>
+</td>
+</tr>
+<?php endforeach; ?>
+<?php if (empty($commandes)): ?>
+<tr>
+<td colspan="8" class="text-center">Aucune commande trouvée</td>
+</tr>
+<?php endif; ?>
+</tbody>
+</table>
+</div>
+<?php if ($total_pages > 1): ?>
+<div class="pagination">
+<?php for ($i = 1; $i <= $total_pages; $i++): ?>
+<?php if ($i == $page): ?>
+<span class="page-item active"><?= $i ?></span>
+<?php else: ?>
+<a href="?page=<?= $i ?>" class="page-item"><?= $i ?></a>
+<?php endif; ?>
+<?php endfor; ?>
+</div>
+<?php endif; ?>
+</div>
+<?php
   include 'footer_template.php';
   ?>
-  
-  <script>
+<script>
     document.addEventListener('DOMContentLoaded', function() {
       // Éléments du formulaire
       const menuSelect = document.querySelector('select[name="menu_id"]');
@@ -393,7 +329,7 @@ function get_total_commandes_by_reservation($conn, $reservation_id) {
           
           totalPriceDisplay.innerHTML = `
             <div>Prix unitaire: ${prixUnitaire.toLocaleString('fr-FR')} XAF</div>
-            <div>Montant total: ${total.toLocaleString('fr-FR')} XAF</div>
+<div>Montant total: ${total.toLocaleString('fr-FR')} XAF</div>
           `;
           
           // Afficher le conteneur de prix total s'il est masqué
@@ -419,6 +355,6 @@ function get_total_commandes_by_reservation($conn, $reservation_id) {
       }
     });
   </script>
-</body>
-
-</html>
+<?php
+  require_once 'footer_template.php';
+  ?>
