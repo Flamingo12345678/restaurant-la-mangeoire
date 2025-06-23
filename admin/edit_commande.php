@@ -123,7 +123,7 @@ unset($_SESSION['flash_message']);
       border: 1px solid #b6e2c7;
     }
 
-    .alert-error {
+    .alert-danger {
       background: #fdeaea;
       color: #b01e28;
       border: 1px solid #f5c2c7;
@@ -167,11 +167,11 @@ unset($_SESSION['flash_message']);
         <input type="number" name="reservation_id" value="<?= htmlspecialchars($commande['ReservationID']) ?>" placeholder="ID réservation" required>
         <input type="number" name="menu_id" value="<?= htmlspecialchars($commande['MenuID']) ?>" placeholder="ID menu" required>
         <input type="number" name="quantite" value="<?= htmlspecialchars($commande['Quantite']) ?>" min="1" placeholder="Quantité" required>
-        <div id="form-error" class="alert alert-error" style="display:none;"></div>
+        <div id="form-error" class="alert alert-danger" style="display:none;"></div>
         <button type="submit">Enregistrer</button>
       </form>
     <?php else: ?>
-      <div class="alert alert-error">Commande introuvable.</div>
+      <div class="alert alert-danger">Commande introuvable.</div>
     <?php endif; ?>
   </div>
 </body>

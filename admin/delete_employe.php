@@ -91,7 +91,7 @@ if ($id > 0 && $_SERVER['REQUEST_METHOD'] === 'POST') {
       border: 1px solid #b6e2c7;
     }
 
-    .form-container .alert-error {
+    .form-container .alert-danger {
       background: #fdeaea;
       color: #b01e28;
       border: 1px solid #f5c2c7;
@@ -154,7 +154,7 @@ if ($id > 0 && $_SERVER['REQUEST_METHOD'] === 'POST') {
       </form>
       <?php display_message(); ?>
     <?php else: ?>
-      <div class="alert alert-error">ID invalide.</div>
+      <div class="alert alert-danger">ID invalide.</div>
       <a href="employes.php" class="back-link">Retour</a>
     <?php endif; ?>
   </div>

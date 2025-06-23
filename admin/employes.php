@@ -541,7 +541,7 @@ $employes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Affichage des messages d'erreur internes
     if (!empty($error)) {
-      echo "<div class='alert alert-error'><i class='bi bi-exclamation-triangle'></i> " . htmlspecialchars($error) . "</div>";
+      echo "<div class='alert alert-danger'><i class='bi bi-exclamation-triangle'></i> " . htmlspecialchars($error) . "</div>";
     }
     
     // Affichage des messages de succès internes
@@ -735,6 +735,7 @@ $employes = $stmt->fetchAll(PDO::FETCH_ASSOC);
       });
     });
   </script>
+    <script src="../assets/js/admin-sidebar.js"></script>
 </body>
 
 </html>

@@ -1,6 +1,0 @@
-2025-05-08 14:35:08 - Fichier de débogage créé
-2025-05-08 14:35:08 - Ouverture de la page de connexion
-2025-05-08 14:35:08 - Aucun utilisateur connecté
-2025-05-08 14:35:08 - Compte administrateur trouvé dans la base de données
-2025-05-08 14:35:08 - Le mot de passe de test est invalide
-2025-05-08 14:35:08 - Fin de la vérification

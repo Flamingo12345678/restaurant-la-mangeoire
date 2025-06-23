@@ -136,7 +136,7 @@ if ($nom && $prenom && $email && mb_strlen($nom) <= 100 && mb_strlen($prenom) <=
         border: 1px solid #b6e2c7;
       }
 
-      .alert-error {
+      .alert-danger {
         background: #fdeaea;
         color: #b01e28;
         border: 1px solid #f5c2c7;
@@ -173,7 +173,7 @@ if ($nom && $prenom && $email && mb_strlen($nom) <= 100 && mb_strlen($prenom) <=
           <button type="submit">Enregistrer</button>
         </form>
       <?php else: ?>
-        <div class="alert alert-error">Client introuvable.</div>
+        <div class="alert alert-danger">Client introuvable.</div>
       <?php endif; ?>
     </div>
   </body>
@@ -188,7 +188,7 @@ if ($nom && $prenom && $email && mb_strlen($nom) <= 100 && mb_strlen($prenom) <=
       if (!errorDiv) {
         errorDiv = document.createElement('div');
         errorDiv.id = 'form-error';
-        errorDiv.className = 'alert alert-error';
+        errorDiv.className = 'alert alert-danger';
         errorDiv.style.display = 'none';
         form.insertBefore(errorDiv, form.querySelector('button'));
       }

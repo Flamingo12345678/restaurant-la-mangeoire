@@ -166,7 +166,7 @@ if ($nom && $email && $date && mb_strlen($nom) <= 100 && mb_strlen($email) <=100
         border: 1px solid #b6e2c7;
       }
 
-      .alert-error {
+      .alert-danger {
         background: #fdeaea;
         color: #b01e28;
         border: 1px solid #f5c2c7;
@@ -212,11 +212,11 @@ if ($nom && $email && $date && mb_strlen($nom) <= 100 && mb_strlen($email) <=100
           <input type="email" name="email_client" value="<?= htmlspecialchars($reservation['email_client'] ?? '') ?>" placeholder="Email du client" required maxlength="100">
           <input type="datetime-local" name="DateReservation" value="<?= htmlspecialchars($reservation['DateReservation'] ?? '') ?>" required>
           <input type="text" name="statut" value="<?= htmlspecialchars($reservation['statut'] ?? '') ?>" placeholder="Statut (Réservée/Annulée)" maxlength="50">
-          <div id="form-error" class="alert alert-error" style="display:none;"></div>
+          <div id="form-error" class="alert alert-danger" style="display:none;"></div>
           <button type="submit">Enregistrer</button>
         </form>
       <?php else: ?>
-        <div class="alert alert-error">Réservation introuvable.</div>
+        <div class="alert alert-danger">Réservation introuvable.</div>
       <?php endif; ?>
     </div>
   </body>

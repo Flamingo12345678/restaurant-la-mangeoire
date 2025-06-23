@@ -67,7 +67,7 @@ if ($stmt) {
 // function display_message()
 // {
 //   if (!empty($_SESSION['flash_message'])) {
-//     $type = $_SESSION['flash_message']['type'] === 'success' ? 'alert-success' : 'alert-error';
+//     $type = $_SESSION['flash_message']['type'] === 'success' ? 'alert-success' : 'alert-danger';
 //     $text = htmlspecialchars($_SESSION['flash_message']['text']);
 //     echo "<div class='alert $type'><i class='bi " .
 //       ($_SESSION['flash_message']['type'] === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle') .
@@ -202,6 +202,7 @@ if ($stmt) {
   <?php
   include 'footer_template.php';
   ?>
+    <script src="../assets/js/admin-sidebar.js"></script>
 </body>
 
 </html>

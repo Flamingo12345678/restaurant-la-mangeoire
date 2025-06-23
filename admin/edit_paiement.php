@@ -121,7 +121,7 @@ $paiement = null;
       border: 1px solid #b6e2c7;
     }
 
-    .alert-error {
+    .alert-danger {
       background: #fdeaea;
       color: #b01e28;
       border: 1px solid #f5c2c7;
@@ -166,11 +166,11 @@ $paiement = null;
         <input type="number" name="montant" value="<?= htmlspecialchars($paiement['Montant']) ?>" step="0.01" min="0" placeholder="Montant" required>
         <input type="date" name="date_paiement" value="<?= htmlspecialchars($paiement['DatePaiement']) ?>" required>
         <input type="text" name="mode" value="<?= htmlspecialchars($paiement['ModePaiement']) ?>" placeholder="Mode de paiement">
-        <div id="form-error" class="alert alert-error" style="display:none;"></div>
+        <div id="form-error" class="alert alert-danger" style="display:none;"></div>
         <button type="submit">Enregistrer</button>
       </form>
     <?php else: ?>
-      <div class="alert alert-error">Paiement introuvable.</div>
+      <div class="alert alert-danger">Paiement introuvable.</div>
     <?php endif; ?>
   </div>
 </body>

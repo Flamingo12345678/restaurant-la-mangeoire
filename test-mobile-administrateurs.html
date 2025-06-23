@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Vérification Mobile - Administrateurs</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .success { color: #22c55e; }
+        .error { color: #ef4444; }
+        .warning { color: #f59e0b; }
+        .info { color: #3b82f6; }
+        .test-item {
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #e5e7eb;
+            background: #f9fafb;
+        }
+        .test-item.success { border-left-color: #22c55e; }
+        .test-item.error { border-left-color: #ef4444; }
+        .test-item.warning { border-left-color: #f59e0b; }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #3b82f6;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .btn:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Test de Vérification Mobile</h1>
+        <p><strong>Page:</strong> Gestion des Administrateurs</p>
+        <p><strong>Date:</strong> <?php echo date('Y-m-d H:i:s'); ?></p>
+        
+        <?php
+        error_reporting(E_ALL);
+        ini_set('display_errors', 0); // Masquer les erreurs pour le test
+        
+        $tests = [];
+        
+        // Test 1: Vérifier que le fichier existe
+        $admin_file = __DIR__ . '/admin/administrateurs.php';
+        if (file_exists($admin_file)) {
+            $tests[] = ['status' => 'success', 'message' => 'Fichier admin/administrateurs.php trouvé'];
+        } else {
+            $tests[] = ['status' => 'error', 'message' => 'Fichier admin/administrateurs.php non trouvé'];
+        }
+        
+        // Test 2: Vérifier la syntaxe PHP
+        $output = [];
+        $return_var = 0;
+        exec("php -l admin/administrateurs.php 2>&1", $output, $return_var);
+        if ($return_var === 0) {
+            $tests[] = ['status' => 'success', 'message' => 'Syntaxe PHP valide'];
+        } else {
+            $tests[] = ['status' => 'error', 'message' => 'Erreur de syntaxe PHP: ' . implode(', ', $output)];
+        }
+        
+        // Test 3: Vérifier les constantes doublées
+        $content = file_get_contents($admin_file);
+        $define_count = preg_match_all("/define\s*\(\s*['\"]INCLUDED_IN_PAGE['\"]/", $content);
+        if ($define_count <= 1) {
+            $tests[] = ['status' => 'success', 'message' => 'Aucune constante INCLUDED_IN_PAGE doublée'];
+        } else {
+            $tests[] = ['status' => 'error', 'message' => "Constante INCLUDED_IN_PAGE définie $define_count fois"];
+        }
+        
+        // Test 4: Vérifier les chemins relatifs
+        if (strpos($content, 'localhost') === false && strpos($content, '192.168.') === false) {
+            $tests[] = ['status' => 'success', 'message' => 'Aucun lien absolu détecté'];
+        } else {
+            $tests[] = ['status' => 'warning', 'message' => 'Des liens absolus peuvent être présents'];
+        }
+        
+        // Afficher les résultats
+        foreach ($tests as $test) {
+            echo "<div class='test-item {$test['status']}'>";
+            echo "<strong>" . ucfirst($test['status']) . ":</strong> " . $test['message'];
+            echo "</div>";
+        }
+        
+        // Compter les résultats
+        $success_count = count(array_filter($tests, function($t) { return $t['status'] === 'success'; }));
+        $total_count = count($tests);
+        
+        echo "<div class='test-container'>";
+        echo "<h2>📊 Résultat Final</h2>";
+        echo "<p><strong>Tests réussis:</strong> $success_count/$total_count</p>";
+        
+        if ($success_count === $total_count) {
+            echo "<p class='success'>✅ Tous les tests sont passés ! La page devrait fonctionner correctement.</p>";
+        } else {
+            echo "<p class='error'>❌ Certains tests ont échoué. Vérifiez les erreurs ci-dessus.</p>";
+        }
+        echo "</div>";
+        ?>
+        
+        <div class="test-container">
+            <h2>🔗 Liens de Test</h2>
+            <a href="admin/administrateurs.php" class="btn">📱 Tester la page Administrateurs</a>
+            <a href="admin/" class="btn">🏠 Dashboard Admin</a>
+            <a href="admin-messages.php" class="btn">💬 Messages Admin</a>
+        </div>
+        
+        <div class="test-container">
+            <h2>📱 Informations de Connexion</h2>
+            <p><strong>Adresse IP actuelle:</strong> <?php echo $_SERVER['SERVER_ADDR'] ?? 'Non disponible'; ?></p>
+            <p><strong>Port:</strong> <?php echo $_SERVER['SERVER_PORT'] ?? 'Non disponible'; ?></p>
+            <p><strong>User-Agent:</strong> <?php echo substr($_SERVER['HTTP_USER_AGENT'] ?? 'Non disponible', 0, 100); ?>...</p>
+        </div>
+    </div>
+</body>
+</html>

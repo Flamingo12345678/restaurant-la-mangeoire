@@ -147,7 +147,7 @@ if (isset($_POST['edit_id'], $_POST['edit_nom_client'], $_POST['edit_email_clien
     $total_places = intval($row['total_places']);
   }
   if ($total_reserves + $edit_nb_personnes > $total_places) {
-    $message = "<span class='alert alert-error'>Impossible de modifier la réservation : la capacité maximale de la salle serait dépassée.</span>";
+    $message = "<span class='alert alert-danger'>Impossible de modifier la réservation : la capacité maximale de la salle serait dépassée.</span>";
   } elseif ($edit_nom && $edit_email && $edit_date && $edit_nb_personnes > 0) {
     // Mise à jour de la réservation
     $sql = "UPDATE Reservations SET nom_client = ?, email_client = ?, DateReservation = ?, Statut = ?, nb_personnes = ? WHERE ReservationID = ?";
@@ -476,6 +476,7 @@ if ($stmt) {
   <?php
   include 'footer_template.php';
   ?>
+    <script src="../assets/js/admin-sidebar.js"></script>
 </body>
 
 </html>

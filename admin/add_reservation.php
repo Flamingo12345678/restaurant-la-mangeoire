@@ -136,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       border: 1px solid #b6e2c7;
     }
 
-    .alert-error {
+    .alert-danger {
       background: #fdeaea;
       color: #b01e28;
       border: 1px solid #f5c2c7;
@@ -182,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         ?>
       </select>
-      <div id="form-error" class="alert alert-error" style="display:none;"></div>
+      <div id="form-error" class="alert alert-danger" style="display:none;"></div>
       <button type="submit">Ajouter</button>
     </form>
     <script>

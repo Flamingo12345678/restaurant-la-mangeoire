@@ -168,7 +168,7 @@ if ($id > 0) {
       border: 1px solid #b6e2c7;
     }
 
-    .alert-error {
+    .alert-danger {
       background: #fdeaea;
       color: #b01e28;
       border: 1px solid #f5c2c7;
@@ -218,11 +218,11 @@ if ($id > 0) {
           <option value="Réservée" <?= (isset($table['Statut']) && $table['Statut'] === 'Réservée') ? 'selected' : '' ?>>Réservée</option>
           <option value="Maintenance" <?= (isset($table['Statut']) && $table['Statut'] === 'Maintenance') ? 'selected' : '' ?>>Maintenance</option>
         </select>
-        <div id="form-error" class="alert alert-error" style="display:none;"></div>
+        <div id="form-error" class="alert alert-danger" style="display:none;"></div>
         <button type="submit">Enregistrer</button>
       </form>
     <?php else: ?>
-      <div class="alert alert-error">Table introuvable.</div>
+      <div class="alert alert-danger">Table introuvable.</div>
     <?php endif; ?>
   </div>
 </body>

@@ -1,0 +1,420 @@
+/* =================================================================
+   STYLES ADMIN MESSAGES - LA MANGEOIRE
+   Interface modernisée pour la gestion des messages de contact
+   ================================================================= */
+
+/* Container principal */
+.admin-messages {
+    background: #f8f9fa;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+/* =================================================================
+   HEADER DE LA PAGE
+   ================================================================= */
+
+.admin-messages .card.bg-primary {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important;
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(44, 62, 80, 0.3);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.admin-messages .card.bg-primary .card-body {
+    position: relative;
+    z-index: 2;
+    padding: 3rem 2rem;
+    text-align: center;
+}
+
+.admin-messages .card.bg-primary .card-body::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+    transform: rotate(-45deg);
+    pointer-events: none;
+    z-index: -1;
+}
+
+.admin-messages .display-6 {
+    font-weight: 300;
+    font-size: 2.75rem;
+    margin-bottom: 1rem;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    letter-spacing: -0.02em;
+    color: white;
+}
+
+.admin-messages .lead {
+    font-size: 1.2rem;
+    font-weight: 300;
+    opacity: 0.95;
+    color: rgba(255,255,255,0.9);
+    margin-bottom: 0;
+}
+
+.admin-messages .display-6 .bi {
+    margin-right: 1rem;
+    font-size: 2.5rem;
+    vertical-align: middle;
+}
+
+/* =================================================================
+   CARTES STATISTIQUES - AFFICHAGE HORIZONTAL FORCÉ
+   ================================================================= */
+
+/* Container des statistiques - FLEXBOX FORCÉ */
+.admin-messages .row.g-4 {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    margin: 0 !important;
+    gap: 1rem !important;
+    align-items: stretch !important;
+}
+
+/* Colonnes des cartes statistiques */
+.admin-messages .row.g-4 > .col-md-3 {
+    flex: 1 1 25% !important;
+    max-width: 25% !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+}
+
+/* Cartes statistiques */
+.admin-messages .stats-card {
+    background: white !important;
+    border: none !important;
+    border-radius: 15px !important;
+    padding: 1.5rem 1rem !important;
+    transition: all 0.3s ease !important;
+    position: relative !important;
+    overflow: hidden !important;
+    width: 100% !important;
+    min-height: 160px !important;
+    text-align: center !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08) !important;
+}
+
+/* Card-body des statistiques */
+.admin-messages .stats-card .card-body {
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    flex-grow: 1 !important;
+}
+
+/* Icônes des statistiques */
+.admin-messages .stats-card .display-4 {
+    font-size: 2.5rem !important;
+    margin-bottom: 0.75rem !important;
+    line-height: 1 !important;
+}
+
+/* Chiffres des statistiques */
+.admin-messages .stats-card h3 {
+    font-size: 2rem !important;
+    font-weight: 700 !important;
+    margin-bottom: 0.5rem !important;
+    line-height: 1 !important;
+}
+
+/* Libellés des statistiques */
+.admin-messages .stats-card p {
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+    margin-bottom: 0 !important;
+    line-height: 1.2 !important;
+}
+
+/* Barres colorées en haut des cartes */
+.admin-messages .stats-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    z-index: 1;
+}
+
+/* Couleurs spécifiques par carte */
+.admin-messages .row.g-4 > .col-md-3:nth-child(1) .stats-card::before {
+    background: linear-gradient(90deg, #3498db, #2980b9); /* Bleu - Total */
+}
+
+.admin-messages .row.g-4 > .col-md-3:nth-child(2) .stats-card::before {
+    background: linear-gradient(90deg, #e74c3c, #c0392b); /* Rouge - Nouveaux */
+}
+
+.admin-messages .row.g-4 > .col-md-3:nth-child(3) .stats-card::before {
+    background: linear-gradient(90deg, #f39c12, #d68910); /* Orange - Lus */
+}
+
+.admin-messages .row.g-4 > .col-md-3:nth-child(4) .stats-card::before {
+    background: linear-gradient(90deg, #27ae60, #229954); /* Vert - Traités */
+}
+
+/* Effets de survol */
+.admin-messages .stats-card:hover {
+    transform: translateY(-5px) !important;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.15) !important;
+}
+
+.admin-messages .stats-card * {
+    transition: all 0.2s ease !important;
+}
+
+.admin-messages .stats-card:hover h3 {
+    transform: scale(1.05) !important;
+}
+
+.admin-messages .stats-card:hover .display-4 {
+    transform: scale(1.08) !important;
+}
+
+/* =================================================================
+   RESPONSIVE DESIGN - MAINTENIR L'AFFICHAGE HORIZONTAL
+   ================================================================= */
+
+/* Tablettes */
+@media (max-width: 768px) {
+    .admin-messages .row.g-4 {
+        gap: 0.5rem !important;
+    }
+    
+    .admin-messages .stats-card {
+        padding: 1rem 0.5rem !important;
+        min-height: 140px !important;
+    }
+    
+    .admin-messages .stats-card .display-4 {
+        font-size: 1.8rem !important;
+    }
+    
+    .admin-messages .stats-card h3 {
+        font-size: 1.5rem !important;
+    }
+    
+    .admin-messages .stats-card p {
+        font-size: 0.8rem !important;
+    }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+    .admin-messages .row.g-4 {
+        gap: 0.25rem !important;
+    }
+    
+    .admin-messages .stats-card {
+        padding: 0.75rem 0.25rem !important;
+        min-height: 120px !important;
+        border-radius: 10px !important;
+    }
+    
+    .admin-messages .stats-card .display-4 {
+        font-size: 1.4rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .admin-messages .stats-card h3 {
+        font-size: 1.2rem !important;
+        margin-bottom: 0.25rem !important;
+    }
+    
+    .admin-messages .stats-card p {
+        font-size: 0.7rem !important;
+        line-height: 1.1 !important;
+    }
+}
+
+/* Très petits écrans */
+@media (max-width: 320px) {
+    .admin-messages .row.g-4 {
+        gap: 0.125rem !important;
+    }
+    
+    .admin-messages .stats-card {
+        padding: 0.5rem 0.125rem !important;
+        min-height: 100px !important;
+        border-radius: 8px !important;
+    }
+    
+    .admin-messages .stats-card .display-4 {
+        font-size: 1.2rem !important;
+        margin-bottom: 0.25rem !important;
+    }
+    
+    .admin-messages .stats-card h3 {
+        font-size: 1rem !important;
+        margin-bottom: 0.125rem !important;
+    }
+    
+    .admin-messages .stats-card p {
+        font-size: 0.65rem !important;
+        line-height: 1.1 !important;
+    }
+}
+
+/* =================================================================
+   CARTES DE MESSAGES
+   ================================================================= */
+
+.admin-messages .message-card {
+    background: white;
+    border: none !important;
+    border-radius: 15px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.admin-messages .message-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 5px;
+    background: #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.admin-messages .message-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+
+/* Statuts des messages */
+.admin-messages .status-Nouveau::before { 
+    background: linear-gradient(180deg, #e74c3c, #c0392b);
+}
+
+.admin-messages .status-Lu::before { 
+    background: linear-gradient(180deg, #f39c12, #d68910);
+}
+
+.admin-messages .status-Traité::before { 
+    background: linear-gradient(180deg, #27ae60, #229954);
+}
+
+/* Badges */
+.admin-messages .badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.4em 0.8em;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Boutons d'action */
+.admin-messages .btn-group-vertical .btn {
+    border-radius: 8px !important;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.admin-messages .btn-outline-warning:hover {
+    background: #f39c12;
+    border-color: #f39c12;
+    transform: translateX(2px);
+}
+
+.admin-messages .btn-outline-success:hover {
+    background: #27ae60;
+    border-color: #27ae60;
+    transform: translateX(2px);
+}
+
+.admin-messages .btn-outline-primary:hover {
+    background: #3498db;
+    border-color: #3498db;
+    transform: translateX(2px);
+}
+
+.admin-messages .btn-outline-danger:hover {
+    background: #e74c3c;
+    border-color: #e74c3c;
+    transform: translateX(2px);
+}
+
+/* Contenu des messages */
+.admin-messages .card-title {
+    color: #2c3e50;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.admin-messages .text-primary {
+    color: #3498db !important;
+    font-weight: 500;
+}
+
+.admin-messages .message-card .card-body {
+    padding: 1.5rem;
+}
+
+/* Section vide */
+.admin-messages .text-center.py-5 .display-1 {
+    color: #bdc3c7;
+    font-size: 4rem;
+}
+
+/* =================================================================
+   RESPONSIVE DESIGN POUR LES MESSAGES
+   ================================================================= */
+
+@media (max-width: 992px) {
+    .admin-messages .message-card .row {
+        flex-direction: column;
+    }
+    
+    .admin-messages .btn-group-vertical {
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+    
+    .admin-messages .btn-group-vertical .btn {
+        margin-bottom: 0;
+        flex: 1;
+    }
+}
+
+@media (max-width: 576px) {
+    .admin-messages {
+        padding: 10px;
+    }
+    
+    .admin-messages .card.bg-primary .card-body {
+        padding: 2rem 1rem;
+    }
+    
+    .admin-messages .display-6 {
+        font-size: 2rem;
+    }
+    
+    .admin-messages .message-card .card-body {
+        padding: 1rem;
+    }
+}

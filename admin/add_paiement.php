@@ -144,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       border: 1px solid #b6e2c7;
     }
 
-    .alert-error {
+    .alert-danger {
       background: #fdeaea;
       color: #b01e28;
       border: 1px solid #f5c2c7;
@@ -178,7 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <input type="number" name="montant" id="montant" placeholder="Montant *" step="0.01" min="0" required>
       <input type="date" name="date_paiement" id="date_paiement" placeholder="Date de paiement *" required>
       <input type="text" name="mode" id="mode" placeholder="Mode de paiement" maxlength="50">
-      <div id="form-error" class="alert alert-error admin-form-error"></div>
+      <div id="form-error" class="alert alert-danger admin-form-error"></div>
       <button type="submit">Ajouter</button>
     </form>
     <script>
