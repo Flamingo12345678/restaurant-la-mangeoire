@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nom'], $_POST['prenom
   $tel = trim($_POST['telephone'] ?? '');
   if ($nom && $prenom && $email) {
     $sql = "INSERT INTO Clients (Nom, Prenom, Email, Telephone) VALUES (?, ?, ?, ?)";
-    $stmt = $conn->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $result = $stmt->execute([$nom, $prenom, $email, $tel]);
     if ($result) {
       set_message('Client ajouté avec succès.');
@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nom'], $_POST['prenom
 if (isset($_GET['delete'])) {
   $id = intval($_GET['delete']);
   $sql = "DELETE FROM Clients WHERE ClientID = ?";
-  $stmt = $conn->prepare($sql);
+  $stmt = $pdo->prepare($sql);
   $result = $stmt->execute([$id]);
   if ($result) {
     set_message('Client supprimé.');
@@ -49,7 +49,7 @@ if (isset($_GET['delete'])) {
 // Liste des clients
 $clients = [];
 $sql = "SELECT * FROM Clients ORDER BY ClientID DESC";
-$stmt = $conn->query($sql);
+$stmt = $pdo->query($sql);
 if ($stmt) {
   while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $clients[] = $row;

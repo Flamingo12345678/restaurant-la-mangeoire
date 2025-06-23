@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajouter'])) {
     $valid = validate_nom($nom) && validate_prix($prix);
     if ($valid) {
       $sql = "INSERT INTO Menus (NomItem, Prix) VALUES (?, ?)";
-      $stmt = $conn->prepare($sql);
+      $stmt = $pdo->prepare($sql);
       $stmt->execute([$nom, $prix]);
       set_message('✅ Menu ajouté avec succès.');
     } else {
@@ -30,14 +30,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_menu'])) {
   } else {
     $id = intval($_POST['delete_menu']);
     // Vérification d'existence du menu
-    $check = $conn->prepare("SELECT COUNT(*) FROM Menus WHERE MenuID=?");
+    $check = $pdo->prepare("SELECT COUNT(*) FROM Menus WHERE MenuID=?");
     $check->execute([$id]);
     if ($check->fetchColumn() == 0) {
       set_message('❌ Ce menu n’existe pas ou a déjà été supprimé.', 'error');
       header('Location: ' . $_SERVER['PHP_SELF']);
       exit;
     }
-    $stmt = $conn->prepare("DELETE FROM Menus WHERE MenuID=?");
+    $stmt = $pdo->prepare("DELETE FROM Menus WHERE MenuID=?");
     $stmt->execute([$id]);
     set_message('🗑️ Menu supprimé avec succès.');
     header('Location: ' . $_SERVER['PHP_SELF']);
@@ -49,9 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_menu'])) {
 $menus_per_page = 10;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $menus_per_page;
-$total_menus = $conn->query("SELECT COUNT(*) FROM Menus")->fetchColumn();
+$total_menus = $pdo->query("SELECT COUNT(*) FROM Menus")->fetchColumn();
 $total_pages = ceil($total_menus / $menus_per_page);
-$menus = $conn->query("SELECT * FROM Menus ORDER BY MenuID DESC LIMIT $menus_per_page OFFSET $offset")->fetchAll();
+$menus = $pdo->query("SELECT * FROM Menus ORDER BY MenuID DESC LIMIT $menus_per_page OFFSET $offset")->fetchAll();
 
 // Removed duplicate function as it's already defined in common.php
 ?>

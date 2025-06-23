@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajouter'])) {
     $valid = validate_numero_table($reservation_id) && validate_prix($montant) && validate_date($date);
     if ($valid) {
       $sql = "INSERT INTO Paiements (ReservationID, Montant, DatePaiement, ModePaiement) VALUES (?, ?, ?, ?)";
-      $stmt = $conn->prepare($sql);
+      $stmt = $pdo->prepare($sql);
       $stmt->execute([$reservation_id, $montant, $date, $mode]);
       set_message('✅ Paiement ajouté avec succès.');
       header('Location: ' . $_SERVER['PHP_SELF']);
@@ -41,14 +41,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_paiement'])) {
   } else {
     $id = intval($_POST['delete_paiement']);
     // Vérification d'existence du paiement
-    $check = $conn->prepare("SELECT COUNT(*) FROM Paiements WHERE PaiementID=?");
+    $check = $pdo->prepare("SELECT COUNT(*) FROM Paiements WHERE PaiementID=?");
     $check->execute([$id]);
     if ($check->fetchColumn() == 0) {
       set_message('❌ Ce paiement n’existe pas ou a déjà été supprimé.', 'error');
       header('Location: ' . $_SERVER['PHP_SELF']);
       exit;
     }
-    $stmt = $conn->prepare("DELETE FROM Paiements WHERE PaiementID=?");
+    $stmt = $pdo->prepare("DELETE FROM Paiements WHERE PaiementID=?");
     $stmt->execute([$id]);
     set_message('🗑️ Paiement supprimé avec succès.');
     header('Location: ' . $_SERVER['PHP_SELF']);
@@ -59,9 +59,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_paiement'])) {
 $paiements_per_page = 10;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $paiements_per_page;
-$total_paiements = $conn->query("SELECT COUNT(*) FROM Paiements")->fetchColumn();
+$total_paiements = $pdo->query("SELECT COUNT(*) FROM Paiements")->fetchColumn();
 $total_pages = ceil($total_paiements / $paiements_per_page);
-$paiements = $conn->query("SELECT * FROM Paiements ORDER BY PaiementID DESC LIMIT $paiements_per_page OFFSET $offset")->fetchAll();
+$paiements = $pdo->query("SELECT * FROM Paiements ORDER BY PaiementID DESC LIMIT $paiements_per_page OFFSET $offset")->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="fr">

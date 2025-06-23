@@ -37,7 +37,7 @@ $has_items = false;
 
 if (isset($_SESSION['client_id'])) {
     // Check from database for authenticated users
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM Panier WHERE UtilisateurID = ?");
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM Panier WHERE UtilisateurID = ?");
     $stmt->execute([$_SESSION['client_id']]);
     $has_items = ($stmt->fetchColumn() > 0);
 } else if (isset($_SESSION['panier']) && count($_SESSION['panier']) > 0) {
@@ -59,7 +59,7 @@ $total = 0;
 
 if (isset($_SESSION['client_id'])) {
     // Get items from database for authenticated users
-    $stmt = $conn->prepare("
+    $stmt = $pdo->prepare("
         SELECT p.PanierID, p.UtilisateurID, p.MenuID, 
                IFNULL(p.Quantite, 1) as Quantite, 
                p.DateAjout, 
@@ -162,10 +162,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errors)) {
         // Save order to database
         try {
-            $conn->beginTransaction();
+            $pdo->beginTransaction();
             
             // Create new order
-            $stmt = $conn->prepare("
+            $stmt = $pdo->prepare("
                 INSERT INTO Commandes (UtilisateurID, DateCommande, Statut, MontantTotal, 
                                        NomClient, PrenomClient, EmailClient, TelephoneClient, 
                                        AdresseLivraison, ModePaiement)
@@ -184,10 +184,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_POST['mode_paiement']
             ]);
             
-            $commande_id = $conn->lastInsertId();
+            $commande_id = $pdo->lastInsertId();
             
             // Add order items
-            $stmt = $conn->prepare("
+            $stmt = $pdo->prepare("
                 INSERT INTO DetailsCommande (CommandeID, MenuID, NomItem, Prix, Quantite, SousTotal)
                 VALUES (?, ?, ?, ?, ?, ?)
             ");
@@ -239,13 +239,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Clear cart
             if (isset($_SESSION['client_id'])) {
-                $stmt = $conn->prepare("DELETE FROM Panier WHERE UtilisateurID = ?");
+                $stmt = $pdo->prepare("DELETE FROM Panier WHERE UtilisateurID = ?");
                 $stmt->execute([$_SESSION['client_id']]);
             } else {
                 unset($_SESSION['panier']);
             }
             
-            $conn->commit();
+            $pdo->commit();
             
             // Redirect to confirmation page
             $_SESSION['message'] = "Votre commande a été enregistrée avec succès. Numéro de commande: " . $commande_id;
@@ -261,7 +261,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
         } catch (Exception $e) {
-            $conn->rollBack();
+            $pdo->rollBack();
             
             // Log détaillé de l'erreur pour le débogage
             error_log("Erreur SQL dans passer-commande.php: " . $e->getMessage() . 
@@ -282,7 +282,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (isset($_SESSION['client_id'])) {
                     try {
                         // Nettoyer le panier en supprimant les éléments problématiques
-                        $clean_stmt = $conn->prepare("DELETE FROM Panier WHERE UtilisateurID = ? AND (Quantite IS NULL OR Quantite <= 0)");
+                        $clean_stmt = $pdo->prepare("DELETE FROM Panier WHERE UtilisateurID = ? AND (Quantite IS NULL OR Quantite <= 0)");
                         $clean_stmt->execute([$_SESSION['client_id']]);
                         error_log("Tentative de nettoyage du panier effectuée pour l'utilisateur " . $_SESSION['client_id']);
                     } catch (Exception $cleanEx) {
@@ -354,7 +354,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $cart_count = 0;
                         if (isset($_SESSION['client_id'])) {
                             // Count from database
-                            $stmt = $conn->prepare("SELECT SUM(Quantite) FROM Panier WHERE UtilisateurID = ?");
+                            $stmt = $pdo->prepare("SELECT SUM(Quantite) FROM Panier WHERE UtilisateurID = ?");
                             $stmt->execute([$_SESSION['client_id']]);
                             $cart_count = $stmt->fetchColumn() ?: 0;
                         } else if (isset($_SESSION['panier']) && count($_SESSION['panier']) > 0) {

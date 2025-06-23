@@ -19,7 +19,7 @@ if (strpos($redirect, 'http') === 0 || strpos($redirect, '//') === 0) {
 if (isset($_SESSION['client_id'])) {
     // Utilisateur connecté - vider dans la base de données
     try {
-        $stmt = $conn->prepare("DELETE FROM Panier WHERE UtilisateurID = ?");
+        $stmt = $pdo->prepare("DELETE FROM Panier WHERE ClientID = ?");
         $stmt->execute([$_SESSION['client_id']]);
         
         $count = $stmt->rowCount();

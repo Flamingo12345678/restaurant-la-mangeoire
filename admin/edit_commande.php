@@ -13,7 +13,7 @@ $quantite = intval($_POST['quantite'] ?? 0);
 if ($reservation_id > 0 && $menu_id > 0 && $quantite > 0) {
 try {
 $sql = "UPDATE Commandes SET ReservationID=?, MenuID=?, Quantite=? WHERE CommandeID=?";
-$stmt = $conn->prepare($sql);
+$stmt = $pdo->prepare($sql);
 $result = $stmt->execute([$reservation_id, $menu_id, $quantite, $id]);
 if ($result) {
 set_message('Commande modifiée.', 'success');
@@ -33,7 +33,7 @@ header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $id);
 exit;
 }
 $sql = "SELECT * FROM Commandes WHERE CommandeID=?";
-$stmt = $conn->prepare($sql);
+$stmt = $pdo->prepare($sql);
 $stmt->execute([$id]);
 $commande = $stmt->fetch(PDO::FETCH_ASSOC);
 } else {

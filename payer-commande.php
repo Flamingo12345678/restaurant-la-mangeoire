@@ -49,7 +49,7 @@ $payment_amount = 0;
 if ($order_id > 0) {
     $payment_type = 'order';
     
-    $stmt = $conn->prepare("
+    $stmt = $pdo->prepare("
         SELECT * FROM Commandes WHERE CommandeID = ?
     ");
     $stmt->execute([$order_id]);
@@ -61,7 +61,7 @@ if ($order_id > 0) {
         // Correction de la requête pour utiliser le nom correct de la colonne dans la table Menus
         try {
             // D'abord, vérifiez la structure de la table Menus
-            $columns_query = $conn->prepare("SHOW COLUMNS FROM Menus");
+            $columns_query = $pdo->prepare("SHOW COLUMNS FROM Menus");
             $columns_query->execute();
             $columns = $columns_query->fetchAll(PDO::FETCH_COLUMN, 0);
             
@@ -76,7 +76,7 @@ if ($order_id > 0) {
             }
             
             // Maintenant utilisez la colonne correcte dans votre requête
-            $items_stmt = $conn->prepare("
+            $items_stmt = $pdo->prepare("
                 SELECT dc.*, m.$name_column as NomItem 
                 FROM DetailsCommande dc
                 LEFT JOIN Menus m ON dc.MenuID = m.MenuID
@@ -86,7 +86,7 @@ if ($order_id > 0) {
             $order_items = $items_stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             // En cas d'erreur, utilisez une requête simplifiée sans joindre la table Menus
-            $items_stmt = $conn->prepare("
+            $items_stmt = $pdo->prepare("
                 SELECT dc.* 
                 FROM DetailsCommande dc
                 WHERE dc.CommandeID = ?
@@ -109,7 +109,7 @@ if ($order_id > 0) {
     }
     
     // Check if the order already has a payment
-    $payment_check = $conn->prepare("
+    $payment_check = $pdo->prepare("
         SELECT * FROM Paiements WHERE CommandeID = ? LIMIT 1
     ");
     $payment_check->execute([$order_id]);
@@ -125,7 +125,7 @@ if ($order_id > 0) {
 elseif ($reservation_id > 0) {
     $payment_type = 'reservation';
     
-    $stmt = $conn->prepare("
+    $stmt = $pdo->prepare("
         SELECT * FROM Reservations WHERE ReservationID = ?
     ");
     $stmt->execute([$reservation_id]);
@@ -137,7 +137,7 @@ elseif ($reservation_id > 0) {
         $payment_amount = isset($reservation['MontantDepot']) ? $reservation['MontantDepot'] : 10.00;
         
         // Check if the reservation already has a payment
-        $payment_check = $conn->prepare("
+        $payment_check = $pdo->prepare("
             SELECT * FROM Paiements WHERE ReservationID = ? LIMIT 1
         ");
         $payment_check->execute([$reservation_id]);
@@ -368,7 +368,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payment_method'])) {
             
             if ($payment_type === 'order') {
                 // Update order status to paid
-                $stmt = $conn->prepare("
+                $stmt = $pdo->prepare("
                     UPDATE Commandes 
                     SET Statut = 'Payé', DatePaiement = NOW() 
                     WHERE CommandeID = ?
@@ -378,7 +378,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payment_method'])) {
                 // Store the payment information (in a real app, you would NOT store full card details)
                 $cardLast4 = substr(str_replace(' ', '', $_POST['card_number']), -4);
                 
-                $stmt = $conn->prepare("
+                $stmt = $pdo->prepare("
                     INSERT INTO Paiements (CommandeID, Montant, ModePaiement, TransactionID, DatePaiement)
                     VALUES (?, ?, ?, ?, NOW())
                 ");
@@ -397,7 +397,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payment_method'])) {
             } else {
                 // For reservation payment
                 // Update reservation status to confirm payment
-                $stmt = $conn->prepare("
+                $stmt = $pdo->prepare("
                     UPDATE Reservations 
                     SET Statut = 'Confirmé', DateMiseAJour = NOW() 
                     WHERE ReservationID = ?
@@ -407,7 +407,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payment_method'])) {
                 // Store the payment information
                 $cardLast4 = substr(str_replace(' ', '', $_POST['card_number']), -4);
                 
-                $stmt = $conn->prepare("
+                $stmt = $pdo->prepare("
                     INSERT INTO Paiements (ReservationID, Montant, ModePaiement, TransactionID, DatePaiement)
                     VALUES (?, ?, ?, ?, NOW())
                 ");

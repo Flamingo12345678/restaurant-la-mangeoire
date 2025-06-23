@@ -17,7 +17,7 @@ $available_currencies = CurrencyManager::getAvailableCurrencies();
 // Quelques prix d'exemple depuis la base de données
 $menu_prices = [];
 try {
-    $stmt = $conn->prepare("SELECT MenuID, NomItem, Prix FROM Menus LIMIT 5");
+    $stmt = $pdo->prepare("SELECT MenuID, NomItem, Prix FROM Menus LIMIT 5");
     $stmt->execute();
     $menus = $stmt->fetchAll(PDO::FETCH_ASSOC);
     

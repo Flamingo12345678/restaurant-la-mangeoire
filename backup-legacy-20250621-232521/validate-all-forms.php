@@ -53,7 +53,7 @@ try {
     $tables = ['Reservations', 'Messages'];
     foreach ($tables as $table) {
         try {
-            $stmt = $conn->query("DESCRIBE $table");
+            $stmt = $pdo->query("DESCRIBE $table");
             echo "   ✅ Table $table existe\n";
         } catch (PDOException $e) {
             echo "   ❌ Table $table manquante\n";

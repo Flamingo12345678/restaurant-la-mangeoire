@@ -5,11 +5,11 @@ require_admin();
 require_once '../db_connexion.php';
 
 // Fonction pour calculer le montant total des commandes par réservation
-function get_total_commandes_by_reservation($conn, $reservation_id) {
+function get_total_commandes_by_reservation($pdo, $reservation_id) {
   // Vérifier si les colonnes existent
-  function checkColumnExists($conn, $tableName, $columnName) {
+  function checkColumnExists($pdo, $tableName, $columnName) {
     try {
-        $stmt = $conn->prepare("SELECT $columnName FROM $tableName LIMIT 1");
+        $stmt = $pdo->prepare("SELECT $columnName FROM $tableName LIMIT 1");
         $stmt->execute();
         return true;
     } catch (PDOException $e) {
@@ -20,8 +20,8 @@ function get_total_commandes_by_reservation($conn, $reservation_id) {
     }
   }
   
-  $hasPrixUnitaire = checkColumnExists($conn, 'Commandes', 'PrixUnitaire');
-  $hasMontantTotal = checkColumnExists($conn, 'Commandes', 'MontantTotal');
+  $hasPrixUnitaire = checkColumnExists($pdo, 'Commandes', 'PrixUnitaire');
+  $hasMontantTotal = checkColumnExists($pdo, 'Commandes', 'MontantTotal');
   
   if ($hasPrixUnitaire && $hasMontantTotal) {
     // Si les colonnes existent, utiliser les valeurs stockées
@@ -34,7 +34,7 @@ function get_total_commandes_by_reservation($conn, $reservation_id) {
             FROM Commandes
             WHERE ReservationID = ?";
     
-    $stmt = $conn->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $stmt->execute([$reservation_id]);
     $totalFromCommandes = $stmt->fetchColumn() ?: 0;
     
@@ -49,7 +49,7 @@ function get_total_commandes_by_reservation($conn, $reservation_id) {
           JOIN Menus m ON c.MenuID = m.MenuID
           WHERE c.ReservationID = ?";
   
-  $stmt = $conn->prepare($sql);
+  $stmt = $pdo->prepare($sql);
   $stmt->execute([$reservation_id]);
   return $stmt->fetchColumn() ?: 0;
 }
@@ -59,12 +59,12 @@ if (isset($_GET['reservation_id'])) {
   $reservation_id = intval($_GET['reservation_id']);
   
   // Vérifier que la réservation existe
-  $check_res = $conn->prepare("SELECT ReservationID FROM Reservations WHERE ReservationID = ?");
+  $check_res = $pdo->prepare("SELECT ReservationID FROM Reservations WHERE ReservationID = ?");
   $check_res->execute([$reservation_id]);
   
   if ($check_res->rowCount() > 0) {
     // Récupérer le montant total des commandes
-    $total = get_total_commandes_by_reservation($conn, $reservation_id);
+    $total = get_total_commandes_by_reservation($pdo, $reservation_id);
     
     // Retourner le résultat au format JSON
     header('Content-Type: application/json');

@@ -1,3 +1,65 @@
+<?php
+// Démarrer la session avant tout output
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+require_once 'db_connexion.php';
+require_once 'includes/email_manager.php';
+
+$success_message = '';
+$error_message = '';
+
+// Traitement du formulaire de contact
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $nom = trim($_POST['nom'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $sujet = trim($_POST['sujet'] ?? '');
+    $message = trim($_POST['message'] ?? '');
+    
+    // Validation
+    if (empty($nom) || empty($email) || empty($sujet) || empty($message)) {
+        $error_message = "Tous les champs sont obligatoires.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error_message = "Adresse email invalide.";
+    } else {
+        try {
+            // Insérer le message dans la base de données (structure Railway)
+            $stmt = $pdo->prepare("
+                INSERT INTO Messages (nom, email, objet, message, date_creation) 
+                VALUES (?, ?, ?, ?, NOW())
+            ");
+            $stmt->execute([$nom, $email, $sujet, $message]);
+            
+            $success_message = "Votre message a été envoyé avec succès ! Nous vous répondrons dans les plus brefs délais.";
+            
+            // Envoyer les notifications par email
+            try {
+                $emailManager = new EmailManager();
+                
+                // Notification à l'admin
+                $emailManager->sendContactNotification($nom, $email, $sujet, $message);
+                
+                // Confirmation au client
+                $emailManager->sendContactConfirmation($nom, $email, $sujet);
+                
+                if (getEnvVar('EMAIL_DEBUG', 'false') === 'true') {
+                    error_log("Contact: Emails envoyés pour le message de $nom ($email)");
+                }
+                
+            } catch (Exception $e) {
+                error_log("Erreur envoi emails: " . $e->getMessage());
+                // Ne pas faire échouer le processus si l'email échoue
+            }
+            
+        } catch (PDOException $e) {
+            error_log("Erreur insertion message: " . $e->getMessage());
+            $error_message = "Une erreur est survenue lors de l'envoi de votre message. Veuillez réessayer.";
+        }
+    }
+}
+?>
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -18,43 +80,40 @@
             padding: 20px 0;
         }
         
-        .contact-container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            overflow: hidden;
+        .container {
+            max-width: 800px;
         }
         
         .contact-header {
-            background: linear-gradient(135deg, #ce1212 0%, #e74c3c 100%);
-            color: white;
-            padding: 30px;
             text-align: center;
+            margin-bottom: 40px;
         }
         
         .contact-header h1 {
-            margin: 0;
-            font-size: 2rem;
-            font-weight: 600;
+            color: #ce1212;
+            font-weight: 700;
+            margin-bottom: 15px;
         }
         
         .contact-header p {
-            margin: 10px 0 0;
-            opacity: 0.9;
-        }
-        
-        .contact-form {
-            padding: 30px;
-        }
-        
-        .form-floating {
-            margin-bottom: 20px;
-        }
-        
-        .form-floating label {
             color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .contact-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 40px;
+            margin-bottom: 30px;
+        }
+        
+        .form-control {
+            border: 2px solid #f0f0f0;
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
         }
         
         .form-control:focus {
@@ -62,203 +121,164 @@
             box-shadow: 0 0 0 0.2rem rgba(206, 18, 18, 0.25);
         }
         
-        .btn-contact {
+        .btn-primary {
             background: linear-gradient(135deg, #ce1212 0%, #e74c3c 100%);
             border: none;
-            padding: 12px 30px;
+            padding: 15px 30px;
             font-size: 1rem;
             font-weight: 600;
-            border-radius: 50px;
-            color: white;
+            border-radius: 10px;
             transition: all 0.3s ease;
-            width: 100%;
         }
         
-        .btn-contact:hover {
+        .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(206, 18, 18, 0.3);
+        }
+        
+        .contact-info {
+            background: #ce1212;
             color: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 30px;
         }
         
-        .success-message {
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
+        .contact-info h3 {
+            margin-bottom: 20px;
+            font-weight: 600;
         }
         
-        .error-message {
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
+        .contact-info-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .contact-info-item i {
+            font-size: 1.2rem;
+            margin-right: 15px;
+        }
+        
+        .btn-back {
+            background: #6c757d;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-back:hover {
+            background: #5a6268;
+            color: white;
+            text-decoration: none;
+            transform: translateY(-1px);
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="contact-container">
-            <div class="contact-header">
-                <h1><i class="bi bi-envelope"></i> Contactez-nous</h1>
-                <p>Nous sommes là pour vous aider</p>
+        <!-- Bouton retour -->
+        <a href="index.php" class="btn-back">
+            <i class="bi bi-arrow-left me-2"></i>
+            Retour à l'accueil
+        </a>
+        
+        <!-- En-tête -->
+        <div class="contact-header">
+            <h1><i class="bi bi-envelope-heart me-2"></i>Contactez-nous</h1>
+            <p>Nous sommes là pour vous écouter ! N'hésitez pas à nous faire part de vos questions, suggestions ou commentaires.</p>
+        </div>
+        
+        <!-- Messages de feedback -->
+        <?php if (!empty($success_message)): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <?= htmlspecialchars($success_message) ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
+        <?php endif; ?>
+        
+        <?php if (!empty($error_message)): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <?= htmlspecialchars($error_message) ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+        
+        <!-- Formulaire de contact -->
+        <div class="contact-card">
+            <h3 class="mb-4"><i class="bi bi-chat-dots me-2"></i>Envoyez-nous un message</h3>
             
-            <div class="contact-form">
-                <?php
-                // Démarrer la session seulement si elle n'est pas déjà active
-                if (session_status() === PHP_SESSION_NONE) {
-                    session_start();
-                }
-                require_once 'db_connexion.php';
-                require_once 'includes/email_notifications.php';
-                
-                $success_message = '';
-                $error_message = '';
-                
-                // Traitement du formulaire
-                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                    $nom = trim(strip_tags($_POST['name'] ?? ''));
-                    $email = filter_var($_POST['email'] ?? '', FILTER_VALIDATE_EMAIL);
-                    $objet = trim(strip_tags($_POST['subject'] ?? ''));
-                    $message = trim(strip_tags($_POST['message'] ?? ''));
-                    
-                    // Validation
-                    if (empty($nom)) {
-                        $error_message = "Le nom est requis.";
-                    } elseif (!$email) {
-                        $error_message = "Un email valide est requis.";
-                    } elseif (empty($objet)) {
-                        $error_message = "L'objet est requis.";
-                    } elseif (empty($message)) {
-                        $error_message = "Le message est requis.";
-                    } else {
-                        try {
-                            // Insertion en base de données (table Messages ou similaire)
-                            $stmt = $conn->prepare("
-                                INSERT INTO Messages (nom, email, objet, message, date_creation)
-                                VALUES (?, ?, ?, ?, NOW())
-                            ");
-                            
-                            $result = $stmt->execute([
-                                $nom,
-                                $email, 
-                                $objet,
-                                $message
-                            ]);
-                            
-                            if ($result) {
-                                $message_id = $conn->lastInsertId();
-                                $success_message = "Votre message a été envoyé avec succès ! Nous vous répondrons dans les plus brefs délais.";
-                                
-                                // Envoi de notification email à l'admin
-                                try {
-                                    $emailNotification = new EmailNotification();
-                                    $message_data = [
-                                        'nom' => $nom,
-                                        'email' => $email,
-                                        'objet' => $objet,
-                                        'message' => $message
-                                    ];
-                                    $emailNotification->sendNewMessageNotification($message_data);
-                                } catch (Exception $e) {
-                                    // Log l'erreur mais ne bloque pas le processus
-                                    error_log("Erreur notification email: " . $e->getMessage());
-                                }
-                                
-                                // Réinitialiser les champs
-                                $_POST = [];
-                            } else {
-                                $error_message = "Erreur lors de l'envoi du message. Veuillez réessayer.";
-                            }
-                        } catch (Exception $e) {
-                            // Log de l'erreur pour diagnostic
-                            error_log("Erreur formulaire contact: " . $e->getMessage());
-                            $error_message = "Une erreur s'est produite lors de l'envoi de votre message. Veuillez réessayer.";
-                        }
-                    }
-                }
-                ?>
-                
-                <?php if ($success_message): ?>
-                    <div class="success-message">
-                        <i class="bi bi-check-circle"></i> <?php echo $success_message; ?>
+            <form method="POST" action="">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="nom" class="form-label">Nom complet *</label>
+                        <input type="text" class="form-control" id="nom" name="nom" required 
+                               value="<?= isset($nom) ? htmlspecialchars($nom) : '' ?>">
                     </div>
-                <?php endif; ?>
-                
-                <?php if ($error_message): ?>
-                    <div class="error-message">
-                        <i class="bi bi-exclamation-triangle"></i> <?php echo $error_message; ?>
+                    <div class="col-md-6 mb-3">
+                        <label for="email" class="form-label">Email *</label>
+                        <input type="email" class="form-control" id="email" name="email" required
+                               value="<?= isset($email) ? htmlspecialchars($email) : '' ?>">
                     </div>
-                <?php endif; ?>
-                
-                <form method="POST" action="" id="contactForm">
-                    <div class="form-floating">
-                        <input type="text" 
-                               class="form-control" 
-                               id="name" 
-                               name="name" 
-                               placeholder="Votre Nom"
-                               value="<?php echo htmlspecialchars($_POST['name'] ?? ''); ?>"
-                               required>
-                        <label for="name">Votre Nom</label>
-                    </div>
-                    
-                    <div class="form-floating">
-                        <input type="email" 
-                               class="form-control" 
-                               id="email" 
-                               name="email" 
-                               placeholder="Votre Email"
-                               value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>"
-                               required>
-                        <label for="email">Votre Email</label>
-                    </div>
-                    
-                    <div class="form-floating">
-                        <input type="text" 
-                               class="form-control" 
-                               id="subject" 
-                               name="subject" 
-                               placeholder="Objet"
-                               value="<?php echo htmlspecialchars($_POST['subject'] ?? ''); ?>"
-                               required>
-                        <label for="subject">Objet</label>
-                    </div>
-                    
-                    <div class="form-floating">
-                        <textarea class="form-control" 
-                                  id="message" 
-                                  name="message" 
-                                  placeholder="Message"
-                                  style="height: 150px"
-                                  required><?php echo htmlspecialchars($_POST['message'] ?? ''); ?></textarea>
-                        <label for="message">Message</label>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-contact">
-                        <i class="bi bi-send"></i> Envoyer le Message
-                    </button>
-                </form>
-                
-                <div class="text-center mt-4">
-                    <a href="index.php" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> Retour à l'accueil
-                    </a>
                 </div>
-                
-                <!-- Informations de contact -->
-                <div class="row mt-4 pt-4 border-top">
-                    <div class="col-md-6 text-center mb-3">
-                        <h6><i class="bi bi-telephone"></i> Téléphone</h6>
-                        <p class="text-muted mb-0">+237 6 96 56 85 20</p>
+                <div class="mb-3">
+                    <label for="sujet" class="form-label">Sujet *</label>
+                    <input type="text" class="form-control" id="sujet" name="sujet" required
+                           value="<?= isset($sujet) ? htmlspecialchars($sujet) : '' ?>">
+                </div>
+                <div class="mb-3">
+                    <label for="message" class="form-label">Message *</label>
+                    <textarea class="form-control" id="message" name="message" rows="5" required><?= isset($message) ? htmlspecialchars($message) : '' ?></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-send me-2"></i>Envoyer le message
+                </button>
+            </form>
+        </div>
+        
+        <!-- Informations de contact -->
+        <div class="contact-info">
+            <h3><i class="bi bi-info-circle me-2"></i>Nos coordonnées</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="contact-info-item">
+                        <i class="bi bi-geo-alt-fill"></i>
+                        <div>
+                            <strong>Adresse</strong><br>
+                            123 Rue de la Gastronomie<br>
+                            75001 Paris, France
+                        </div>
                     </div>
-                    <div class="col-md-6 text-center">
-                        <h6><i class="bi bi-envelope"></i> Email</h6>
-                        <p class="text-muted mb-0">la-mangeoire@gmail.com</p>
+                    <div class="contact-info-item">
+                        <i class="bi bi-telephone-fill"></i>
+                        <div>
+                            <strong>Téléphone</strong><br>
+                            +33 1 23 45 67 89
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="contact-info-item">
+                        <i class="bi bi-envelope-fill"></i>
+                        <div>
+                            <strong>Email</strong><br>
+                            contact@lamangeoire.fr
+                        </div>
+                    </div>
+                    <div class="contact-info-item">
+                        <i class="bi bi-clock-fill"></i>
+                        <div>
+                            <strong>Horaires</strong><br>
+                            Lun-Dim : 11h30 - 23h00
+                        </div>
                     </div>
                 </div>
             </div>
@@ -267,26 +287,5 @@
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('contactForm');
-            const nameInput = document.getElementById('name');
-            
-            // Auto-focus sur le premier champ
-            nameInput.focus();
-            
-            // Animation de soumission
-            form.addEventListener('submit', function(e) {
-                // Validation finale
-                if (!form.checkValidity()) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    form.classList.add('was-validated');
-                    return;
-                }
-            });
-        });
-    </script>
 </body>
 </html>

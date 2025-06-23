@@ -24,7 +24,7 @@ try {
     require_once 'db_connexion.php';
     echo "   ✅ Connexion réussie\n";
     
-    $stmt = $conn->query("SELECT COUNT(*) FROM Messages");
+    $stmt = $pdo->query("SELECT COUNT(*) FROM Messages");
     $count = $stmt->fetchColumn();
     echo "   ✅ Table Messages accessible ($count messages)\n";
 } catch (Exception $e) {

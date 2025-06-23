@@ -8,7 +8,7 @@ require_once 'db_connexion.php';
 
 // Vérifier que la table Messages existe
 try {
-    $stmt = $conn->query("DESCRIBE Messages");
+    $stmt = $pdo->query("DESCRIBE Messages");
     $columns = $stmt->fetchAll(PDO::FETCH_COLUMN);
     
     echo "✅ Table Messages trouvée avec les colonnes :\n";
@@ -27,7 +27,7 @@ try {
         'message' => 'Ceci est un message de test pour vérifier le bon fonctionnement du formulaire de contact.'
     ];
     
-    $stmt = $conn->prepare("
+    $stmt = $pdo->prepare("
         INSERT INTO Messages (nom, email, objet, message, date_creation)
         VALUES (?, ?, ?, ?, NOW())
     ");
@@ -40,11 +40,11 @@ try {
     ]);
     
     if ($result) {
-        $message_id = $conn->lastInsertId();
+        $message_id = $pdo->lastInsertId();
         echo "✅ Message de test inséré avec succès (ID: $message_id)\n";
         
         // Vérifier que le message a bien été inséré
-        $stmt = $conn->prepare("SELECT * FROM Messages WHERE MessageID = ?");
+        $stmt = $pdo->prepare("SELECT * FROM Messages WHERE MessageID = ?");
         $stmt->execute([$message_id]);
         $inserted_message = $stmt->fetch();
         
@@ -57,7 +57,7 @@ try {
             echo "   - Statut: " . $inserted_message['statut'] . "\n";
             
             // Nettoyer le message de test
-            $stmt = $conn->prepare("DELETE FROM Messages WHERE MessageID = ?");
+            $stmt = $pdo->prepare("DELETE FROM Messages WHERE MessageID = ?");
             $stmt->execute([$message_id]);
             echo "🧹 Message de test supprimé\n";
         }

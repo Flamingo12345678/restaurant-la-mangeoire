@@ -15,7 +15,7 @@ $sql = "SELECT DATE(DateReservation) as jour, COUNT(*) as nombre
        GROUP BY DATE(DateReservation)
        ORDER BY jour";
 
-$stmt = $conn->query($sql);
+$stmt = $pdo->query($sql);
 $trafficArray = [];
 $labels = [];
 

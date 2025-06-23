@@ -67,7 +67,7 @@ require_once 'db_connexion.php';
 echo "<h2>Vérification du compte administrateur</h2>";
 try {
     $query = "SELECT * FROM Administrateurs WHERE Email = ?";
-    $stmt = $conn->prepare($query);
+    $stmt = $pdo->prepare($query);
     $email = "admin@lamangeoire.fr";
     $stmt->execute([$email]);
     $admin = $stmt->fetch(PDO::FETCH_ASSOC);

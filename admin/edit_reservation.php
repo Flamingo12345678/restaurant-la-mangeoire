@@ -30,22 +30,22 @@ $statut = trim($_POST['statut'] ?? 'Réservée');
 if ($nom && $email && $date && mb_strlen($nom) <= 100 && mb_strlen($email) <=100 && mb_strlen($statut) <=50) {
   try {
   $sql="UPDATE Reservations SET nom_client=?, email_client=?, DateReservation=?, statut=? WHERE id=?" ;
-  $stmt=$conn->prepare($sql);
+  $stmt=$pdo->prepare($sql);
   $result = $stmt->execute([$nom, $email, $date, $statut, $id]);
   if ($result) {
   // Libérer toutes les anciennes tables associées
   $sql = "SELECT TableID FROM ReservationTables WHERE ReservationID = ?";
-  $stmt_old = $conn->prepare($sql);
+  $stmt_old = $pdo->prepare($sql);
   $stmt_old->execute([$id]);
   $old_tables = $stmt_old->fetchAll(PDO::FETCH_COLUMN);
   if ($old_tables) {
   foreach ($old_tables as $table_id) {
   $sql = "UPDATE TablesRestaurant SET Statut = 'Libre' WHERE TableID = ?";
-  $stmt_update = $conn->prepare($sql);
+  $stmt_update = $pdo->prepare($sql);
   $stmt_update->execute([$table_id]);
   }
   $sql = "DELETE FROM ReservationTables WHERE ReservationID = ?";
-  $stmt_del = $conn->prepare($sql);
+  $stmt_del = $pdo->prepare($sql);
   $stmt_del->execute([$id]);
   }
   // Associer les nouvelles tables sélectionnées
@@ -53,10 +53,10 @@ if ($nom && $email && $date && mb_strlen($nom) <= 100 && mb_strlen($email) <=100
   foreach ($_POST['table_ids'] as $table_id) {
   $table_id = intval($table_id);
   $sql = "INSERT INTO ReservationTables (ReservationID, TableID, nb_places) VALUES (?, ?, ?)";
-  $stmt_assoc = $conn->prepare($sql);
+  $stmt_assoc = $pdo->prepare($sql);
   $stmt_assoc->execute([$id, $table_id, 0]);
   $sql = "UPDATE TablesRestaurant SET Statut = 'Réservée' WHERE TableID = ?";
-  $stmt_update = $conn->prepare($sql);
+  $stmt_update = $pdo->prepare($sql);
   $stmt_update->execute([$table_id]);
   }
   }
@@ -79,7 +79,7 @@ if ($nom && $email && $date && mb_strlen($nom) <= 100 && mb_strlen($email) <=100
   }
   // Récupération de la réservation avec PDO
   $sql = "SELECT * FROM Reservations WHERE id=?";
-  $stmt = $conn->prepare($sql);
+  $stmt = $pdo->prepare($sql);
   $stmt->execute([$id]);
   $reservation = $stmt->fetch(PDO::FETCH_ASSOC);
   } else {

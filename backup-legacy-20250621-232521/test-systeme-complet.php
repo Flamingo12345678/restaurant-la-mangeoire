@@ -75,12 +75,12 @@ try {
     echo "✅ Connexion à la base de données réussie\n";
     
     // Vérifier la table reservations
-    $stmt = $conn->query("SHOW TABLES LIKE 'reservations'");
+    $stmt = $pdo->query("SHOW TABLES LIKE 'reservations'");
     if ($stmt->rowCount() > 0) {
         echo "✅ Table 'reservations' existe\n";
         
         // Vérifier la structure de la table
-        $stmt = $conn->query("DESCRIBE reservations");
+        $stmt = $pdo->query("DESCRIBE reservations");
         $columns = $stmt->fetchAll(PDO::FETCH_COLUMN);
         $required_columns = ['id', 'nom', 'email', 'telephone', 'date_reservation', 'heure_reservation', 'nombre_personnes', 'message', 'statut', 'date_creation'];
         

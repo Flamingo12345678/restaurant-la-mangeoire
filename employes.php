@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajouter'])) {
     $valid = validate_nom($nom) && validate_prenom($prenom) && validate_nom($poste, 50) && validate_salaire($salaire) && validate_date($date_embauche);
     if ($valid) {
       $sql = "INSERT INTO Employes (Nom, Prenom, Poste, Salaire, DateEmbauche) VALUES (?, ?, ?, ?, ?)";
-      $stmt = $conn->prepare($sql);
+      $stmt = $pdo->prepare($sql);
       $stmt->execute([$nom, $prenom, $poste, $salaire, $date_embauche]);
       set_message('✅ Employé ajouté avec succès.');
       header('Location: ' . $_SERVER['PHP_SELF']);
@@ -50,14 +50,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_employe'])) {
   } else {
     $id = intval($_POST['delete_employe']);
     // Vérification d'existence de l'employé
-    $check = $conn->prepare("SELECT COUNT(*) FROM Employes WHERE EmployeID=?");
+    $check = $pdo->prepare("SELECT COUNT(*) FROM Employes WHERE EmployeID=?");
     $check->execute([$id]);
     if ($check->fetchColumn() == 0) {
       set_message('❌ Cet employé n’existe pas ou a déjà été supprimé.', 'error');
       header('Location: ' . $_SERVER['PHP_SELF']);
       exit;
     }
-    $stmt = $conn->prepare("DELETE FROM Employes WHERE EmployeID=?");
+    $stmt = $pdo->prepare("DELETE FROM Employes WHERE EmployeID=?");
     $stmt->execute([$id]);
     set_message('🗑️ Employé supprimé avec succès.');
     header('Location: ' . $_SERVER['PHP_SELF']);
@@ -68,9 +68,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_employe'])) {
 $employes_per_page = 10;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $employes_per_page;
-$total_employes = $conn->query("SELECT COUNT(*) FROM Employes")->fetchColumn();
+$total_employes = $pdo->query("SELECT COUNT(*) FROM Employes")->fetchColumn();
 $total_pages = ceil($total_employes / $employes_per_page);
-$employes = $conn->query("SELECT * FROM Employes ORDER BY EmployeID DESC LIMIT $employes_per_page OFFSET $offset")->fetchAll();
+$employes = $pdo->query("SELECT * FROM Employes ORDER BY EmployeID DESC LIMIT $employes_per_page OFFSET $offset")->fetchAll();
 
 // CSS supplémentaires spécifiques à cette page
 $additional_css = [

@@ -9,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nom'], $_POST['prix']
   $prix = floatval($_POST['prix']);
   if ($nom && $prix > 0) {
     $sql = "INSERT INTO Menus (NomItem, Prix) VALUES (?, ?)";
-    $stmt = $conn->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     if ($stmt) {
       if ($stmt->execute([$nom, $prix])) {
         set_message('Menu ajouté avec succès.', 'success');
@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_menu_id'], $_P
   }
   $id = intval($_POST['delete_menu_id']);
   $sql = "DELETE FROM Menus WHERE MenuID = ?";
-  $stmt = $conn->prepare($sql);
+  $stmt = $pdo->prepare($sql);
   if ($stmt) {
     if ($stmt->execute([$id])) {
       set_message('Menu supprimé.', 'success');
@@ -54,11 +54,11 @@ $per_page = 20;
 $offset = ($page - 1) * $per_page;
 // Compter le total
 $total_sql = "SELECT COUNT(*) FROM Menus";
-$total_menus = $conn->query($total_sql)->fetchColumn();
+$total_menus = $pdo->query($total_sql)->fetchColumn();
 $total_pages = ceil($total_menus / $per_page);
 $menus = [];
 $sql = "SELECT * FROM Menus ORDER BY MenuID DESC LIMIT :limit OFFSET :offset";
-$stmt = $conn->prepare($sql);
+$stmt = $pdo->prepare($sql);
 $stmt->bindValue(':limit', $per_page, PDO::PARAM_INT);
 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 $stmt->execute();

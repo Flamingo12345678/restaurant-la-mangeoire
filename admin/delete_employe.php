@@ -14,7 +14,7 @@ if ($id > 0 && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
   }
   // Vérification d'existence de l'employé
-  $check = $conn->prepare("SELECT COUNT(*) FROM Employes WHERE EmployeID=?");
+  $check = $pdo->prepare("SELECT COUNT(*) FROM Employes WHERE EmployeID=?");
   $check->execute([$id]);
   if ($check->fetchColumn() == 0) {
     set_message('Employé inexistant ou déjà supprimé.', 'error');
@@ -23,7 +23,7 @@ if ($id > 0 && $_SERVER['REQUEST_METHOD'] === 'POST') {
   }
   try {
     $sql = "DELETE FROM Employes WHERE EmployeID=?";
-    $stmt = $conn->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $result = $stmt->execute([$id]);
     if ($result) {
       set_message('Employé supprimé.');

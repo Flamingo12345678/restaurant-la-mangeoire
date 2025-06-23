@@ -14,7 +14,7 @@ echo "-" . str_repeat("-", 30) . "\n";
 try {
     require_once 'db_connexion.php';
     
-    $stmt = $conn->query('DESCRIBE Messages');
+    $stmt = $pdo->query('DESCRIBE Messages');
     $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     echo "✅ Table Messages trouvée avec " . count($columns) . " colonnes :\n";
@@ -23,7 +23,7 @@ try {
     }
     
     // Vérifier les valeurs de statut
-    $stmt = $conn->query("SHOW COLUMNS FROM Messages LIKE 'statut'");
+    $stmt = $pdo->query("SHOW COLUMNS FROM Messages LIKE 'statut'");
     $statut_info = $stmt->fetch(PDO::FETCH_ASSOC);
     echo "   📊 Valeurs de statut possibles : {$statut_info['Type']}\n";
     
@@ -111,7 +111,7 @@ echo "-" . str_repeat("-", 30) . "\n";
 
 try {
     // Statistiques des messages
-    $stmt = $conn->query("
+    $stmt = $pdo->query("
         SELECT statut, COUNT(*) as count 
         FROM Messages 
         GROUP BY statut
@@ -133,7 +133,7 @@ try {
     // Afficher quelques messages récents
     if ($total > 0) {
         echo "\n📬 Messages récents :\n";
-        $stmt = $conn->query("
+        $stmt = $pdo->query("
             SELECT MessageID, nom, email, objet, statut, 
                    DATE_FORMAT(date_creation, '%d/%m/%Y %H:%i') as date_formatted
             FROM Messages 

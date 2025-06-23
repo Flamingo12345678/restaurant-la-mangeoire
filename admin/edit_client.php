@@ -16,7 +16,7 @@ $prenom = trim($_POST['prenom'] ?? '');
 $email = validate_email($_POST['email'] ?? '') ? $_POST['email'] : '';
 $tel = trim($_POST['telephone'] ?? '');
 // Vérifier l'existence du client avant modification
-$check = $conn->prepare("SELECT COUNT(*) FROM Clients WHERE ClientID=?");
+$check = $pdo->prepare("SELECT COUNT(*) FROM Clients WHERE ClientID=?");
 $check->execute([$id]);
 if ($check->fetchColumn() == 0) {
 set_message('Ce client n\'existe pas ou a déjà été supprimé.', 'error');
@@ -27,7 +27,7 @@ exit;
 if ($nom && $prenom && $email && mb_strlen($nom) <= 100 && mb_strlen($prenom) <=100 && mb_strlen($tel) <=20) {
   try {
   $sql="UPDATE Clients SET Nom=?, Prenom=?, Email=?, Telephone=? WHERE ClientID=?" ;
-  $stmt=$conn->prepare($sql);
+  $stmt=$pdo->prepare($sql);
   $result = $stmt->execute([$nom, $prenom, $email, $tel, $id]);
   if ($result) {
   set_message('Client modifié.');
@@ -49,7 +49,7 @@ if ($nom && $prenom && $email && mb_strlen($nom) <= 100 && mb_strlen($prenom) <=
   }
   // Récupération du client avec PDO (et non sqlsrv)
   $sql = "SELECT * FROM Clients WHERE ClientID=?";
-  $stmt = $conn->prepare($sql);
+  $stmt = $pdo->prepare($sql);
   $stmt->execute([$id]);
   $client = $stmt->fetch(PDO::FETCH_ASSOC);
   } else {

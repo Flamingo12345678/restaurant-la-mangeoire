@@ -63,7 +63,7 @@ if (empty($nom)) {
     $error_message = "Le message est requis.";
 } else {
     try {
-        $stmt = $conn->prepare("
+        $stmt = $pdo->prepare("
             INSERT INTO Messages (nom, email, objet, message, date_creation)
             VALUES (?, ?, ?, ?, NOW())
         ");
@@ -71,12 +71,12 @@ if (empty($nom)) {
         $result = $stmt->execute([$nom, $email, $objet, $message]);
         
         if ($result) {
-            $message_id = $conn->lastInsertId();
+            $message_id = $pdo->lastInsertId();
             $success = true;
             echo "   ✅ Message inséré avec succès (ID: $message_id)\n";
             
             // Nettoyer le message de test
-            $stmt = $conn->prepare("DELETE FROM Messages WHERE MessageID = ?");
+            $stmt = $pdo->prepare("DELETE FROM Messages WHERE MessageID = ?");
             $stmt->execute([$message_id]);
             echo "   🧹 Message de test supprimé\n";
         } else {

@@ -28,14 +28,14 @@
 ```php
 // Récupération limitée - seulement les prix
 $menu_prices = [];
-$stmt = $conn->prepare("SELECT MenuID, NomItem, Prix FROM Menus");
+$stmt = $pdo->prepare("SELECT MenuID, NomItem, Prix FROM Menus");
 ```
 
 **Après :**
 ```php
 // Récupération complète avec descriptions
 $menus_data = [];
-$stmt = $conn->prepare("SELECT MenuID, NomItem, Description, Prix FROM Menus ORDER BY MenuID");
+$stmt = $pdo->prepare("SELECT MenuID, NomItem, Description, Prix FROM Menus ORDER BY MenuID");
 ```
 
 ### 2. Affichage dynamique du menu

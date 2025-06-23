@@ -23,17 +23,17 @@ require_once __DIR__ . '/../../includes/order-manager.php';
 // Configuration et initialisation
 try {
     // Connexion à la base de données
-    $conn = getDBConnection();
+    $pdo = getDBConnection();
     
     // Currency Manager (si disponible)
     $currencyManager = null;
     if (file_exists(__DIR__ . '/../../includes/currency_manager.php')) {
         require_once __DIR__ . '/../../includes/currency_manager.php';
-        $currencyManager = new CurrencyManager($conn);
+        $currencyManager = new CurrencyManager($pdo);
     }
     
     // Order Manager
-    $orderManager = new OrderManager($conn, $currencyManager);
+    $orderManager = new OrderManager($pdo, $currencyManager);
     
 } catch (Exception $e) {
     http_response_code(500);

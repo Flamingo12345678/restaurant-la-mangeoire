@@ -15,14 +15,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_statut'], $_POST
   } else {
     $edit_id = intval($_POST['edit_id']);
     $edit_statut = ($_POST['edit_statut'] === 'Annulée') ? 'Annulée' : 'Réservée';
-    $check = $conn->prepare("SELECT COUNT(*) FROM Reservations WHERE ReservationID=?");
+    $check = $pdo->prepare("SELECT COUNT(*) FROM Reservations WHERE ReservationID=?");
     $check->execute([$edit_id]);
     if ($check->fetchColumn() == 0) {
       set_message('❌ Cette réservation n’existe pas.', 'error');
       header('Location: ' . $_SERVER['PHP_SELF']);
       exit;
     }
-    $stmt = $conn->prepare("UPDATE Reservations SET Statut=? WHERE ReservationID=?");
+    $stmt = $pdo->prepare("UPDATE Reservations SET Statut=? WHERE ReservationID=?");
     $stmt->execute([$edit_statut, $edit_id]);
     set_message('✅ Statut de la réservation modifié.');
     header('Location: ' . $_SERVER['PHP_SELF']);
@@ -39,14 +39,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_reservation'])
   } else {
     $id = intval($_POST['delete_reservation']);
     // Vérification d'existence de la réservation
-    $check = $conn->prepare("SELECT COUNT(*) FROM Reservations WHERE ReservationID=?");
+    $check = $pdo->prepare("SELECT COUNT(*) FROM Reservations WHERE ReservationID=?");
     $check->execute([$id]);
     if ($check->fetchColumn() == 0) {
       set_message('❌ Cette réservation n’existe pas ou a déjà été supprimée.', 'error');
       header('Location: ' . $_SERVER['PHP_SELF']);
       exit;
     }
-    $stmt = $conn->prepare("DELETE FROM Reservations WHERE ReservationID=?");
+    $stmt = $pdo->prepare("DELETE FROM Reservations WHERE ReservationID=?");
     $stmt->execute([$id]);
     set_message('🗑️ Réservation supprimée avec succès.');
     header('Location: ' . $_SERVER['PHP_SELF']);
@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajouter'])) {
     $valid = validate_nom($nom) && validate_email($email) && validate_date(substr($date, 0, 10)) && $nb_personnes > 0;
     if ($valid) {
       $sql = "INSERT INTO Reservations (ClientID, nom_client, email_client, telephone, message, DateReservation, Statut, nb_personnes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-      $stmt = $conn->prepare($sql);
+      $stmt = $pdo->prepare($sql);
       $stmt->execute([$clientID, $nom, $email, $telephone, $message, $date, $statut, $nb_personnes]);
       set_message('✅ Réservation ajoutée avec succès.');
       header('Location: ' . $_SERVER['PHP_SELF']);
@@ -90,9 +90,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajouter'])) {
 $reservations_per_page = 10;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $reservations_per_page;
-$total_reservations = $conn->query("SELECT COUNT(*) FROM Reservations")->fetchColumn();
+$total_reservations = $pdo->query("SELECT COUNT(*) FROM Reservations")->fetchColumn();
 $total_pages = ceil($total_reservations / $reservations_per_page);
-$reservations = $conn->query("SELECT * FROM Reservations ORDER BY ReservationID DESC LIMIT $reservations_per_page OFFSET $offset")->fetchAll();
+$reservations = $pdo->query("SELECT * FROM Reservations ORDER BY ReservationID DESC LIMIT $reservations_per_page OFFSET $offset")->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -246,10 +246,10 @@ $reservations = $conn->query("SELECT * FROM Reservations ORDER BY ReservationID 
   <!-- Statistiques rapides -->
   <?php
   $stats = [
-    'total' => $conn->query("SELECT COUNT(*) FROM Reservations")->fetchColumn(),
-    'reservees' => $conn->query("SELECT COUNT(*) FROM Reservations WHERE Statut = 'Réservée'")->fetchColumn(),
-    'annulees' => $conn->query("SELECT COUNT(*) FROM Reservations WHERE Statut = 'Annulée'")->fetchColumn(),
-    'aujourdhui' => $conn->query("SELECT COUNT(*) FROM Reservations WHERE DATE(DateReservation) = CURDATE()")->fetchColumn(),
+    'total' => $pdo->query("SELECT COUNT(*) FROM Reservations")->fetchColumn(),
+    'reservees' => $pdo->query("SELECT COUNT(*) FROM Reservations WHERE Statut = 'Réservée'")->fetchColumn(),
+    'annulees' => $pdo->query("SELECT COUNT(*) FROM Reservations WHERE Statut = 'Annulée'")->fetchColumn(),
+    'aujourdhui' => $pdo->query("SELECT COUNT(*) FROM Reservations WHERE DATE(DateReservation) = CURDATE()")->fetchColumn(),
   ];
   ?>
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">

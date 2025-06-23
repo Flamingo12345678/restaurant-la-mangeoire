@@ -22,7 +22,7 @@ $date_embauche = $_POST['date_embauche'] ?? '';
 if ($nom && $prenom && $poste && $salaire > 0 && $date_embauche && mb_strlen($nom) <= 100 && mb_strlen($prenom) <=100 && mb_strlen($poste) <=50) {
   try {
   $sql="UPDATE Employes SET Nom=?, Prenom=?, Poste=?, Salaire=?, DateEmbauche=? WHERE EmployeID=?" ;
-  $stmt=$conn->prepare($sql);
+  $stmt=$pdo->prepare($sql);
   $result = $stmt->execute([$nom, $prenom, $poste, $salaire, $date_embauche, $id]);
   if ($result) {
   set_message('Employé modifié.');
@@ -44,7 +44,7 @@ if ($nom && $prenom && $poste && $salaire > 0 && $date_embauche && mb_strlen($no
   }
   // Récupération de l'employé avec PDO
   $sql = "SELECT * FROM Employes WHERE EmployeID=?";
-  $stmt = $conn->prepare($sql);
+  $stmt = $pdo->prepare($sql);
   $stmt->execute([$id]);
   $employe = $stmt->fetch(PDO::FETCH_ASSOC);
   } else {

@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($valid) {
       try {
         $sql = "INSERT INTO Clients (Nom, Prenom, Email, Telephone) VALUES (?, ?, ?, ?)";
-        $stmt = $conn->prepare($sql);
+        $stmt = $pdo->prepare($sql);
         $result = $stmt->execute([$nom, $prenom, $email, $tel]);
         if ($result) {
           $message = 'Client ajouté avec succès.';

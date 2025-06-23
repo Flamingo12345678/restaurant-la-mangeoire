@@ -30,7 +30,7 @@ $prix = floatval($_POST['prix'] ?? 0);
 if ($nom && $prix > 0 && mb_strlen($nom) <= 100 && mb_strlen($description) <=255) {
   try {
   $sql="UPDATE Menus SET NomItem=?, Description=?, Prix=? WHERE MenuID=?" ;
-  $stmt=$conn->prepare($sql);
+  $stmt=$pdo->prepare($sql);
   $result = $stmt->execute([$nom, $description, $prix, $id]);
   if ($result) {
   set_message('Menu modifié.');
@@ -51,7 +51,7 @@ if ($nom && $prix > 0 && mb_strlen($nom) <= 100 && mb_strlen($description) <=255
   exit;
   }
   $sql = "SELECT * FROM Menus WHERE MenuID=?";
-  $stmt = $conn->prepare($sql);
+  $stmt = $pdo->prepare($sql);
   $stmt->execute([$id]);
   $menu = $stmt->fetch(PDO::FETCH_ASSOC);
   } else {

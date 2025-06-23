@@ -191,7 +191,7 @@
             </div>
             <div class="stat-card">
                 <div class="stat-number" id="total-value">0</div>
-                <div class="stat-label">Valeur Totale (FCFA)</div>
+                <div class="stat-label">Valeur Totale (€)</div>
             </div>
         </div>
 

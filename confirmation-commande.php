@@ -1,7 +1,21 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Définir cette constante pour éviter l'auto-configuration
+define('HTTPS_MANAGER_NO_AUTO', true);
+
 require_once 'includes/common.php';
+require_once 'includes/payment_manager.php';
 require_once 'db_connexion.php';
+require_once 'includes/https_manager.php';
+
+// Configuration environnement sécurisé sans forcer HTTPS en développement
+if (!isset($_GET['test']) && !isset($_GET['dev'])) {
+    // Seulement ajouter les headers de sécurité, pas forcer HTTPS en développement
+    HTTPSManager::addSecurityHeaders();
+}
 
 // Custom function to display cart messages
 function display_cart_message() {
@@ -26,7 +40,7 @@ $order = null;
 
 if ($order_id > 0) {
     // Get order details
-    $stmt = $conn->prepare("
+    $stmt = $pdo->prepare("
         SELECT * FROM Commandes WHERE CommandeID = ?
     ");
     $stmt->execute([$order_id]);
@@ -34,7 +48,7 @@ if ($order_id > 0) {
     
     // Get order items
     if ($order) {
-        $stmt = $conn->prepare("
+        $stmt = $pdo->prepare("
             SELECT * FROM DetailsCommande WHERE CommandeID = ?
         ");
         $stmt->execute([$order_id]);
@@ -49,6 +63,15 @@ if (!$order) {
     header("Location: index.php");
     exit;
 }
+
+// Vérifier si la commande est déjà payée
+$stmt = $pdo->prepare("SELECT * FROM Paiements WHERE CommandeID = ? AND Statut = 'Confirme'");
+$stmt->execute([$order_id]);
+$paiement_existant = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// Initialiser le gestionnaire de paiements
+$paymentManager = new PaymentManager();
+$public_keys = $paymentManager->getPublicKeys();
 ?>
 
 <!DOCTYPE html>
@@ -92,7 +115,78 @@ if (!$order) {
             border-radius: 5px;
             margin-top: 30px;
         }
+        
+        /* Styles pour l'étape 3 de paiement */
+        .step-number {
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        .payment-methods {
+            margin: 30px 0;
+        }
+        
+        .payment-method-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .payment-method-card:hover .card {
+            border-color: #007bff !important;
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .payment-method-card .card {
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+        
+        .payment-icon {
+            transition: transform 0.3s ease;
+        }
+        
+        .payment-method-card:hover .payment-icon {
+            transform: scale(1.1);
+        }
+        
+        #card-element {
+            background: white;
+        }
+        
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .loading-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 400px;
+        }
     </style>
+    
+    <!-- Stripe SDK -->
+    <?php if (!$paiement_existant && $public_keys['stripe_publishable_key']): ?>
+        <script src="https://js.stripe.com/v3/"></script>
+    <?php endif; ?>
 </head>
 <body>
     <header id="header" class="header d-flex align-items-center sticky-top">
@@ -141,7 +235,18 @@ if (!$order) {
                             <i class="bi bi-receipt"></i>
                         </div>
                         <h2>Commande Confirmée!</h2>
-                        <p class="lead">Votre commande a été enregistrée avec succès. Vous paierez à la livraison.</p>
+                        <p class="lead">Votre commande a été enregistrée avec succès.</p>
+                        
+                        <?php if ($paiement_existant): ?>
+                            <div class="alert alert-success">
+                                <i class="bi bi-check-circle"></i> <strong>Paiement confirmé!</strong> Votre commande sera livrée prochainement.
+                            </div>
+                        <?php else: ?>
+                            <div class="alert alert-info">
+                                <i class="bi bi-credit-card"></i> <strong>Étape 3 - Finaliser votre paiement</strong>
+                                <p class="mb-0 mt-2">Veuillez choisir votre mode de paiement pour confirmer définitivement votre commande.</p>
+                            </div>
+                        <?php endif; ?>
                         
                         <div class="order-details mt-5 text-start">
                             <h4 class="mb-4">Détails de la commande</h4>
@@ -150,8 +255,16 @@ if (!$order) {
                                 <div class="col-md-6">
                                     <p><strong>Numéro de commande:</strong> #<?php echo $order['CommandeID']; ?></p>
                                     <p><strong>Date:</strong> <?php echo date('d/m/Y H:i', strtotime($order['DateCommande'])); ?></p>
-                                    <p><strong>Statut:</strong> <span class="badge bg-warning text-dark">En attente de livraison</span></p>
-                                    <p><strong>Mode de paiement:</strong> Paiement à la livraison</p>
+                                    <p><strong>Statut:</strong> 
+                                    <?php if ($paiement_existant): ?>
+                                        <span class="badge bg-success">Payée</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-warning text-dark">En attente de paiement</span>
+                                    <?php endif; ?>
+                                    </p>
+                                    <p><strong>Mode de paiement:</strong> 
+                                    <?php echo $paiement_existant ? 'Carte bancaire (payé)' : 'En attente de paiement'; ?>
+                                    </p>
                                 </div>
                                 <div class="col-md-6">
                                     <p><strong>Client:</strong> <?php echo htmlspecialchars($order['PrenomClient'] . ' ' . $order['NomClient']); ?></p>
@@ -180,16 +293,16 @@ if (!$order) {
                                         <?php foreach ($order_items as $item): ?>
                                         <tr>
                                             <td><?php echo htmlspecialchars($item['NomItem']); ?></td>
-                                            <td class="text-center"><?php echo number_format($item['Prix'], 0, ',', ' '); ?> XAF</td>
+                                            <td class="text-center"><?php echo number_format($item['Prix'], 2, ',', ' '); ?> €</td>
                                             <td class="text-center"><?php echo $item['Quantite']; ?></td>
-                                            <td class="text-end"><?php echo number_format($item['SousTotal'], 0, ',', ' '); ?> XAF</td>
+                                            <td class="text-end"><?php echo number_format($item['SousTotal'], 2, ',', ' '); ?> €</td>
                                         </tr>
                                         <?php endforeach; ?>
                                     </tbody>
                                     <tfoot>
                                         <tr>
                                             <th colspan="3" class="text-end">Total</th>
-                                            <th class="text-end"><?php echo number_format($order['MontantTotal'], 0, ',', ' '); ?> XAF</th>
+                                            <th class="text-end"><?php echo number_format($order['MontantTotal'], 2, ',', ' '); ?> €</th>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -197,11 +310,124 @@ if (!$order) {
                         </div>
                         
                         <div class="mt-5">
-                            <p>Un e-mail de confirmation a été envoyé à votre adresse. Vous serez contacté prochainement pour finaliser la livraison.</p>
+                            <?php if ($paiement_existant): ?>
+                                <p>Un e-mail de confirmation a été envoyé à votre adresse. Votre commande sera livrée prochainement.</p>
+                            <?php else: ?>
+                                <!-- Système de paiement moderne - Étape 3 -->
+                                <div class="payment-section">
+                                    <div class="step-header mb-4">
+                                        <span class="step-number bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 40px; height: 40px; font-weight: bold;">3</span>
+                                        <h4 class="d-inline-block ms-3 mb-0">Choisissez votre mode de paiement</h4>
+                                    </div>
+                                    
+                                    <div class="payment-methods">
+                                        <div class="row g-3">
+                                            <!-- Stripe (Carte bancaire) -->
+                                            <div class="col-md-4">
+                                                <div class="payment-method-card h-100" data-method="stripe">
+                                                    <div class="card h-100 border-2">
+                                                        <div class="card-body text-center p-4">
+                                                            <div class="payment-icon mb-3">
+                                                                <i class="bi bi-credit-card text-primary" style="font-size: 2.5rem;"></i>
+                                                            </div>
+                                                            <h5 class="card-title">Carte Bancaire</h5>
+                                                            <p class="card-text text-muted">Paiement sécurisé Stripe</p>
+                                                            <small class="text-success">
+                                                                <i class="bi bi-shield-check"></i> 3D Secure
+                                                            </small>
+                                                            <div class="mt-3">
+                                                                <button class="btn btn-primary w-100" onclick="initiateStripePayment()">
+                                                                    <i class="bi bi-lock"></i> Payer <?php echo number_format($order['MontantTotal'], 2, ',', ' '); ?> €
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- PayPal -->
+                                            <div class="col-md-4">
+                                                <div class="payment-method-card h-100" data-method="paypal">
+                                                    <div class="card h-100 border-2">
+                                                        <div class="card-body text-center p-4">
+                                                            <div class="payment-icon mb-3">
+                                                                <i class="bi bi-paypal text-warning" style="font-size: 2.5rem;"></i>
+                                                            </div>
+                                                            <h5 class="card-title">PayPal</h5>
+                                                            <p class="card-text text-muted">Compte ou carte via PayPal</p>
+                                                            <small class="text-info">
+                                                                <i class="bi bi-shield-check"></i> Protection acheteur
+                                                            </small>
+                                                            <div class="mt-3">
+                                                                <button class="btn btn-warning w-100" onclick="initiatePayPalPayment()">
+                                                                    <i class="bi bi-paypal"></i> Payer <?php echo number_format($order['MontantTotal'], 2, ',', ' '); ?> €
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Stripe Alternative -->
+                                            <div class="col-md-4">
+                                                <div class="payment-method-card h-100" data-method="stripe-alt">
+                                                    <div class="card h-100 border-2">
+                                                        <div class="card-body text-center p-4">
+                                                            <div class="payment-icon mb-3">
+                                                                <i class="bi bi-credit-card-2-front text-info" style="font-size: 2.5rem;"></i>
+                                                            </div>
+                                                            <h5 class="card-title">Stripe</h5>
+                                                            <p class="card-text text-muted">Paiement sécurisé Stripe</p>
+                                                            <small class="text-info">
+                                                                <i class="bi bi-lightning"></i> Instantané
+                                                            </small>
+                                                            <div class="mt-3">
+                                                                <button class="btn btn-info w-100" onclick="initiateStripePayment()">
+                                                                    <i class="bi bi-credit-card"></i> Payer <?php echo number_format($order['MontantTotal'], 2, ',', ' '); ?> €
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Éléments Stripe (cachés initialement) -->
+                                    <div id="stripe-payment-form" class="mt-4" style="display: none;">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h5 class="mb-0"><i class="bi bi-credit-card"></i> Paiement par carte bancaire</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <form id="payment-form">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Informations de la carte</label>
+                                                        <div id="card-element" style="padding: 12px; border: 1px solid #ced4da; border-radius: 0.375rem;">
+                                                            <!-- Stripe Elements sera injecté ici -->
+                                                        </div>
+                                                        <div id="card-errors" class="text-danger mt-2"></div>
+                                                    </div>
+                                                    <button type="submit" id="submit-payment" class="btn btn-primary w-100">
+                                                        <span id="button-text">Confirmer le paiement</span>
+                                                        <div id="spinner" class="spinner-border spinner-border-sm ms-2 d-none" role="status">
+                                                            <span class="visually-hidden">Traitement...</span>
+                                                        </div>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                            
                             <div class="d-flex justify-content-center gap-3 mt-4">
                                 <a href="index.php" class="btn btn-primary">Retour à l'accueil</a>
                                 <?php if (isset($_SESSION['client_id'])): ?>
                                 <a href="mon-compte.php" class="btn btn-outline-secondary">Voir mes commandes</a>
+                                <?php endif; ?>
+                                <?php if (!$paiement_existant): ?>
+                                <a href="contact.php" class="btn btn-outline-info">Besoin d'aide ?</a>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -286,5 +512,181 @@ if (!$order) {
 
     <!-- Main JS File -->
     <script src="assets/js/main.js"></script>
+    
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Traitement en cours...</span>
+            </div>
+            <h4>Traitement du paiement...</h4>
+            <p class="text-muted">Veuillez patienter, ne fermez pas cette page.</p>
+        </div>
+    </div>
+    
+    <!-- Scripts de paiement -->
+    <?php if (!$paiement_existant): ?>
+    <script>
+        // Configuration
+        const ORDER_ID = <?php echo $order_id; ?>;
+        const ORDER_AMOUNT = <?php echo $order['MontantTotal']; ?>;
+        
+        <?php if ($public_keys['stripe_publishable_key']): ?>
+        // Configuration Stripe
+        const stripe = Stripe('<?php echo $public_keys['stripe_publishable_key']; ?>');
+        const elements = stripe.elements();
+        let cardElement = null;
+        let paymentForm = null;
+        <?php endif; ?>
+        
+        // Fonctions de paiement
+        function showLoading() {
+            document.getElementById('loading-overlay').style.display = 'flex';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
+        
+        function showError(message) {
+            hideLoading();
+            alert('Erreur: ' + message);
+        }
+        
+        // Stripe Payment
+        function initiateStripePayment() {
+            <?php if ($public_keys['stripe_publishable_key']): ?>
+            // Cacher les autres méthodes et afficher le formulaire Stripe
+            document.querySelectorAll('.payment-method-card').forEach(card => {
+                card.style.display = 'none';
+            });
+            
+            const stripeForm = document.getElementById('stripe-payment-form');
+            stripeForm.style.display = 'block';
+            
+            // Initialiser Stripe Elements si pas déjà fait
+            if (!cardElement) {
+                cardElement = elements.create('card', {
+                    style: {
+                        base: {
+                            fontSize: '16px',
+                            color: '#424770',
+                            '::placeholder': {
+                                color: '#aab7c4',
+                            },
+                        },
+                    },
+                });
+                cardElement.mount('#card-element');
+                
+                cardElement.on('change', ({error}) => {
+                    const displayError = document.getElementById('card-errors');
+                    if (error) {
+                        displayError.textContent = error.message;
+                    } else {
+                        displayError.textContent = '';
+                    }
+                });
+                
+                // Gestion du formulaire
+                paymentForm = document.getElementById('payment-form');
+                paymentForm.addEventListener('submit', handleStripeSubmit);
+            }
+            <?php else: ?>
+            showError('Stripe non configuré');
+            <?php endif; ?>
+        }
+        
+        async function handleStripeSubmit(event) {
+            event.preventDefault();
+            showLoading();
+            
+            const {token, error} = await stripe.createToken(cardElement);
+            
+            if (error) {
+                showError(error.message);
+                return;
+            }
+            
+            // Créer le PaymentMethod avec le token
+            const {paymentMethod, error: pmError} = await stripe.createPaymentMethod({
+                type: 'card',
+                card: cardElement,
+            });
+            
+            if (pmError) {
+                showError(pmError.message);
+                return;
+            }
+            
+            // Envoyer à l'API
+            try {
+                const response = await fetch('/api/payments.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'stripe_payment',
+                        payment_method_id: paymentMethod.id,
+                        montant: ORDER_AMOUNT,
+                        commande_id: ORDER_ID
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    window.location.href = 'confirmation-paiement.php?commande=' + ORDER_ID + '&status=success';
+                } else if (result.requires_action) {
+                    const {error: confirmError} = await stripe.confirmCardPayment(result.client_secret);
+                    if (confirmError) {
+                        showError(confirmError.message);
+                    } else {
+                        window.location.href = 'confirmation-paiement.php?commande=' + ORDER_ID + '&status=success';
+                    }
+                } else {
+                    showError(result.error || 'Erreur de paiement');
+                }
+            } catch (error) {
+                showError('Erreur de communication: ' + error.message);
+            }
+        }
+        
+        // PayPal Payment
+        async function initiatePayPalPayment() {
+            showLoading();
+            
+            try {
+                const response = await fetch('/api/payments.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'create_paypal_payment',
+                        montant: ORDER_AMOUNT,
+                        commande_id: ORDER_ID,
+                        return_url: window.location.origin + '/api/paypal_return.php',
+                        cancel_url: window.location.href
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success && result.approval_url) {
+                    // Rediriger vers PayPal
+                    window.location.href = result.approval_url;
+                } else {
+                    showError(result.error || 'Erreur PayPal');
+                }
+            } catch (error) {
+                showError('Erreur de communication: ' + error.message);
+            }
+        }
+        
+
+    </script>
+    <?php endif; ?>
 </body>
 </html>

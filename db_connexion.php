@@ -1,32 +1,66 @@
 <?php
-// Chargement automatique du fichier .env (toujours, même en production)
-require_once(__DIR__ . '/vendor/autoload.php');
-if (file_exists(__DIR__ . '/.env')) {
-  $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-  $dotenv->load();
+// Fonction simple pour charger le fichier .env
+function loadEnvFile($filePath) {
+    if (!file_exists($filePath)) {
+        return false;
+    }
+    
+    $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        // Ignorer les commentaires
+        if (strpos(trim($line), '#') === 0) {
+            continue;
+        }
+        
+        // Diviser la ligne en clé=valeur
+        if (strpos($line, '=') !== false) {
+            list($key, $value) = explode('=', $line, 2);
+            $key = trim($key);
+            $value = trim($value, "\" \t\n\r\0\x0B");
+            
+            // Définir la variable d'environnement
+            $_ENV[$key] = $value;
+            putenv("$key=$value");
+        }
+    }
+    return true;
 }
 
-// Connexion PDO MySQL centralisée
-$host = trim(getenv('MYSQLHOST') ?: ($_ENV['MYSQLHOST'] ?? ''), "\" ");
-$db   = trim(getenv('MYSQLDATABASE') ?: ($_ENV['MYSQLDATABASE'] ?? ''), "\" ");
-$user = trim(getenv('MYSQLUSER') ?: ($_ENV['MYSQLUSER'] ?? ''), "\" ");
-$pass = trim(getenv('MYSQLPASSWORD') ?: ($_ENV['MYSQLPASSWORD'] ?? ''), "\" ");
-$port = trim(getenv('MYSQLPORT') ?: ($_ENV['MYSQLPORT'] ?? ''), "\" ");
+// Charger le fichier .env
+$envLoaded = loadEnvFile(__DIR__ . '/.env');
+
+if (!$envLoaded) {
+    die('Erreur : impossible de charger le fichier .env');
+}
+
+// Récupération des variables d'environnement
+if (!function_exists('getEnvVar')) {
+    function getEnvVar($key, $default = '') {
+        return $_ENV[$key] ?? getenv($key) ?: $default;
+    }
+}
+
+$host = getEnvVar('MYSQLHOST');
+$db   = getEnvVar('MYSQLDATABASE');
+$user = getEnvVar('MYSQLUSER');
+$pass = getEnvVar('MYSQLPASSWORD');
+$port = getEnvVar('MYSQLPORT');
 $charset = 'utf8mb4';
 
-// Vérification stricte des variables d'environnement
+// Vérification des variables requises
 $envVars = ['MYSQLHOST', 'MYSQLDATABASE', 'MYSQLUSER', 'MYSQLPASSWORD', 'MYSQLPORT'];
 $missing = [];
 foreach ($envVars as $var) {
-  $val = trim(getenv($var) ?: ($_ENV[$var] ?? ''), "\" ");
-  if (empty($val)) {
-    $missing[] = $var;
-  }
+    $val = getEnvVar($var);
+    if (empty($val)) {
+        $missing[] = $var;
+    }
 }
 
 if (count($missing) > 0) {
-  echo "<pre>Variables d'environnement manquantes : " . implode(', ', $missing) . "</pre>";
-  die("Erreur : une ou plusieurs variables d'environnement MySQL sont manquantes. Vérifiez la configuration Railway (" . implode(', ', $envVars) . ")");
+    echo "<pre>Variables d'environnement manquantes : " . implode(', ', $missing) . "</pre>";
+    echo "<pre>Variables disponibles : " . print_r($_ENV, true) . "</pre>";
+    die("Erreur : variables manquantes dans le fichier .env");
 }
 
 $dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";
@@ -37,7 +71,7 @@ $options = [
   PDO::ATTR_EMULATE_PREPARES   => false,
 ];
 try {
-  $conn = new PDO($dsn, $user, $pass, $options);
+  $pdo = new PDO($dsn, $user, $pass, $options);
 } catch (PDOException $e) {
   if (getenv('RAILWAY_ENVIRONMENT') || !empty($_ENV['RAILWAY_ENVIRONMENT'])) {
     die('Erreur de connexion à la base de données : ' . $e->getMessage());

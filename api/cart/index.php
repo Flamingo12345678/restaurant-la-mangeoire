@@ -22,8 +22,8 @@ require_once __DIR__ . '/../../db_connexion.php';
 // Configuration et initialisation
 try {
     // Connexion à la base de données
-    $conn = $GLOBALS['conn'] ?? null;
-    if (!$conn) {
+    $pdo = $GLOBALS['conn'] ?? null;
+    if (!$pdo) {
         throw new Exception('Connexion base de données non disponible');
     }
     
@@ -42,19 +42,19 @@ $path = $_SERVER['PATH_INFO'] ?? '/';
 
 switch ($method) {
     case 'GET':
-        handleGetRequest($path, $conn);
+        handleGetRequest($path, $pdo);
         break;
         
     case 'POST':
-        handlePostRequest($path, $conn);
+        handlePostRequest($path, $pdo);
         break;
         
     case 'PUT':
-        handlePutRequest($path, $conn);
+        handlePutRequest($path, $pdo);
         break;
         
     case 'DELETE':
-        handleDeleteRequest($path, $conn);
+        handleDeleteRequest($path, $pdo);
         break;
         
     default:
@@ -69,23 +69,23 @@ switch ($method) {
 /**
  * Gérer les requêtes GET
  */
-function handleGetRequest($path, $conn) {
+function handleGetRequest($path, $pdo) {
     $segments = explode('/', trim($path, '/'));
     
     switch ($segments[0]) {
         case 'validate':
             // GET /validate - Valider les articles du panier
-            validateCartItems($conn);
+            validateCartItems($pdo);
             break;
             
         case 'totals':
             // GET /totals - Calculer les totaux
-            calculateTotals($conn);
+            calculateTotals($pdo);
             break;
             
         case 'items':
             // GET /items - Récupérer les détails des articles du menu
-            getMenuItems($conn);
+            getMenuItems($pdo);
             break;
             
         default:
@@ -101,18 +101,18 @@ function handleGetRequest($path, $conn) {
 /**
  * Gérer les requêtes POST
  */
-function handlePostRequest($path, $conn) {
+function handlePostRequest($path, $pdo) {
     $segments = explode('/', trim($path, '/'));
     
     switch ($segments[0]) {
         case 'sync':
             // POST /sync - Synchroniser le panier
-            syncCart($conn);
+            syncCart($pdo);
             break;
             
         case 'validate':
             // POST /validate - Valider un panier complet
-            validateFullCart($conn);
+            validateFullCart($pdo);
             break;
             
         default:
@@ -128,7 +128,7 @@ function handlePostRequest($path, $conn) {
 /**
  * Gérer les requêtes PUT (non utilisées pour le moment)
  */
-function handlePutRequest($path, $conn) {
+function handlePutRequest($path, $pdo) {
     http_response_code(404);
     echo json_encode([
         'success' => false,
@@ -139,7 +139,7 @@ function handlePutRequest($path, $conn) {
 /**
  * Gérer les requêtes DELETE (non utilisées pour le moment)
  */
-function handleDeleteRequest($path, $conn) {
+function handleDeleteRequest($path, $pdo) {
     http_response_code(404);
     echo json_encode([
         'success' => false,
@@ -150,7 +150,7 @@ function handleDeleteRequest($path, $conn) {
 /**
  * Valider les articles du panier
  */
-function validateCartItems($conn) {
+function validateCartItems($pdo) {
     try {
         if (empty($_GET['items'])) {
             throw new InvalidArgumentException('Liste des articles requise (paramètre items)');
@@ -169,7 +169,7 @@ function validateCartItems($conn) {
                 FROM Menus 
                 WHERE MenuID IN ($placeholders)";
         
-        $stmt = $conn->prepare($sql);
+        $stmt = $pdo->prepare($sql);
         $stmt->execute($itemIds);
         $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
@@ -203,7 +203,7 @@ function validateCartItems($conn) {
 /**
  * Calculer les totaux du panier
  */
-function calculateTotals($conn) {
+function calculateTotals($pdo) {
     try {
         $input = json_decode(file_get_contents('php://input'), true);
         
@@ -248,7 +248,7 @@ function calculateTotals($conn) {
             }
             
             // Vérifier que l'article existe et a le bon prix
-            $stmt = $conn->prepare("SELECT Prix, Disponible FROM Menus WHERE MenuID = ?");
+            $stmt = $pdo->prepare("SELECT Prix, Disponible FROM Menus WHERE MenuID = ?");
             $stmt->execute([$item['id']]);
             $menuItem = $stmt->fetch(PDO::FETCH_ASSOC);
             
@@ -284,7 +284,7 @@ function calculateTotals($conn) {
         
         if ($currency !== 'EUR' && file_exists(__DIR__ . '/../../includes/currency_manager.php')) {
             require_once __DIR__ . '/../../includes/currency_manager.php';
-            $currencyManager = new CurrencyManager($conn);
+            $currencyManager = new CurrencyManager($pdo);
             $currencyData = $currencyManager->getCurrencyByCode($currency);
             if ($currencyData) {
                 $currencyRate = $currencyData['rate'];
@@ -325,7 +325,7 @@ function calculateTotals($conn) {
 /**
  * Récupérer les détails des articles du menu
  */
-function getMenuItems($conn) {
+function getMenuItems($pdo) {
     try {
         $itemIds = [];
         
@@ -340,7 +340,7 @@ function getMenuItems($conn) {
                     FROM Menus 
                     WHERE Disponible = 1 
                     ORDER BY NomItem";
-            $stmt = $conn->prepare($sql);
+            $stmt = $pdo->prepare($sql);
             $stmt->execute();
         } else {
             // Retourner seulement les articles demandés
@@ -349,7 +349,7 @@ function getMenuItems($conn) {
                     FROM Menus 
                     WHERE MenuID IN ($placeholders)
                     ORDER BY NomItem";
-            $stmt = $conn->prepare($sql);
+            $stmt = $pdo->prepare($sql);
             $stmt->execute($itemIds);
         }
         
@@ -387,7 +387,7 @@ function getMenuItems($conn) {
 /**
  * Synchroniser le panier (pour les clients connectés)
  */
-function syncCart($conn) {
+function syncCart($pdo) {
     try {
         // Vérifier que l'utilisateur est connecté
         if (!isset($_SESSION['client_id'])) {
@@ -412,7 +412,7 @@ function syncCart($conn) {
         switch ($action) {
             case 'save':
                 // Sauvegarder le panier en base
-                saveCartToDatabase($conn, $clientId, $cartData);
+                saveCartToDatabase($pdo, $clientId, $cartData);
                 echo json_encode([
                     'success' => true,
                     'message' => 'Panier sauvegardé'
@@ -421,7 +421,7 @@ function syncCart($conn) {
                 
             case 'load':
                 // Charger le panier depuis la base
-                $savedCart = loadCartFromDatabase($conn, $clientId);
+                $savedCart = loadCartFromDatabase($pdo, $clientId);
                 echo json_encode([
                     'success' => true,
                     'cart' => $savedCart
@@ -430,11 +430,11 @@ function syncCart($conn) {
                 
             case 'merge':
                 // Fusionner panier local + panier sauvegardé
-                $savedCart = loadCartFromDatabase($conn, $clientId);
+                $savedCart = loadCartFromDatabase($pdo, $clientId);
                 $mergedCart = mergeCartData($cartData, $savedCart);
                 
                 // Sauvegarder le résultat
-                saveCartToDatabase($conn, $clientId, $mergedCart);
+                saveCartToDatabase($pdo, $clientId, $mergedCart);
                 
                 echo json_encode([
                     'success' => true,
@@ -459,7 +459,7 @@ function syncCart($conn) {
 /**
  * Valider un panier complet avant commande
  */
-function validateFullCart($conn) {
+function validateFullCart($pdo) {
     try {
         $input = json_decode(file_get_contents('php://input'), true);
         
@@ -479,7 +479,7 @@ function validateFullCart($conn) {
             }
             
             // Vérifier l'existence et la disponibilité
-            $stmt = $conn->prepare("SELECT NomItem, Prix, Disponible FROM Menus WHERE MenuID = ?");
+            $stmt = $pdo->prepare("SELECT NomItem, Prix, Disponible FROM Menus WHERE MenuID = ?");
             $stmt->execute([$item['id']]);
             $menuItem = $stmt->fetch(PDO::FETCH_ASSOC);
             
@@ -559,20 +559,20 @@ function validateFullCart($conn) {
 /**
  * Sauvegarder le panier en base de données
  */
-function saveCartToDatabase($conn, $clientId, $cartData) {
+function saveCartToDatabase($pdo, $clientId, $cartData) {
     $sql = "INSERT INTO PaniersClients (ClientID, CartData, DateModification) 
             VALUES (?, ?, NOW()) 
             ON DUPLICATE KEY UPDATE CartData = VALUES(CartData), DateModification = NOW()";
     
-    $stmt = $conn->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $stmt->execute([$clientId, json_encode($cartData)]);
 }
 
 /**
  * Charger le panier depuis la base de données
  */
-function loadCartFromDatabase($conn, $clientId) {
-    $stmt = $conn->prepare("SELECT CartData FROM PaniersClients WHERE ClientID = ?");
+function loadCartFromDatabase($pdo, $clientId) {
+    $stmt = $pdo->prepare("SELECT CartData FROM PaniersClients WHERE ClientID = ?");
     $stmt->execute([$clientId]);
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
     

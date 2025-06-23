@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($valid) {
       try {
         $sql = "INSERT INTO Paiements (ReservationID, Montant, DatePaiement, ModePaiement) VALUES (?, ?, ?, ?)";
-        $stmt = $conn->prepare($sql);
+        $stmt = $pdo->prepare($sql);
         $result = $stmt->execute([$reservation_id, $montant, $date, $mode]);
         if ($result) {
           set_message('Paiement ajouté.');

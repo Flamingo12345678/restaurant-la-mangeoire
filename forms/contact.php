@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             // Insertion en base de données
-            $stmt = $conn->prepare("
+            $stmt = $pdo->prepare("
                 INSERT INTO Messages (nom, email, objet, message, date_creation)
                 VALUES (?, ?, ?, ?, NOW())
             ");

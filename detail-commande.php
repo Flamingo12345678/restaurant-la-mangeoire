@@ -26,8 +26,8 @@ if (isset($_GET['id'])) {
     $check_query = "SELECT c.*, m.NomItem, m.Prix, m.Description
                    FROM Commandes c
                    LEFT JOIN Menus m ON c.MenuID = m.MenuID
-                   WHERE c.CommandeID = ? AND c.UtilisateurID = ?";
-    $check_stmt = $conn->prepare($check_query);
+                   WHERE c.CommandeID = ? AND c.ClientID = ?";
+    $check_stmt = $pdo->prepare($check_query);
     $check_stmt->execute([$commande_id, $client_id]);
     $commandes = $check_stmt->fetchAll(PDO::FETCH_ASSOC);
     
@@ -35,13 +35,13 @@ if (isset($_GET['id'])) {
         // Récupérer les infos de la réservation
         $reservation_id = $commandes[0]['ReservationID'];
         $reservation_query = "SELECT * FROM Reservations WHERE ReservationID = ?";
-        $reservation_stmt = $conn->prepare($reservation_query);
+        $reservation_stmt = $pdo->prepare($reservation_query);
         $reservation_stmt->execute([$reservation_id]);
         $reservation = $reservation_stmt->fetch(PDO::FETCH_ASSOC);
         
         // Récupérer les infos de paiement
         $paiement_query = "SELECT * FROM Paiements WHERE CommandeID = ? ORDER BY DatePaiement DESC LIMIT 1";
-        $paiement_stmt = $conn->prepare($paiement_query);
+        $paiement_stmt = $pdo->prepare($paiement_query);
         $paiement_stmt->execute([$commande_id]);
         $paiement = $paiement_stmt->fetch(PDO::FETCH_ASSOC);
     } else {
@@ -53,14 +53,14 @@ if (isset($_GET['id'])) {
     
     // Récupérer les infos de la réservation
     $reservation_query = "SELECT * FROM Reservations WHERE ReservationID = ?";
-    $reservation_stmt = $conn->prepare($reservation_query);
+    $reservation_stmt = $pdo->prepare($reservation_query);
     $reservation_stmt->execute([$reservation_id]);
     $reservation = $reservation_stmt->fetch(PDO::FETCH_ASSOC);
     
     if ($reservation) {
         // Récupérer les infos de paiement liées à la réservation
         $paiement_query = "SELECT * FROM Paiements WHERE ReservationID = ? ORDER BY DatePaiement DESC LIMIT 1";
-        $paiement_stmt = $conn->prepare($paiement_query);
+        $paiement_stmt = $pdo->prepare($paiement_query);
         $paiement_stmt->execute([$reservation_id]);
         $paiement = $paiement_stmt->fetch(PDO::FETCH_ASSOC);
     
@@ -75,7 +75,7 @@ if (isset($_GET['id'])) {
         } else {
             // Vérifier si l'utilisateur est lié à une commande pour cette réservation (table Utilisateurs)
             $check_query = "SELECT COUNT(*) FROM Commandes WHERE ReservationID = ? AND UtilisateurID = ?";
-            $check_stmt = $conn->prepare($check_query);
+            $check_stmt = $pdo->prepare($check_query);
             $check_stmt->execute([$reservation_id, $client_id]);
             $count = $check_stmt->fetchColumn();
             
@@ -90,7 +90,7 @@ if (isset($_GET['id'])) {
                                FROM Commandes c
                                LEFT JOIN Menus m ON c.MenuID = m.MenuID
                                WHERE c.ReservationID = ?";
-            $commandes_stmt = $conn->prepare($commandes_query);
+            $commandes_stmt = $pdo->prepare($commandes_query);
             $commandes_stmt->execute([$reservation_id]);
             $commandes = $commandes_stmt->fetchAll(PDO::FETCH_ASSOC);
         } else {

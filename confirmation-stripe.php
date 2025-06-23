@@ -35,12 +35,12 @@ if ($status === 'success' && $session_id) {
             if ($commande_id) {
                 // Enregistrer le paiement pour une commande
                 $sql = "INSERT INTO Paiements (CommandeID, Montant, MethodePaiement, NumeroTransaction, DatePaiement) VALUES (?, ?, ?, ?, NOW())";
-                $stmt = $conn->prepare($sql);
+                $stmt = $pdo->prepare($sql);
                 $stmt->execute([$commande_id, $montant, $method_paiement, $transaction_id]);
                 
                 // Mettre à jour le statut de la commande
                 $sql_update = "UPDATE Commandes SET Statut = 'Payé', DatePaiement = NOW() WHERE CommandeID = ?";
-                $stmt_update = $conn->prepare($sql_update);
+                $stmt_update = $pdo->prepare($sql_update);
                 $stmt_update->execute([$commande_id]);
                 
                 $message = "✅ Paiement réussi ! Votre commande #$commande_id a été confirmée.";
@@ -51,12 +51,12 @@ if ($status === 'success' && $session_id) {
             } elseif ($reservation_id) {
                 // Enregistrer le paiement pour une réservation
                 $sql = "INSERT INTO Paiements (ReservationID, Montant, MethodePaiement, NumeroTransaction, DatePaiement) VALUES (?, ?, ?, ?, NOW())";
-                $stmt = $conn->prepare($sql);
+                $stmt = $pdo->prepare($sql);
                 $stmt->execute([$reservation_id, $montant, $method_paiement, $transaction_id]);
                 
                 // Mettre à jour le statut de la réservation
                 $sql_update = "UPDATE Reservations SET Statut = 'Confirmé' WHERE ReservationID = ?";
-                $stmt_update = $conn->prepare($sql_update);
+                $stmt_update = $pdo->prepare($sql_update);
                 $stmt_update->execute([$reservation_id]);
                 
                 $message = "✅ Paiement réussi ! Votre réservation #$reservation_id a été confirmée.";

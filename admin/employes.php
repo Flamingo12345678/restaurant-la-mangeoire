@@ -42,7 +42,7 @@ require_once __DIR__ . '/../db_connexion.php';
 // Récupérer les informations de l'administrateur actuel
 try {
     $query = "SELECT Role FROM Administrateurs WHERE AdminID = ?";
-    $stmt = $conn->prepare($query);
+    $stmt = $pdo->prepare($query);
     $stmt->execute([$_SESSION['admin_id']]);
     $admin = $stmt->fetch(PDO::FETCH_ASSOC);
     
@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // Requête d'insertion
                         $query = "INSERT INTO Employes (Nom, Prenom, Email, Telephone, Poste, DateEmbauche, Salaire, MotDePasse, Status) 
                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-                        $stmt = $conn->prepare($query);
+                        $stmt = $pdo->prepare($query);
                         $stmt->execute([$nom, $prenom, $email, $telephone, $poste, $date_embauche, $salaire, $password_hash, $status]);
                         
                         $message = "L'employé a été ajouté avec succès.";
@@ -128,7 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                         
                         // Exécuter la requête
-                        $stmt = $conn->prepare($query);
+                        $stmt = $pdo->prepare($query);
                         $stmt->execute($params);
                         
                         $message = "L'employé a été mis à jour avec succès.";
@@ -143,7 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $id = $_POST['id'];
                 
                 try {
-                    $stmt = $conn->prepare("DELETE FROM Employes WHERE EmployeID = ?");
+                    $stmt = $pdo->prepare("DELETE FROM Employes WHERE EmployeID = ?");
                     $stmt->execute([$id]);
                     
                     $message = "L'employé a été supprimé avec succès.";
@@ -159,12 +159,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $employes_per_page = 20;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $employes_per_page;
-$total_employes = $conn->query("SELECT COUNT(*) FROM Employes")->fetchColumn();
+$total_employes = $pdo->query("SELECT COUNT(*) FROM Employes")->fetchColumn();
 $total_pages = ceil($total_employes / $employes_per_page);
 
 // Récupérer les employés pour la pagination
 $query = "SELECT * FROM Employes ORDER BY Nom ASC, Prenom ASC LIMIT $employes_per_page OFFSET $offset";
-$stmt = $conn->prepare($query);
+$stmt = $pdo->prepare($query);
 $stmt->execute();
 $employes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>

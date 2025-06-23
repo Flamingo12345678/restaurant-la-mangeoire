@@ -10,7 +10,7 @@ echo "=== AJOUT DE LA COLONNE MESSAGE ===" . PHP_EOL;
 
 try {
     // Vérifier si la colonne message existe déjà
-    $stmt = $conn->query("SHOW COLUMNS FROM Reservations LIKE 'message'");
+    $stmt = $pdo->query("SHOW COLUMNS FROM Reservations LIKE 'message'");
     $hasMessage = $stmt->rowCount() > 0;
     
     if (!$hasMessage) {
@@ -18,7 +18,7 @@ try {
         
         // Ajouter la colonne message
         $sql = "ALTER TABLE Reservations ADD COLUMN message TEXT DEFAULT NULL COMMENT 'Message ou demande spéciale du client'";
-        $conn->exec($sql);
+        $pdo->exec($sql);
         
         echo "✅ Colonne 'message' ajoutée avec succès!" . PHP_EOL;
     } else {
@@ -27,7 +27,7 @@ try {
     
     // Afficher la structure finale
     echo PHP_EOL . "📋 Structure finale de la table:" . PHP_EOL;
-    $columns = $conn->query("DESCRIBE Reservations")->fetchAll(PDO::FETCH_ASSOC);
+    $columns = $pdo->query("DESCRIBE Reservations")->fetchAll(PDO::FETCH_ASSOC);
     foreach ($columns as $col) {
         echo "  • {$col['Field']} ({$col['Type']})" . PHP_EOL;
     }

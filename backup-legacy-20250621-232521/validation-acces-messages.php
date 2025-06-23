@@ -13,7 +13,7 @@ echo "-" . str_repeat("-", 20) . "\n";
 try {
     require_once 'db_connexion.php';
     
-    $stmt = $conn->query('DESCRIBE Messages');
+    $stmt = $pdo->query('DESCRIBE Messages');
     $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     $required_columns = ['MessageID', 'nom', 'email', 'objet', 'message', 'date_creation', 'statut'];
@@ -28,7 +28,7 @@ try {
     }
     
     // Statistiques
-    $stmt = $conn->query("SELECT COUNT(*) as total FROM Messages");
+    $stmt = $pdo->query("SELECT COUNT(*) as total FROM Messages");
     $total = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
     echo "📊 Total des messages : $total\n";
     

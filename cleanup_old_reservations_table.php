@@ -10,12 +10,12 @@ echo "=== NETTOYAGE DE L'ANCIENNE TABLE RESERVATIONS ===" . PHP_EOL;
 
 try {
     // Vérifier si la table 'reservations' (minuscule) existe
-    $checkTable = $conn->query("SHOW TABLES LIKE 'reservations'");
+    $checkTable = $pdo->query("SHOW TABLES LIKE 'reservations'");
     
     if ($checkTable->rowCount() > 0) {
         // Afficher le contenu de l'ancienne table avant suppression
         echo "📋 Contenu de l'ancienne table 'reservations' (minuscule):" . PHP_EOL;
-        $oldData = $conn->query("SELECT * FROM reservations")->fetchAll(PDO::FETCH_ASSOC);
+        $oldData = $pdo->query("SELECT * FROM reservations")->fetchAll(PDO::FETCH_ASSOC);
         
         if (count($oldData) > 0) {
             foreach ($oldData as $row) {
@@ -34,14 +34,14 @@ try {
             
             if (strtolower($confirmation) === 'y' || strtolower($confirmation) === 'yes') {
                 // Supprimer la table
-                $conn->exec("DROP TABLE reservations");
+                $pdo->exec("DROP TABLE reservations");
                 echo "✅ Ancienne table 'reservations' supprimée avec succès." . PHP_EOL;
             } else {
                 echo "❌ Suppression annulée." . PHP_EOL;
             }
         } else {
             // Table vide, on peut la supprimer directement
-            $conn->exec("DROP TABLE reservations");
+            $pdo->exec("DROP TABLE reservations");
             echo "✅ Ancienne table 'reservations' (vide) supprimée avec succès." . PHP_EOL;
         }
     } else {
@@ -53,7 +53,7 @@ try {
 }
 
 echo PHP_EOL . "🔍 Tables actuelles dans la base de données:" . PHP_EOL;
-$tables = $conn->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN);
+$tables = $pdo->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN);
 foreach ($tables as $table) {
     echo "  • " . $table . PHP_EOL;
 }

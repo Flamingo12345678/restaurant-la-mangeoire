@@ -8,9 +8,9 @@ require_once '../db_connexion.php';
 $page_title = "Commandes";
 
 // Vérifier si les colonnes PrixUnitaire et MontantTotal existent
-$checkColumn = function($columnName) use ($conn) {
+$checkColumn = function($columnName) use ($pdo) {
     try {
-        $stmt = $conn->prepare("SELECT $columnName FROM Commandes LIMIT 1");
+        $stmt = $pdo->prepare("SELECT $columnName FROM Commandes LIMIT 1");
         $stmt->execute();
         return true;
     } catch (PDOException $e) {
@@ -28,7 +28,7 @@ $hasMontantTotal = $checkColumn('MontantTotal');
 $reservations = [];
 try {
   $res_query = "SELECT ReservationID, DateReservation, nom_client, nb_personnes FROM Reservations WHERE Statut = 'Réservée' ORDER BY DateReservation DESC";
-  $reservations = $conn->query($res_query)->fetchAll(PDO::FETCH_ASSOC);
+  $reservations = $pdo->query($res_query)->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
   set_message('Erreur lors de la récupération des réservations : ' . $e->getMessage(), 'error');
 }
@@ -37,7 +37,7 @@ try {
 $menus = [];
 try {
   $menu_query = "SELECT MenuID, NomItem, Prix FROM Menus ORDER BY NomItem";
-  $menus = $conn->query($menu_query)->fetchAll(PDO::FETCH_ASSOC);
+  $menus = $pdo->query($menu_query)->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
   set_message('Erreur lors de la récupération des menus : ' . $e->getMessage(), 'error');
 }
@@ -50,11 +50,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reservation_id'], $_P
   
   if ($reservation_id > 0 && $menu_id > 0 && $quantite > 0) {
     // Vérifier que la réservation existe avant d'insérer
-    $check_res = $conn->prepare("SELECT ReservationID FROM Reservations WHERE ReservationID = ?");
+    $check_res = $pdo->prepare("SELECT ReservationID FROM Reservations WHERE ReservationID = ?");
     $check_res->execute([$reservation_id]);
     
     // Récupérer le prix du menu sélectionné
-    $check_menu = $conn->prepare("SELECT Prix FROM Menus WHERE MenuID = ?");
+    $check_menu = $pdo->prepare("SELECT Prix FROM Menus WHERE MenuID = ?");
     $check_menu->execute([$menu_id]);
     $menu_data = $check_menu->fetch(PDO::FETCH_ASSOC);
     
@@ -67,12 +67,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reservation_id'], $_P
         if ($hasPrixUnitaire && $hasMontantTotal) {
           $sql = "INSERT INTO Commandes (ReservationID, MenuID, Quantite, PrixUnitaire, MontantTotal) 
                   VALUES (?, ?, ?, ?, ?)";
-          $stmt = $conn->prepare($sql);
+          $stmt = $pdo->prepare($sql);
           $result = $stmt->execute([$reservation_id, $menu_id, $quantite, $prix_unitaire, $montant_total]);
         } else {
           // Fallback sans les colonnes de prix
           $sql = "INSERT INTO Commandes (ReservationID, MenuID, Quantite) VALUES (?, ?, ?)";
-          $stmt = $conn->prepare($sql);
+          $stmt = $pdo->prepare($sql);
           $result = $stmt->execute([$reservation_id, $menu_id, $quantite]);
         }
         
@@ -107,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_commande_id'],
   
   $id = intval($_POST['delete_commande_id']);
   $sql = "DELETE FROM Commandes WHERE CommandeID = ?";
-  $stmt = $conn->prepare($sql);
+  $stmt = $pdo->prepare($sql);
   
   if ($stmt) {
     if ($stmt->execute([$id])) {
@@ -127,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_commande_id'],
 $commandes_per_page = 20;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $commandes_per_page;
-$total_commandes = $conn->query("SELECT COUNT(*) FROM Commandes")->fetchColumn();
+$total_commandes = $pdo->query("SELECT COUNT(*) FROM Commandes")->fetchColumn();
 $total_pages = ceil($total_commandes / $commandes_per_page);
 
 // Requête adaptée en fonction des colonnes disponibles
@@ -144,7 +144,7 @@ $commandes_query = "
     LIMIT $commandes_per_page OFFSET $offset";
 
 try {
-    $commandes = $conn->query($commandes_query)->fetchAll(PDO::FETCH_ASSOC);
+    $commandes = $pdo->query($commandes_query)->fetchAll(PDO::FETCH_ASSOC);
     
     // Calculer le prix unitaire et le montant total à partir du prix du menu
     foreach ($commandes as $key => $commande) {
@@ -161,7 +161,7 @@ try {
 }
 
 // Fonction utilitaire pour obtenir le montant total des commandes par réservation
-function get_total_commandes_by_reservation($conn, $reservation_id) {
+function get_total_commandes_by_reservation($pdo, $reservation_id) {
   global $hasPrixUnitaire, $hasMontantTotal;
   
   if ($hasPrixUnitaire && $hasMontantTotal) {
@@ -176,7 +176,7 @@ function get_total_commandes_by_reservation($conn, $reservation_id) {
             WHERE c.ReservationID = ?";
   }
   
-  $stmt = $conn->prepare($sql);
+  $stmt = $pdo->prepare($sql);
   $stmt->execute([$reservation_id]);
   return $stmt->fetchColumn();
 }

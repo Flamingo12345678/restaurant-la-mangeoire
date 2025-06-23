@@ -43,7 +43,7 @@ if (($order_id == 0 && $reservation_id == 0) && !empty($type)) {
     // Essayer de récupérer le montant depuis la base de données
     if ($order_id > 0) {
         try {
-            $stmt = $conn->prepare("SELECT MontantTotal FROM Commandes WHERE CommandeID = ?");
+            $stmt = $pdo->prepare("SELECT MontantTotal FROM Commandes WHERE CommandeID = ?");
             $stmt->execute([$order_id]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             if ($result) {
@@ -55,7 +55,7 @@ if (($order_id == 0 && $reservation_id == 0) && !empty($type)) {
         }
     } elseif ($reservation_id > 0) {
         try {
-            $stmt = $conn->prepare("SELECT MontantDepot FROM Reservations WHERE ReservationID = ?");
+            $stmt = $pdo->prepare("SELECT MontantDepot FROM Reservations WHERE ReservationID = ?");
             $stmt->execute([$reservation_id]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             if ($result) {
@@ -90,7 +90,7 @@ if ($status === 'success' && !empty($paymentId) && !empty($PayerID)) {
             // Process order payment
             try {
                 // Update order status
-                $stmt = $conn->prepare("
+                $stmt = $pdo->prepare("
                     UPDATE Commandes 
                     SET Statut = 'Payé', DatePaiement = NOW() 
                     WHERE CommandeID = ?
@@ -98,7 +98,7 @@ if ($status === 'success' && !empty($paymentId) && !empty($PayerID)) {
                 $stmt->execute([$order_id]);
                 
                 // Record payment in database
-                $stmt = $conn->prepare("
+                $stmt = $pdo->prepare("
                     INSERT INTO Paiements (CommandeID, Montant, ModePaiement, TransactionID, DatePaiement)
                     VALUES (?, ?, ?, ?, NOW())
                 ");
@@ -122,7 +122,7 @@ if ($status === 'success' && !empty($paymentId) && !empty($PayerID)) {
             // Process reservation payment
             try {
                 // Update reservation status
-                $stmt = $conn->prepare("
+                $stmt = $pdo->prepare("
                     UPDATE Reservations 
                     SET Statut = 'Confirmé', DateMiseAJour = NOW() 
                     WHERE ReservationID = ?
@@ -130,7 +130,7 @@ if ($status === 'success' && !empty($paymentId) && !empty($PayerID)) {
                 $stmt->execute([$reservation_id]);
                 
                 // Record payment in database
-                $stmt = $conn->prepare("
+                $stmt = $pdo->prepare("
                     INSERT INTO Paiements (ReservationID, Montant, ModePaiement, TransactionID, DatePaiement)
                     VALUES (?, ?, ?, ?, NOW())
                 ");
@@ -201,10 +201,10 @@ $paiement = null;
 
 if ($order_id > 0) {
     // Get order details
-    $stmt = $conn->prepare("
-        SELECT c.*, u.Nom, u.Prenom, u.Email, u.Telephone
+    $stmt = $pdo->prepare("
+        SELECT c.*, cl.Nom, cl.Prenom, cl.Email, cl.Telephone
         FROM Commandes c
-        LEFT JOIN Utilisateurs u ON c.UtilisateurID = u.UtilisateurID
+        LEFT JOIN Clients cl ON c.ClientID = cl.ClientID
         WHERE c.CommandeID = ?
     ");
     $stmt->execute([$order_id]);
@@ -212,7 +212,7 @@ if ($order_id > 0) {
     
     // Get payment details
     if ($payment_success) {
-        $stmt = $conn->prepare("
+        $stmt = $pdo->prepare("
             SELECT * FROM Paiements 
             WHERE CommandeID = ? 
             ORDER BY DatePaiement DESC 
@@ -223,7 +223,7 @@ if ($order_id > 0) {
     }
 } elseif ($reservation_id > 0) {
     // Get reservation details
-    $stmt = $conn->prepare("
+    $stmt = $pdo->prepare("
         SELECT * FROM Reservations 
         WHERE ReservationID = ?
     ");
@@ -232,7 +232,7 @@ if ($order_id > 0) {
     
     // Get payment details
     if ($payment_success) {
-        $stmt = $conn->prepare("
+        $stmt = $pdo->prepare("
             SELECT * FROM Paiements 
             WHERE ReservationID = ? 
             ORDER BY DatePaiement DESC 

@@ -21,17 +21,17 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
     $action = $_GET['action'];
     
     if ($action === 'mark_read') {
-        $stmt = $conn->prepare("UPDATE Messages SET statut = 'lu' WHERE id = ?");
+        $stmt = $pdo->prepare("UPDATE Messages SET statut = 'lu' WHERE id = ?");
         $stmt->execute([$id]);
         $success = "Message marqué comme lu.";
     } elseif ($action === 'mark_processed') {
-        $stmt = $conn->prepare("UPDATE Messages SET statut = 'traite' WHERE id = ?");
+        $stmt = $pdo->prepare("UPDATE Messages SET statut = 'traite' WHERE id = ?");
         $stmt->execute([$id]);
         $success = "Message marqué comme traité.";
     } elseif ($action === 'delete') {
         // Seuls les admins peuvent supprimer des messages
         if ($is_admin) {
-            $stmt = $conn->prepare("DELETE FROM Messages WHERE id = ?");
+            $stmt = $pdo->prepare("DELETE FROM Messages WHERE id = ?");
             $stmt->execute([$id]);
             $success = "Message supprimé avec succès.";
         } else {
@@ -51,7 +51,7 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
 }
 
 // Récupérer les messages
-$messages = $conn->query("
+$messages = $pdo->query("
     SELECT id, nom, email, objet, message, 
            DATE_FORMAT(date_creation, '%d/%m/%Y à %H:%i') as date_formatted,
            statut, date_creation
@@ -67,7 +67,7 @@ $stats = [
     'traite' => 0
 ];
 
-$stmt = $conn->query("
+$stmt = $pdo->query("
     SELECT statut, COUNT(*) as count 
     FROM Messages 
     GROUP BY statut

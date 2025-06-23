@@ -12,14 +12,14 @@ if (
   // Calcul du nombre de places déjà réservées à venir
   $now = date('Y-m-d H:i:s');
   $sql = "SELECT COALESCE(SUM(nb_personnes),0) AS total_reserves FROM Reservations WHERE Statut = 'Réservée' AND DateReservation >= ?";
-  $stmt = $conn->prepare($sql);
+  $stmt = $pdo->prepare($sql);
   $stmt->execute([$now]);
   $row = $stmt->fetch(PDO::FETCH_ASSOC);
   $total_reserves = intval($row['total_reserves']);
 
   // Calcul du nombre total de places disponibles dans la salle
   $sql = "SELECT SUM(Capacite) AS total_places FROM TablesRestaurant";
-  $stmt = $conn->query($sql);
+  $stmt = $pdo->query($sql);
   $total_places = 0;
   if ($stmt) {
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -41,7 +41,7 @@ if (
     if ($nom && $email && $date && $nb_personnes > 0) {
       // Recherche du client par email
       $sql = "SELECT ClientID FROM Clients WHERE Email = ?";
-      $stmt_client = $conn->prepare($sql);
+      $stmt_client = $pdo->prepare($sql);
       $stmt_client->execute([$email]);
       $client = $stmt_client->fetch(PDO::FETCH_ASSOC);
       if ($client) {
@@ -49,26 +49,26 @@ if (
       } else {
         // Ajout du client s'il n'existe pas
         $sql = "INSERT INTO Clients (Nom, Prenom, Email, Telephone) VALUES (?, '', ?, ?)";
-        $stmt_insert = $conn->prepare($sql);
+        $stmt_insert = $pdo->prepare($sql);
         $stmt_insert->execute([$nom, $email, $telephone]);
-        $client_id = $conn->lastInsertId();
+        $client_id = $pdo->lastInsertId();
       }
       // Insertion de la réservation en base de données avec ClientID
       $sql = "INSERT INTO Reservations (nom_client, email_client, DateReservation, statut, nb_personnes, ClientID, telephone) VALUES (?, ?, ?, ?, ?, ?, ?)";
-      $stmt = $conn->prepare($sql);
+      $stmt = $pdo->prepare($sql);
       $result = $stmt->execute([$nom, $email, $date, $statut, $nb_personnes, $client_id, $telephone]);
       if ($result) {
         // Récupérer l'ID de la réservation insérée
-        $reservation_id = $conn->lastInsertId();
+        $reservation_id = $pdo->lastInsertId();
         // Association automatique des tables à la réservation et mise à jour du statut
         if (!empty($_POST['table_ids']) && is_array($_POST['table_ids'])) {
           foreach ($_POST['table_ids'] as $table_id) {
             $table_id = intval($table_id);
             $sql = "INSERT INTO ReservationTables (ReservationID, TableID, nb_places) VALUES (?, ?, ?)";
-            $stmt_assoc = $conn->prepare($sql);
+            $stmt_assoc = $pdo->prepare($sql);
             $stmt_assoc->execute([$reservation_id, $table_id, 0]); // 0 ou nombre de places attribuées si connu
             $sql = "UPDATE TablesRestaurant SET Statut = 'Réservée' WHERE TableID = ?";
-            $stmt_update = $conn->prepare($sql);
+            $stmt_update = $pdo->prepare($sql);
             $stmt_update->execute([$table_id]);
           }
         }
@@ -93,23 +93,23 @@ if (isset($_GET['delete'])) {
   $id = intval($_GET['delete']);
   // Libérer toutes les tables associées à la réservation supprimée (multi-tables)
   $sql = "SELECT TableID FROM ReservationTables WHERE ReservationID = ?";
-  $stmt = $conn->prepare($sql);
+  $stmt = $pdo->prepare($sql);
   $stmt->execute([$id]);
   $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
   if ($tables) {
     foreach ($tables as $table_id) {
       $sql = "UPDATE TablesRestaurant SET Statut = 'Libre' WHERE TableID = ?";
-      $stmt2 = $conn->prepare($sql);
+      $stmt2 = $pdo->prepare($sql);
       $stmt2->execute([$table_id]);
     }
     // Supprimer les associations dans ReservationTables
     $sql = "DELETE FROM ReservationTables WHERE ReservationID = ?";
-    $stmt = $conn->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $stmt->execute([$id]);
   }
   // Suppression de la réservation
   $sql = "DELETE FROM Reservations WHERE ReservationID = ?";
-  $stmt = $conn->prepare($sql);
+  $stmt = $pdo->prepare($sql);
   $result = $stmt->execute([$id]);
   if ($result) {
     set_message('Réservation supprimée avec succès.', 'success');
@@ -135,12 +135,12 @@ if (isset($_POST['edit_id'], $_POST['edit_nom_client'], $_POST['edit_email_clien
   // Vérification de la capacité maximale lors de la modification
   $now = date('Y-m-d H:i:s');
   $sql = "SELECT COALESCE(SUM(nb_personnes),0) AS total_reserves FROM Reservations WHERE Statut = 'Réservée' AND DateReservation >= ? AND ReservationID != ?";
-  $stmt = $conn->prepare($sql);
+  $stmt = $pdo->prepare($sql);
   $stmt->execute([$now, $edit_id]);
   $row = $stmt->fetch(PDO::FETCH_ASSOC);
   $total_reserves = intval($row['total_reserves']);
   $sql = "SELECT SUM(Capacite) AS total_places FROM TablesRestaurant";
-  $stmt = $conn->query($sql);
+  $stmt = $pdo->query($sql);
   $total_places = 0;
   if ($stmt) {
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -151,23 +151,23 @@ if (isset($_POST['edit_id'], $_POST['edit_nom_client'], $_POST['edit_email_clien
   } elseif ($edit_nom && $edit_email && $edit_date && $edit_nb_personnes > 0) {
     // Mise à jour de la réservation
     $sql = "UPDATE Reservations SET nom_client = ?, email_client = ?, DateReservation = ?, Statut = ?, nb_personnes = ? WHERE ReservationID = ?";
-    $stmt = $conn->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $result = $stmt->execute([$edit_nom, $edit_email, $edit_date, $edit_statut, $edit_nb_personnes, $edit_id]);
     // Si la réservation passe à Annulée, libérer toutes les tables associées (multi-tables)
     if ($edit_statut === 'Annulée') {
       $sql = "SELECT TableID FROM ReservationTables WHERE ReservationID = ?";
-      $stmt2 = $conn->prepare($sql);
+      $stmt2 = $pdo->prepare($sql);
       $stmt2->execute([$edit_id]);
       $tables = $stmt2->fetchAll(PDO::FETCH_COLUMN);
       if ($tables) {
         foreach ($tables as $table_id) {
           $sql = "UPDATE TablesRestaurant SET Statut = 'Libre' WHERE TableID = ?";
-          $stmt3 = $conn->prepare($sql);
+          $stmt3 = $pdo->prepare($sql);
           $stmt3->execute([$table_id]);
         }
         // Supprimer les associations dans ReservationTables
         $sql = "DELETE FROM ReservationTables WHERE ReservationID = ?";
-        $stmt2 = $conn->prepare($sql);
+        $stmt2 = $pdo->prepare($sql);
         $stmt2->execute([$edit_id]);
       }
     }
@@ -191,7 +191,7 @@ if (isset($_POST['edit_id'], $_POST['edit_nom_client'], $_POST['edit_email_clien
 $reservations = [];
 $sql = "SELECT * FROM Reservations ORDER BY ReservationID DESC";
 try {
-  $stmt = $conn->query($sql);
+  $stmt = $pdo->query($sql);
   if ($stmt) {
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
       $reservations[] = $row;
@@ -210,13 +210,13 @@ try {
           WHERE t.Statut = 'Réservée'
           GROUP BY t.TableID
           HAVING COUNT(r.ReservationID) = 0";
-  $stmt = $conn->prepare($sql);
+  $stmt = $pdo->prepare($sql);
   $stmt->execute([$now]);
   $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
   if ($tables) {
     $in = implode(',', array_fill(0, count($tables), '?'));
     $sql = "UPDATE TablesRestaurant SET Statut = 'Libre' WHERE TableID IN ($in)";
-    $stmt2 = $conn->prepare($sql);
+    $stmt2 = $pdo->prepare($sql);
     $stmt2->execute($tables);
   }
 } catch (PDOException $e) {
@@ -227,13 +227,13 @@ try {
 $now = date('Y-m-d H:i:s');
 // Correction du calcul : on ne compte que les réservations à venir (date future ou maintenant, statut Réservée)
 $sql = "SELECT COALESCE(SUM(nb_personnes),0) AS total_reserves FROM Reservations WHERE Statut = 'Réservée' AND DateReservation >= ?";
-$stmt = $conn->prepare($sql);
+$stmt = $pdo->prepare($sql);
 $stmt->execute([$now]);
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
 $total_reserves = intval($row['total_reserves']);
 // Nombre total de places disponibles
 $sql = "SELECT SUM(Capacite) AS total_places FROM TablesRestaurant";
-$stmt = $conn->query($sql);
+$stmt = $pdo->query($sql);
 $total_places = 0;
 if ($stmt) {
   $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -328,7 +328,7 @@ if ($stmt) {
             <?php
             // Récupérer les tables disponibles
             $sql = "SELECT * FROM TablesRestaurant WHERE Statut = 'Libre' ORDER BY Capacite ASC";
-            $stmt = $conn->prepare($sql);
+            $stmt = $pdo->prepare($sql);
             $stmt->execute();
             $tables_disponibles = $stmt->fetchAll(PDO::FETCH_ASSOC);
             if ($tables_disponibles) {

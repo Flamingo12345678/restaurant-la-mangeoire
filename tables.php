@@ -14,14 +14,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_statut_table'], 
   } else {
     $edit_id = intval($_POST['edit_table_id']);
     $edit_statut = in_array($_POST['edit_statut_table'], ['Libre', 'Réservée', 'Maintenance']) ? $_POST['edit_statut_table'] : 'Libre';
-    $check = $conn->prepare("SELECT COUNT(*) FROM TablesRestaurant WHERE TableID=?");
+    $check = $pdo->prepare("SELECT COUNT(*) FROM TablesRestaurant WHERE TableID=?");
     $check->execute([$edit_id]);
     if ($check->fetchColumn() == 0) {
       set_message('❌ Cette table n’existe pas.', 'error');
       header('Location: ' . $_SERVER['PHP_SELF']);
       exit;
     }
-    $stmt = $conn->prepare("UPDATE TablesRestaurant SET Statut=? WHERE TableID=?");
+    $stmt = $pdo->prepare("UPDATE TablesRestaurant SET Statut=? WHERE TableID=?");
     $stmt->execute([$edit_statut, $edit_id]);
     set_message('✅ Statut de la table modifié.');
     header('Location: ' . $_SERVER['PHP_SELF']);
@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajouter'])) {
     $valid = validate_numero_table($numero) && validate_places($places);
     if ($valid) {
       $sql = "INSERT INTO TablesRestaurant (NumeroTable, Capacite) VALUES (?, ?)";
-      $stmt = $conn->prepare($sql);
+      $stmt = $pdo->prepare($sql);
       $stmt->execute([$numero, $places]);
       set_message('✅ Table ajoutée avec succès.');
       header('Location: ' . $_SERVER['PHP_SELF']);
@@ -63,14 +63,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_table'])) {
   } else {
     $id = intval($_POST['delete_table']);
     // Vérification d'existence de la table
-    $check = $conn->prepare("SELECT COUNT(*) FROM TablesRestaurant WHERE TableID=?");
+    $check = $pdo->prepare("SELECT COUNT(*) FROM TablesRestaurant WHERE TableID=?");
     $check->execute([$id]);
     if ($check->fetchColumn() == 0) {
       set_message('❌ Cette table n’existe pas ou a déjà été supprimée.', 'error');
       header('Location: ' . $_SERVER['PHP_SELF']);
       exit;
     }
-    $stmt = $conn->prepare("DELETE FROM TablesRestaurant WHERE TableID=?");
+    $stmt = $pdo->prepare("DELETE FROM TablesRestaurant WHERE TableID=?");
     $stmt->execute([$id]);
     set_message('🗑️ Table supprimée avec succès.');
     header('Location: ' . $_SERVER['PHP_SELF']);
@@ -82,9 +82,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_table'])) {
 $tables_per_page = 10;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $tables_per_page;
-$total_tables = $conn->query("SELECT COUNT(*) FROM TablesRestaurant")->fetchColumn();
+$total_tables = $pdo->query("SELECT COUNT(*) FROM TablesRestaurant")->fetchColumn();
 $total_pages = ceil($total_tables / $tables_per_page);
-$tables = $conn->query("SELECT * FROM TablesRestaurant ORDER BY TableID DESC LIMIT $tables_per_page OFFSET $offset")->fetchAll();
+$tables = $pdo->query("SELECT * FROM TablesRestaurant ORDER BY TableID DESC LIMIT $tables_per_page OFFSET $offset")->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="fr">

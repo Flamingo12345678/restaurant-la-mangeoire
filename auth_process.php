@@ -14,7 +14,7 @@ if (isset($_POST['reset_password'])) {
     $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
     
     try {
-        $stmt = $conn->prepare("UPDATE Administrateurs SET MotDePasse = ? WHERE AdminID = ?");
+        $stmt = $pdo->prepare("UPDATE Administrateurs SET MotDePasse = ? WHERE AdminID = ?");
         $result = $stmt->execute([$hashed_password, $admin_id]);
         
         if ($result) {
@@ -43,17 +43,17 @@ if (isset($_POST['create_admin'])) {
     
     try {
         // Vérifier si l'administrateur existe déjà
-        $check_stmt = $conn->prepare("SELECT AdminID FROM Administrateurs WHERE Email = ?");
+        $check_stmt = $pdo->prepare("SELECT AdminID FROM Administrateurs WHERE Email = ?");
         $check_stmt->execute([$email]);
         $existing_admin = $check_stmt->fetch();
         
         if ($existing_admin) {
             debug_log("L'administrateur existe déjà, mise à jour...");
-            $stmt = $conn->prepare("UPDATE Administrateurs SET MotDePasse = ?, Nom = ?, Prenom = ?, Role = ? WHERE Email = ?");
+            $stmt = $pdo->prepare("UPDATE Administrateurs SET MotDePasse = ?, Nom = ?, Prenom = ?, Role = ? WHERE Email = ?");
             $result = $stmt->execute([$hashed_password, $nom, $prenom, $role, $email]);
         } else {
             debug_log("Création d'un nouvel administrateur");
-            $stmt = $conn->prepare("INSERT INTO Administrateurs (Email, MotDePasse, Nom, Prenom, Role) VALUES (?, ?, ?, ?, ?)");
+            $stmt = $pdo->prepare("INSERT INTO Administrateurs (Email, MotDePasse, Nom, Prenom, Role) VALUES (?, ?, ?, ?, ?)");
             $result = $stmt->execute([$email, $hashed_password, $nom, $prenom, $role]);
         }
         
@@ -81,7 +81,7 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
     
     try {
         // Vérifier dans la table Administrateurs
-        $admin_stmt = $conn->prepare("SELECT * FROM Administrateurs WHERE Email = ?");
+        $admin_stmt = $pdo->prepare("SELECT * FROM Administrateurs WHERE Email = ?");
         $admin_stmt->execute([$email]);
         $admin = $admin_stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -92,7 +92,7 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
                 debug_log("Mot de passe correct, création de la session administrateur");
                 
                 // Mise à jour de la dernière connexion
-                $update_stmt = $conn->prepare("UPDATE Administrateurs SET DerniereConnexion = NOW() WHERE AdminID = ?");
+                $update_stmt = $pdo->prepare("UPDATE Administrateurs SET DerniereConnexion = NOW() WHERE AdminID = ?");
                 $update_stmt->execute([$admin['AdminID']]);
                 
                 // Créer la session administrateur
@@ -115,7 +115,7 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
             }
         } else {
             // Vérifier dans la table Clients
-            $client_stmt = $conn->prepare("SELECT * FROM Clients WHERE Email = ?");
+            $client_stmt = $pdo->prepare("SELECT * FROM Clients WHERE Email = ?");
             $client_stmt->execute([$email]);
             $client = $client_stmt->fetch(PDO::FETCH_ASSOC);
             

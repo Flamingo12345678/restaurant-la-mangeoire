@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             // Insertion en base de données
-            $stmt = $conn->prepare("
+            $stmt = $pdo->prepare("
                 INSERT INTO reservations (nom, email, telephone, nombre_personnes, date_reservation, heure_reservation, message, date_creation, statut)
                 VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), 'En attente')
             ");

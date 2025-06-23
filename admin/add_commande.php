@@ -17,7 +17,7 @@ $valid = validate_quantite($quantite) && $reservation_id > 0 && $menu_id > 0;
 if ($valid) {
 try {
 $sql = "INSERT INTO Commandes (ReservationID, MenuID, Quantite) VALUES (?, ?, ?)";
-$stmt = $conn->prepare($sql);
+$stmt = $pdo->prepare($sql);
 $result = $stmt->execute([$reservation_id, $menu_id, $quantite]);
 if ($result) {
 $message = 'Commande ajoutée.';

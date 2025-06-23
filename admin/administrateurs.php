@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 
     // Vérifier si l'email existe déjà
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM Administrateurs WHERE Email = ?");
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM Administrateurs WHERE Email = ?");
     $stmt->execute([$email]);
     if ($stmt->fetchColumn() > 0) {
       $errors[] = "Cette adresse email est déjà utilisée.";
@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
       // Insertion de l'administrateur
       try {
-        $stmt = $conn->prepare("INSERT INTO Administrateurs (Email, MotDePasse, Nom, Prenom, Role) VALUES (?, ?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO Administrateurs (Email, MotDePasse, Nom, Prenom, Role) VALUES (?, ?, ?, ?, ?)");
         $result = $stmt->execute([$email, $password_hash, $nom, $prenom, $role]);
 
         if ($result) {
@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 
     // Vérifier si l'email existe déjà pour un autre administrateur
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM Administrateurs WHERE Email = ? AND AdminID != ?");
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM Administrateurs WHERE Email = ? AND AdminID != ?");
     $stmt->execute([$email, $admin_id]);
     if ($stmt->fetchColumn() > 0) {
       $errors[] = "Cette adresse email est déjà utilisée par un autre administrateur.";
@@ -114,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     if (empty($errors)) {
       try {
-        $stmt = $conn->prepare("UPDATE Administrateurs SET Email = ?, Nom = ?, Prenom = ?, Role = ? WHERE AdminID = ?");
+        $stmt = $pdo->prepare("UPDATE Administrateurs SET Email = ?, Nom = ?, Prenom = ?, Role = ? WHERE AdminID = ?");
         $result = $stmt->execute([$email, $nom, $prenom, $role, $admin_id]);
 
         if ($result) {
@@ -167,7 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
       $password_hash = password_hash($password, PASSWORD_DEFAULT);
 
       try {
-        $stmt = $conn->prepare("UPDATE Administrateurs SET MotDePasse = ? WHERE AdminID = ?");
+        $stmt = $pdo->prepare("UPDATE Administrateurs SET MotDePasse = ? WHERE AdminID = ?");
         $result = $stmt->execute([$password_hash, $admin_id]);
 
         if ($result) {
@@ -204,7 +204,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 
     try {
-      $stmt = $conn->prepare("DELETE FROM Administrateurs WHERE AdminID = ?");
+      $stmt = $pdo->prepare("DELETE FROM Administrateurs WHERE AdminID = ?");
       $result = $stmt->execute([$admin_id]);
 
       if ($result) {
@@ -225,7 +225,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // Récupération de la liste des administrateurs
 $administrateurs = [];
 try {
-  $stmt = $conn->query("SELECT * FROM Administrateurs ORDER BY Role DESC, Nom ASC");
+  $stmt = $pdo->query("SELECT * FROM Administrateurs ORDER BY Role DESC, Nom ASC");
   $administrateurs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
   set_message("Erreur lors de la récupération des administrateurs : " . $e->getMessage(), "error");

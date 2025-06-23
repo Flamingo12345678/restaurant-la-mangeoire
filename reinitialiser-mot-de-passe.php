@@ -6,15 +6,15 @@ require_once 'db_connexion.php';
 $message = '';
 $token = $_GET['token'] ?? '';
 $valid_token = false;
-$user_id = null;
+$client_id = null;
 $success = false;
 
 // Vérifier si le token est valide
 if (!empty($token)) {
-  $stmt = $conn->prepare("
-        SELECT r.UtilisateurID, u.Email 
+  $stmt = $pdo->prepare("
+        SELECT r.ClientID, u.Email 
         FROM ReinitialisationMotDePasse r
-        JOIN Utilisateurs u ON r.UtilisateurID = u.UtilisateurID
+        JOIN Clients u ON r.ClientID = u.ClientID
         WHERE r.Token = ? AND r.DateExpiration > NOW()
     ");
   $stmt->execute([$token]);
@@ -22,7 +22,7 @@ if (!empty($token)) {
 
   if ($reset_data) {
     $valid_token = true;
-    $user_id = $reset_data['UtilisateurID'];
+    $client_id = $reset_data['ClientID'];
     $user_email = $reset_data['Email'];
   } else {
     $message = "Ce lien de réinitialisation est invalide ou a expiré. Veuillez faire une nouvelle demande.";
@@ -48,17 +48,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $valid_token) {
   // Si pas d'erreurs, mettre à jour le mot de passe
   if (empty($erreurs)) {
     $password_hash = password_hash($new_password, PASSWORD_DEFAULT);
-    $stmt = $conn->prepare("UPDATE Utilisateurs SET MotDePasse = ? WHERE UtilisateurID = ?");
+    $stmt = $pdo->prepare("UPDATE Clients SET MotDePasse = ? WHERE ClientID = ?");
 
-    if ($stmt->execute([$password_hash, $user_id])) {
+    if ($stmt->execute([$password_hash, $client_id])) {
       // Supprimer le token de réinitialisation
-      $stmt = $conn->prepare("DELETE FROM ReinitialisationMotDePasse WHERE UtilisateurID = ?");
-      $stmt->execute([$user_id]);
+      $stmt = $pdo->prepare("DELETE FROM ReinitialisationMotDePasse WHERE ClientID = ?");
+      $stmt->execute([$client_id]);
 
       $success = true;
 
       // Journaliser la réinitialisation
-      error_log("Mot de passe réinitialisé pour l'utilisateur " . $user_id);
+      error_log("Mot de passe réinitialisé pour l'utilisateur " . $client_id);
     } else {
       $message = "Une erreur est survenue lors de la réinitialisation de votre mot de passe. Veuillez réessayer.";
     }

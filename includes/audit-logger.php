@@ -7,13 +7,13 @@
  */
 
 class AuditLogger {
-    private $connexion;
+    private $pdoexion;
     private $logFile;
     private $maxLogSize = 10485760; // 10MB
     
     public function __construct() {
-        global $conn;
-        $this->connexion = $conn;
+        global $pdo;
+        $this->connexion = $pdo;
         $this->logFile = __DIR__ . '/logs/audit.log';
         $this->ensureLogDirectory();
         $this->createAuditTable();

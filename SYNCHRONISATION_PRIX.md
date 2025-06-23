@@ -16,7 +16,7 @@ Ajout d'un code PHP dans `index.php` pour récupérer les prix depuis la base de
 // Récupérer les prix des menus depuis la base de données
 $menu_prices = [];
 try {
-  $stmt = $conn->prepare("SELECT MenuID, NomItem, Prix FROM Menus");
+  $stmt = $pdo->prepare("SELECT MenuID, NomItem, Prix FROM Menus");
   $stmt->execute();
   $menus = $stmt->fetchAll(PDO::FETCH_ASSOC);
   

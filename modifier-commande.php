@@ -1,8 +1,8 @@
 <?php
 session_start();
 require_once 'db_connexion.php';
-// Vérifiez que $conn est bien un objet mysqli
-if (!($conn instanceof mysqli)) {
+// Vérifiez que $pdo est bien un objet mysqli
+if (!($pdo instanceof mysqli)) {
     die("La connexion à la base de données n'est pas valide. Vérifiez db_connexion.php pour utiliser mysqli.");
 }
 
@@ -17,9 +17,9 @@ $commande_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
 // Vérifier si la commande existe et appartient au client
 $check_query = "SELECT * FROM commandes WHERE id = ? AND client_id = ? AND statut = 'En attente'";
-$check_stmt = $conn->prepare($check_query);
+$check_stmt = $pdo->prepare($check_query);
 if (!$check_stmt) {
-    die("Erreur de préparation de la requête : " . $conn->error);
+    die("Erreur de préparation de la requête : " . $pdo->error);
 }
 $check_stmt->bind_param("ii", $commande_id, $client_id);
 $check_stmt->execute();
@@ -37,14 +37,14 @@ $details_query = "SELECT d.*, m.nom AS menu_nom, m.prix AS menu_prix
                  FROM details_commande d 
                  JOIN menus m ON d.menu_id = m.id 
                  WHERE d.commande_id = ?";
-$details_stmt = $conn->prepare($details_query);
+$details_stmt = $pdo->prepare($details_query);
 $details_stmt->bind_param("i", $commande_id);
 $details_stmt->execute();
 $details_result = $details_stmt->get_result();
 
 // Récupérer tous les menus disponibles
 $menus_query = "SELECT * FROM menus WHERE disponible = 1";
-$menus_stmt = $conn->prepare($menus_query);
+$menus_stmt = $pdo->prepare($menus_query);
 $menus_stmt->execute();
 $menus_result = $menus_stmt->get_result();
 $menus = [];
@@ -59,12 +59,12 @@ $error_message = "";
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['update_commande'])) {
         // Commencer une transaction
-        $conn->begin_transaction();
+        $pdo->begin_transaction();
         
         try {
             // Supprimer tous les détails actuels
             $delete_details = "DELETE FROM details_commande WHERE commande_id = ?";
-            $delete_stmt = $conn->prepare($delete_details);
+            $delete_stmt = $pdo->prepare($delete_details);
             $delete_stmt->bind_param("i", $commande_id);
             $delete_stmt->execute();
             
@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             
             if (isset($_POST['menu_id']) && isset($_POST['quantite'])) {
                 $insert_detail = "INSERT INTO details_commande (commande_id, menu_id, quantite, prix_unitaire) VALUES (?, ?, ?, ?)";
-                $insert_stmt = $conn->prepare($insert_detail);
+                $insert_stmt = $pdo->prepare($insert_detail);
                 
                 for ($i = 0; $i < count($_POST['menu_id']); $i++) {
                     $menu_id = $_POST['menu_id'][$i];
@@ -91,12 +91,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             
             // Mettre à jour le montant total de la commande
             $update_commande = "UPDATE commandes SET montant_total = ? WHERE id = ?";
-            $update_stmt = $conn->prepare($update_commande);
+            $update_stmt = $pdo->prepare($update_commande);
             $update_stmt->bind_param("di", $montant_total, $commande_id);
             $update_stmt->execute();
             
             // Valider la transaction
-            $conn->commit();
+            $pdo->commit();
             
             $success_message = "Votre commande a été mise à jour avec succès.";
             
@@ -111,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             
         } catch (Exception $e) {
             // Annuler la transaction en cas d'erreur
-            $conn->rollback();
+            $pdo->rollback();
             $error_message = "Erreur lors de la mise à jour de la commande : " . $e->getMessage();
         }
     }

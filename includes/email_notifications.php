@@ -336,7 +336,7 @@ function notifyNewContactMessage($message_data) {
 // Exemple d'intégration dans contact.php :
 /*
 if ($result) {
-    $message_id = $conn->lastInsertId();
+    $message_id = $pdo->lastInsertId();
     
     // Données du message pour notification
     $message_data = [

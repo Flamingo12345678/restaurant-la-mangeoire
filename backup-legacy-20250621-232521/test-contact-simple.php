@@ -12,7 +12,7 @@ try {
     echo "<p>✅ Connexion base de données OK</p>";
     
     // Test de la table Messages
-    $stmt = $conn->query("SHOW TABLES LIKE 'Messages'");
+    $stmt = $pdo->query("SHOW TABLES LIKE 'Messages'");
     if ($stmt->rowCount() > 0) {
         echo "<p>✅ Table Messages existe</p>";
     } else {
@@ -20,15 +20,15 @@ try {
     }
     
     // Test d'insertion
-    $stmt = $conn->prepare("INSERT INTO Messages (nom, email, objet, message, date_creation) VALUES (?, ?, ?, ?, NOW())");
+    $stmt = $pdo->prepare("INSERT INTO Messages (nom, email, objet, message, date_creation) VALUES (?, ?, ?, ?, NOW())");
     $result = $stmt->execute(['Test', 'test@test.com', 'Test', 'Message de test']);
     
     if ($result) {
-        $id = $conn->lastInsertId();
+        $id = $pdo->lastInsertId();
         echo "<p>✅ Insertion test réussie (ID: $id)</p>";
         
         // Nettoyage
-        $stmt = $conn->prepare("DELETE FROM Messages WHERE MessageID = ?");
+        $stmt = $pdo->prepare("DELETE FROM Messages WHERE MessageID = ?");
         $stmt->execute([$id]);
         echo "<p>✅ Nettoyage effectué</p>";
     }
