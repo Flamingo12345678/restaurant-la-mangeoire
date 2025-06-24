@@ -1,4 +1,5 @@
 <?php
+require_once 'includes/https-security.php'; // Sécurité HTTPS
 require_once 'includes/common.php';
 require_once 'includes/currency_manager.php';
 require_once 'db_connexion.php';
@@ -448,55 +449,103 @@ try {
             }
         };
         
-        function addToCart(menuId, menuName, menuPrice, menuPriceFormatted) {
+        async function addToCart(menuId, menuName, menuPrice, menuPriceFormatted) {
             console.log('Ajout au panier:', {menuId, menuName, menuPrice, menuPriceFormatted});
             
             // Animation du bouton
             const button = event.target.closest('.add-to-cart-btn');
             const originalText = button.innerHTML;
             
-            // Récupérer le panier actuel
-            let cart = window.CartManager.getCart();
-            
-            // Vérifier si l'article existe déjà dans le panier
-            const existingItem = cart.find(item => item.id === menuId);
-            
-            if (existingItem) {
-                existingItem.quantity += 1;
-                existingItem.total = existingItem.quantity * existingItem.price;
-                console.log('Article existant mis à jour:', existingItem);
-            } else {
-                const newItem = {
-                    id: menuId,
-                    name: menuName,
-                    price: menuPrice,
-                    priceFormatted: menuPriceFormatted,
-                    quantity: 1,
-                    total: menuPrice
-                };
-                cart.push(newItem);
-                console.log('Nouvel article ajouté:', newItem);
-            }
-            
-            // Sauvegarder dans localStorage
-            if (window.CartManager.saveCart(cart)) {
-                console.log('Panier sauvegardé avec succès:', cart);
-                console.log('localStorage vérifié:', window.CartManager.getCart());
-                
-                // Déclencher un événement pour synchroniser les autres pages
-                window.dispatchEvent(new CustomEvent('cartUpdated', { detail: cart }));
-            } else {
-                console.error('Erreur lors de la sauvegarde du panier');
-            }
-            
-            // Animation du bouton
-            button.innerHTML = '<i class="bi bi-check-circle"></i> Ajouté !';
-            button.style.background = '#28a745';
+            // Désactiver le bouton pendant le traitement
+            button.innerHTML = '<i class="bi bi-hourglass-split"></i> Ajout...';
             button.disabled = true;
             
-            // Afficher une notification
-            const quantity = existingItem ? existingItem.quantity : 1;
-            showNotification(`"${menuName}" ajouté au panier (${quantity}x)`, 'success');
+            try {
+                // 1. Ajout côté serveur via AJAX (HTTPS sécurisé)
+                const formData = new FormData();
+                formData.append('menu_id', menuId);
+                formData.append('quantity', 1);
+                formData.append('ajax', 'true');
+                
+                // Construire l'URL sécurisée HTTPS
+                const secureUrl = window.location.protocol === 'https:' 
+                    ? 'ajouter-au-panier.php' 
+                    : window.location.origin.replace('http:', 'https:') + '/ajouter-au-panier.php';
+                
+                const response = await fetch(secureUrl, {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'same-origin', // Inclure les cookies de session
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log('Réponse serveur:', result);
+                
+                if (!result.success) {
+                    throw new Error(result.message || 'Erreur lors de l\'ajout au panier');
+                }
+                
+                // 2. Mise à jour du localStorage pour l'interface utilisateur
+                let cart = window.CartManager.getCart();
+                
+                // Vérifier si l'article existe déjà dans le panier local
+                const existingItem = cart.find(item => item.id === menuId);
+                
+                if (existingItem) {
+                    existingItem.quantity += 1;
+                    existingItem.total = existingItem.quantity * existingItem.price;
+                    console.log('Article existant mis à jour localement:', existingItem);
+                } else {
+                    const newItem = {
+                        id: menuId,
+                        name: menuName,
+                        price: menuPrice,
+                        priceFormatted: menuPriceFormatted,
+                        quantity: 1,
+                        total: menuPrice
+                    };
+                    cart.push(newItem);
+                    console.log('Nouvel article ajouté localement:', newItem);
+                }
+                
+                // Sauvegarder dans localStorage pour l'interface
+                if (window.CartManager.saveCart(cart)) {
+                    console.log('Panier sauvegardé localement:', cart);
+                    
+                    // Déclencher un événement pour synchroniser les autres pages
+                    window.dispatchEvent(new CustomEvent('cartUpdated', { detail: cart }));
+                }
+                
+                // Animation de succès
+                button.innerHTML = '<i class="bi bi-check-circle"></i> Ajouté !';
+                button.style.background = '#28a745';
+                
+                // Afficher une notification de succès
+                const quantity = existingItem ? existingItem.quantity : 1;
+                showNotification(result.message || `"${menuName}" ajouté au panier (${quantity}x)`, 'success');
+                
+                // Mettre à jour le compteur dans le header
+                if (window.CartCounter) {
+                    window.CartCounter.updateDisplay();
+                }
+                
+            } catch (error) {
+                console.error('Erreur ajout au panier:', error);
+                
+                // Animation d'erreur
+                button.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Erreur';
+                button.style.background = '#dc3545';
+                
+                // Afficher une notification d'erreur
+                showNotification(error.message || 'Erreur lors de l\'ajout au panier', 'error');
+            }
             
             // Mettre à jour l'affichage du panier
             updateCartDisplay();
@@ -514,7 +563,12 @@ try {
             const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
             const cartTotal = cart.reduce((total, item) => total + item.total, 0);
             
-            // Mettre à jour l'icône du panier dans le header (si elle existe)
+            // Mettre à jour le compteur dans le header (nouveau système)
+            if (window.CartCounter) {
+                window.CartCounter.updateDisplay();
+            }
+            
+            // Compatibilité avec l'ancien système
             const cartIcon = document.querySelector('.cart-icon');
             if (cartIcon) {
                 cartIcon.innerHTML = `<i class="bi bi-cart"></i> (${cartCount})`;
