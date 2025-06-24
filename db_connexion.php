@@ -26,11 +26,27 @@ function loadEnvFile($filePath) {
     return true;
 }
 
-// Charger le fichier .env
-$envLoaded = loadEnvFile(__DIR__ . '/.env');
+// Charger le fichier .env approprié selon l'environnement
+$envLoaded = false;
 
+// 1. D'abord essayer de charger .env.production si on est en production
+if (getenv('RAILWAY_ENVIRONMENT') || getenv('APP_ENV') === 'production') {
+    $envLoaded = loadEnvFile(__DIR__ . '/.env.production');
+}
+
+// 2. Si pas de fichier de production, essayer .env
 if (!$envLoaded) {
-    die('Erreur : impossible de charger le fichier .env');
+    $envLoaded = loadEnvFile(__DIR__ . '/.env');
+}
+
+// 3. Si aucun fichier n'est trouvé, vérifier si les variables sont déjà définies
+if (!$envLoaded) {
+    // Vérifier si les variables essentielles sont déjà dans l'environnement (Railway)
+    if (getenv('MYSQLHOST') || getenv('MYSQL_URL')) {
+        $envLoaded = true; // Variables disponibles via l'environnement
+    } else {
+        die('Erreur : impossible de charger les variables d\'environnement (.env ou variables système)');
+    }
 }
 
 // Récupération des variables d'environnement
