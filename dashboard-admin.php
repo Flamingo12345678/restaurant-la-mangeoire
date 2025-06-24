@@ -7,6 +7,9 @@
  * Accessible uniquement aux superadmins
  */
 
+// Protection contre l'inclusion directe - requis par les templates admin
+define('INCLUDED_IN_PAGE', true);
+
 // Démarrer la session
 session_start();
 
@@ -20,8 +23,8 @@ require_once 'db_connexion.php';
 require_once 'includes/payment_manager.php';
 
 // Configuration pour le template header
-define('INCLUDED_IN_PAGE', true);
-$page_title = "Dashboard Administrateur";
+$page_title = "Dashboard Système";
+$is_in_admin_folder = false; // On est à la racine, pas dans /admin/
 
 // Utiliser la connexion PDO
 $pdo = $pdo;
@@ -102,17 +105,11 @@ try {
     $taux_conversion = 0;
 }
 
+// Inclure le header admin avec sidebar
+require_once 'admin/header_template.php';
 ?>
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $page_title; ?> - La Mangeoire</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.min.css" rel="stylesheet">
-    <style>
+
+<style>
         /* ===== VARIABLES CSS ===== */
         :root {
             --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -123,15 +120,23 @@ try {
             --transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
 
-        /* ===== STYLES GÉNÉRAUX ===== */
-        body {
+        /* ===== ADAPTATION POUR LA SIDEBAR ===== */
+        .admin-main-content {
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container-fluid {
+            padding: 0;
         }
 
-        .container-fluid {
-            padding: 30px;
+        /* Adaptation pour desktop avec sidebar */
+        @media (min-width: 992px) {
+            .admin-main-content {
+                margin-left: 250px;
+                padding: 30px;
+            }
         }
 
         /* ===== HEADER AVEC ONGLETS ===== */
@@ -399,17 +404,10 @@ try {
         .stat-card:nth-child(3) { animation-delay: 0.2s; }
         .stat-card:nth-child(4) { animation-delay: 0.3s; }
     </style>
-</head>
-<body>
-    <div class="container-fluid">
-        <!-- Header -->
-        <div class="admin-header">
-            <h1><i class="bi bi-speedometer2 me-3"></i>Dashboard Administrateur</h1>
-            <p>Monitoring système et paiements - Restaurant La Mangeoire</p>
-        </div>
 
-        <!-- Navigation par onglets -->
-        <ul class="nav nav-tabs custom-tabs" id="adminTabs" role="tablist">
+<!-- Navigation par onglets -->
+<div class="container-fluid">
+    <ul class="nav nav-tabs custom-tabs" id="adminTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="system-tab" data-bs-toggle="tab" data-bs-target="#system" type="button" role="tab">
                     <i class="bi bi-cpu me-2"></i>Dashboard Système
@@ -647,10 +645,8 @@ try {
             </div>
         </div>
     </div>
+    <!-- Fin du contenu principal -->
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.min.js"></script>
     <script>
         // Graphique répartition des paiements
         const paymentMethodsCtx = document.getElementById('paymentMethodsChart').getContext('2d');
@@ -816,5 +812,12 @@ try {
             refreshMonitoringData();
         });
     </script>
-</body>
-</html>
+
+    <!-- Scripts Chart.js spécifiques au dashboard -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.min.js"></script>
+</div> <!-- Fermeture container-fluid -->
+
+<?php
+// Inclure le footer admin
+require_once 'admin/footer_template.php';
+?>
