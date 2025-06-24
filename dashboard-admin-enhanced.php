@@ -29,19 +29,19 @@ $pdo = $pdo;
 // Récupération des statistiques système
 try {
     // Nombre total de commandes
-    $stmt = $pdo->query("SELECT COUNT(*) as total FROM Commandes WHERE 1");
+    $stmt = $pdo->query("SELECT COUNT(*) as total FROM commandes WHERE 1");
     $total_commandes = $stmt->fetch()['total'] ?? 0;
     
     // Revenus du mois
-    $stmt = $pdo->query("SELECT COALESCE(SUM(MontantTotal), 0) as revenus FROM Commandes WHERE DATE(DateCommande) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND Statut = 'Payée'");
+    $stmt = $pdo->query("SELECT COALESCE(SUM(montant_total), 0) as revenus FROM commandes WHERE DATE(date_creation) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND statut = 'payee'");
     $revenus_mois = $stmt->fetch()['revenus'] ?? 0;
     
     // Clients actifs
-    $stmt = $pdo->query("SELECT COUNT(DISTINCT ClientID) as clients FROM Commandes WHERE DATE(DateCommande) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)");
+    $stmt = $pdo->query("SELECT COUNT(DISTINCT user_id) as clients FROM commandes WHERE DATE(date_creation) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)");
     $clients_actifs = $stmt->fetch()['clients'] ?? 0;
     
     // Réservations en attente
-    $stmt = $pdo->query("SELECT COUNT(*) as reservations FROM Reservations WHERE Statut = 'En attente'");
+    $stmt = $pdo->query("SELECT COUNT(*) as reservations FROM reservations WHERE statut = 'en_attente'");
     $reservations_attente = $stmt->fetch()['reservations'] ?? 0;
     
 } catch(PDOException $e) {
