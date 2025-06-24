@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once 'includes/https-security.php'; // Sécurité HTTPS
 require_once 'includes/common.php';
 require_once 'db_connexion.php';
 require_once 'includes/currency_manager.php';
@@ -15,12 +16,30 @@ if (isset($_GET['currency'])) {
 
 // Custom function to display cart messages using the session variable format we've set up
 function display_cart_message() {
+  // Gérer les messages du panier (format moderne)
+  if (isset($_SESSION['cart_message'])) {
+    $message = $_SESSION['cart_message'];
+    $message_type = $message['type'] ?? 'info';
+    $alert_class = ($message_type == 'error') ? 'alert-danger' : 'alert-success';
+    
+    echo '<div class="alert ' . $alert_class . ' alert-dismissible fade show" role="alert">';
+    echo '<i class="bi bi-' . ($message_type == 'error' ? 'exclamation-triangle' : 'check-circle') . '"></i> ';
+    echo htmlspecialchars($message['text']);
+    echo '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>';
+    echo '</div>';
+    
+    // Clear the message after displaying it
+    unset($_SESSION['cart_message']);
+  }
+  
+  // Gérer les anciens messages (format legacy)
   if (isset($_SESSION['message'])) {
     $message_type = isset($_SESSION['message_type']) ? $_SESSION['message_type'] : 'info';
     $alert_class = ($message_type == 'error') ? 'alert-danger' : 'alert-success';
     
     echo '<div class="alert ' . $alert_class . ' alert-dismissible fade show" role="alert">';
-    echo $_SESSION['message'];
+    echo '<i class="bi bi-' . ($message_type == 'error' ? 'exclamation-triangle' : 'check-circle') . '"></i> ';
+    echo htmlspecialchars($_SESSION['message']);
     echo '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>';
     echo '</div>';
     
