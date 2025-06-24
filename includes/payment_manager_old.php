@@ -205,6 +205,10 @@ class PaymentManager {
                 'payment_method' => $payment_data['payment_method_id'],
                 'confirmation_method' => 'manual',
                 'confirm' => true,
+                'automatic_payment_methods' => [
+                    'enabled' => true,
+                    'allow_redirects' => 'never'
+                ],
                 'metadata' => [
                     'commande_id' => $payment_data['commande_id'] ?? '',
                     'reservation_id' => $payment_data['reservation_id'] ?? '',
