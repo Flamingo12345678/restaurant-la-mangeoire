@@ -26,17 +26,43 @@ function loadEnvFile($filePath) {
     return true;
 }
 
-// Charger le fichier .env
-$envLoaded = loadEnvFile(__DIR__ . '/.env');
+// Charger le fichier .env (optionnel, pour développement local)
+// En production (Railway), les variables sont directement injectées
+$envLoaded = false;
 
-if (!$envLoaded) {
-    die('Erreur : impossible de charger le fichier .env');
+// Essayer de charger .env.production en priorité
+if (file_exists(__DIR__ . '/.env.production')) {
+    $envLoaded = loadEnvFile(__DIR__ . '/.env.production');
 }
+
+// Si pas de .env.production, essayer .env (développement)
+if (!$envLoaded && file_exists(__DIR__ . '/.env')) {
+    $envLoaded = loadEnvFile(__DIR__ . '/.env');
+}
+
+// Si aucun fichier .env n'est trouvé, continuer (Railway injecte directement les variables)
+// Pas d'erreur fatale, les variables peuvent être présentes dans l'environnement système
 
 // Récupération des variables d'environnement
 if (!function_exists('getEnvVar')) {
     function getEnvVar($key, $default = '') {
-        return $_ENV[$key] ?? getenv($key) ?: $default;
+        // Essayer $_ENV d'abord (chargé depuis .env)
+        if (!empty($_ENV[$key])) {
+            return $_ENV[$key];
+        }
+        
+        // Essayer getenv() (variables système, Railway)
+        $value = getenv($key);
+        if ($value !== false && $value !== '') {
+            return $value;
+        }
+        
+        // Essayer $_SERVER (certains hébergeurs)
+        if (!empty($_SERVER[$key])) {
+            return $_SERVER[$key];
+        }
+        
+        return $default;
     }
 }
 
